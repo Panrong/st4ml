@@ -1,8 +1,8 @@
-import MapMatcher.{Point, Trajectory, greatCircleDist}
+package preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-
+import SpatialClasses._
 
 object preprocessing {
 
