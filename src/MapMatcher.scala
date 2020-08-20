@@ -1,3 +1,5 @@
+package MapMatcher
+
 import java.io.FileWriter
 
 import MapMatcher._
@@ -232,7 +234,7 @@ object MapMatcher {
         point2 = points(i)
       }
       val tProb = transitionProbArray(point1, point2, pairs(point1), pairs(point2), beta, g, roadIDMap)
-      var sum:Double = 0
+      var sum: Double = 0
       for (j <- tProb) sum += j.sum
       if (sum != 0) {
         if (filteredPoints contains (point1)) filteredPoints = filteredPoints :+ point2
@@ -287,9 +289,9 @@ object MapMatcher {
   def apply(trajectory: Trajectory, roadIDMap: Map[Int, Line], g: EdgeWeightedDigraph): Array[Array[Line]] = {
     val roads = roadIDMap.values.toArray
     val orgPairs = getCandidates(trajectory, roads)
-    val cleanedPairs = hmmBreak(orgPairs,roadIDMap,g)
-    var bestRoadsCollection = new Array[Array[Line]] (0)
-    for(pairs <- cleanedPairs) {
+    val cleanedPairs = hmmBreak(orgPairs, roadIDMap, g)
+    var bestRoadsCollection = new Array[Array[Line]](0)
+    for (pairs <- cleanedPairs) {
       var bestRoads = getBestRoads(pairs, g, roadIDMap)
       bestRoads = connectRoads(bestRoads, roadIDMap, g)
       for (i <- bestRoads) print(i.id.toString + "->")
@@ -357,12 +359,13 @@ object MapMatcherTest extends App {
   val fakePoints = Array(Point(0.004, 0.00025, 0), Point(0.0017, 0.0002, 10), Point(-0.0002, 0.0007, 20), Point(0.0003, 0.0022, 30), Point(0.0011, 0.002, 40))
   val fakeTrajectory = Trajectory(0, 0, 0, fakePoints)
   val fakeTrajectoryRDD = sc.parallelize(Array(fakeTrajectory))
+  findCandidate(sc.parallelize(fake_roads), fakeTrajectory, 200)
   /*
   val mapmatchedRDD = fakeTrajectoryRDD.map(traj => {
     MapMatcher(traj, fake_roads)
   })
   mapmatchedRDD.collect()
-   */
+  */
   var g = EdgeWeightedDigraph()
   for (i <- 0 to mtx.length - 1) {
     for (j <- 0 to mtx.length - 1) {
@@ -442,64 +445,90 @@ object MapMatcherTest extends App {
   for(i <- t) println(i)
 
    */
-  // preprocessing functions
-  def trajPreprocessing(fileName: String = "C:\\Users\\kaiqi001\\Map Matching\\src\\cleaned.txt"): Array[Trajectory] = {
-    //scala version
-    val bufferedSource = io.Source.fromFile(fileName)
-    // println(bufferedSource.getLines.length)
-    var trajs = new Array[Trajectory](0)
-    for (line <- bufferedSource.getLines) {
-      val cols = line.split(" ")
-      var points = new Array[Point](0)
-      for (i <- 3 to cols.length - 1 by 2) {
-        points = points :+ Point(cols(i).toDouble, cols(i + 1).toDouble, cols(2).toLong + 15 * (i - 3) / 2)
+
+  def findCandidate(rdd: RDD[Line], traj: Trajectory, maxDist: Double): Map[Point, Array[Line]] = {
+    // find candidate for one traj
+    val pairedRDD = rdd.flatMap(l => {
+      var candidatePairs = new Array[(Point, Line)](0)
+      val points = traj.points
+      for (p <- points) {
+        if (l.dist2Point(p) <= maxDist) candidatePairs = candidatePairs :+ (p,l)
       }
-      val traj = Trajectory(cols(0).toLong, cols(1).toLong, cols(2).toLong, points)
-      trajs = trajs :+ traj
-    }
-    //println(trajs(0))
-    //for(i<-trajs(0).points) println(i)
-    trajs
+      candidatePairs
+    }).groupByKey.map(k => (k._1, k._2.toArray)) //pairRDD with key: Point value: Array[Line]
+    // rdd1.collect.foreach(x => println(x._1, x._2.deep))
+    var candidateMap: Map[Point, Array[Line]] = Map()
+    for(x <- pairedRDD){ candidateMap += (x._1 -> x._2)}
+    candidateMap
   }
 
-  def genTrajRDD(fileName: String, numPartition: Int, sc: SparkContext): RDD[Trajectory] = {
-    //spark version
-    // file: txt of "tripID taxiID startTime point1.long point1.lat point2.long point2.lat ..."
-    val f = sc.textFile(fileName, numPartition)
-    val lines = f.map(line => line.split(' '))
-    val trajRDD = lines.map(line => {
-      var points = new Array[Point](0)
-      for (i <- 3 to line.length - 1 by 2) {
-        points = points :+ Point(line(i).toDouble, line(i + 1).toDouble, line(2).toLong + 15 * (i - 3) / 2)
-      }
-      Trajectory(line(0).toLong, line(1).toLong, line(2).toLong, points)
+  def genCandidateRDD(trajRDD: RDD[Trajectory], roadRDD: RDD[Line], maxDist:Double = 200): RDD[(Trajectory, Map[Point, Array[Line]])] = {
+    // find candidate for all trajs
+    val candidateRDD = trajRDD.map(traj =>{
+      (traj, findCandidate(roadRDD, traj, maxDist))
     })
-    trajRDD
-  }
+    candidateRDD
+  } // if generate candidates for all trajs, each time need to scan, not efficient
 
-  def splitTraj(trajectory: Trajectory, splitPoints: Array[Int]): Array[Trajectory] = {
-    if (splitPoints.length == 1) Array(trajectory)
-    else {
+    // preprocessing functions
+    def trajPreprocessing(fileName: String = "C:\\Users\\kaiqi001\\Map Matching\\src\\cleaned.txt"): Array[Trajectory] = {
+      //scala version
+      val bufferedSource = io.Source.fromFile(fileName)
+      // println(bufferedSource.getLines.length)
       var trajs = new Array[Trajectory](0)
-      //println(splitPoints.deep)
-      for (i <- 0 to splitPoints.length - 2) {
-        val points = trajectory.points.take(splitPoints(i + 1) + 1).drop(splitPoints(i))
-        trajs = trajs :+ Trajectory(trajectory.tripID, trajectory.taxiID, points(0).t, points)
+      for (line <- bufferedSource.getLines) {
+        val cols = line.split(" ")
+        var points = new Array[Point](0)
+        for (i <- 3 to cols.length - 1 by 2) {
+          points = points :+ Point(cols(i).toDouble, cols(i + 1).toDouble, cols(2).toLong + 15 * (i - 3) / 2)
+        }
+        val traj = Trajectory(cols(0).toLong, cols(1).toLong, cols(2).toLong, points)
+        trajs = trajs :+ traj
       }
+      //println(trajs(0))
+      //for(i<-trajs(0).points) println(i)
       trajs
     }
-  }
 
-  def trajBreak(trajRDD: RDD[Trajectory], speed: Double = 50, timeInterval: Double = 180): RDD[Trajectory] = {
-    // speed and time interval check
-    trajRDD.flatMap(traj => {
-      var splitPoints = new Array[Int](0)
-      for (i <- 0 to traj.points.length - 2 by 2) {
-        val t = traj.points(i + 1).t - traj.points(i).t
-        val l = greatCircleDist(traj.points(i + 1), traj.points(i))
-        if (l / t > speed || t > timeInterval) splitPoints = splitPoints :+ i
+    def genTrajRDD(fileName: String, numPartition: Int, sc: SparkContext): RDD[Trajectory] = {
+      //spark version
+      // file: txt of "tripID taxiID startTime point1.long point1.lat point2.long point2.lat ..."
+      val f = sc.textFile(fileName, numPartition)
+      val lines = f.map(line => line.split(' '))
+      val trajRDD = lines.map(line => {
+        var points = new Array[Point](0)
+        for (i <- 3 to line.length - 1 by 2) {
+          points = points :+ Point(line(i).toDouble, line(i + 1).toDouble, line(2).toLong + 15 * (i - 3) / 2)
+        }
+        Trajectory(line(0).toLong, line(1).toLong, line(2).toLong, points)
+      })
+      trajRDD
+    }
+
+    def splitTraj(trajectory: Trajectory, splitPoints: Array[Int]): Array[Trajectory] = {
+      if (splitPoints.length == 1) Array(trajectory)
+      else {
+        var trajs = new Array[Trajectory](0)
+        //println(splitPoints.deep)
+        for (i <- 0 to splitPoints.length - 2) {
+          val points = trajectory.points.take(splitPoints(i + 1) + 1).drop(splitPoints(i))
+          trajs = trajs :+ Trajectory(trajectory.tripID, trajectory.taxiID, points(0).t, points)
+        }
+        trajs
       }
-      splitTraj(traj, 0 +: splitPoints)
-    }).filter(traj => traj.points.length > 1)
+    }
+
+    def trajBreak(trajRDD: RDD[Trajectory], speed: Double = 50, timeInterval: Double = 180): RDD[Trajectory] = {
+      // speed and time interval check
+      trajRDD.flatMap(traj => {
+        var splitPoints = new Array[Int](0)
+        for (i <- 0 to traj.points.length - 2 by 2) {
+          val t = traj.points(i + 1).t - traj.points(i).t
+          val l = greatCircleDist(traj.points(i + 1), traj.points(i))
+          if (l / t > speed || t > timeInterval) splitPoints = splitPoints :+ i
+        }
+        splitTraj(traj, 0 +: splitPoints)
+      }).filter(traj => traj.points.length > 1)
+    }
+
   }
-}
