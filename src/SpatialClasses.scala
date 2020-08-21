@@ -7,7 +7,11 @@ import scala.math._
 case class Point(lat: Double, long: Double, t: Long = 0) extends Serializable {
 
 }
+case class Rectangle(topLeft:Point, bottomRight:Point) extends Serializable{
+  val center = Point((topLeft.lat + bottomRight.lat)/2,  (topLeft.long + bottomRight.long)/2)
 
+
+}
 case class Line(start: Point, end: Point, id: Long = 0) extends Serializable {
   val length = greatCircleDist(start, end)
 
@@ -33,6 +37,14 @@ case class Line(start: Point, end: Point, id: Long = 0) extends Serializable {
     if (beta < Pi / 2 && gamma < Pi / 2) Array(c * sin(beta), a - c * sin(beta))
     else if (beta >= Pi / 2) Array(0, a)
     else Array(a, 0)
+  }
+
+  def mbr():Rectangle = {
+    val lat_min = min(start.lat, end.lat)
+    val long_min = min(start.long, end.long)
+    val lat_max = max(start.lat, end.lat)
+    val long_max = max(start.long, end.long)
+    Rectangle(Point(lat_min, long_min), Point(lat_max, long_max))
   }
 }
 
