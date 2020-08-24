@@ -67,14 +67,16 @@ object STRPartitioner {
     // gen dataframeRDD on MBR
     val rectangleRDD = origin.map(x => (x._1.center.lat, x._1.center.long))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
-    val boxes = STR(df, numPartition, List("x", "y"), true)
+    val res = STR(df, numPartition, List("x", "y"), true)
+    val boxes = res._1
+    val boxMap = res._2
     for (i <- boxes) println(i)
     var boxesWIthID: Map[Int, List[Double]] = Map()
     for (i <- 0 to boxes.length - 1) {
       val box = boxes(i)
       boxesWIthID += (i -> box)
     }
-    val partitioner = new STRPartitioner(boxesWIthID.size, boxesWIthID)
+    val partitioner = new STRPartitioner(boxesWIthID.size, boxMap)
     new ShuffledRDD[Rectangle, Line, Line](origin, partitioner)
   }
 
@@ -95,9 +97,14 @@ object STRPartitioner {
     df.filter(functions.col(column) >= range(0) && functions.col(column) < range(1))
   }
 
-  def gen_boxes(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]]): Array[List[Double]] = {
+  def gen_boxes(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]]): (Array[List[Double]], Map[List[Double], Array[(List[Double], Int)]]) = {
+    var metaBoxes = new Array[List[Double]](0)
+    for (x <- 0 to x_boundaries.length - 2) metaBoxes = metaBoxes :+ List(x_boundaries(x), y_boundaries(x)(0), x_boundaries(x + 1), y_boundaries(0).last)
+    var boxMap: Map[List[Double], Array[(List[Double], Int)]] = Map()
     var boxes = new Array[List[Double]](0)
+    var n = 0
     for (i <- 0 to x_boundaries.length - 2) {
+      var stripBoxes = new Array[(List[Double], Int)](0)
       var x_min = x_boundaries(i)
       var x_max = x_boundaries(i + 1)
       for (j <- 0 to y_boundaries(i).length - 2) {
@@ -105,10 +112,13 @@ object STRPartitioner {
         var y_max = y_boundaries(i)(j + 1)
         var box = List(x_min, y_min, x_max, y_max)
         boxes = boxes :+ box
+        stripBoxes = stripBoxes :+ (box, n)
+        n += 1
         //println(box)
       }
+      boxMap += metaBoxes(i) -> stripBoxes
     }
-    boxes
+    (boxes, boxMap)
   }
 
   def getWholeRange(df: DataFrame, column: List[String]): Array[Double] = {
@@ -139,7 +149,7 @@ object STRPartitioner {
     (n_x_boundaries, n_y_boundaries)
   }
 
-  def STR(df: DataFrame, numPartitions: Int, columns: List[String], coverWholeRange: Boolean): Array[List[Double]] = {
+  def STR(df: DataFrame, numPartitions: Int, columns: List[String], coverWholeRange: Boolean): (Array[List[Double]], Map[List[Double], Array[(List[Double], Int)]]) = {
     // columns: sequence of partitioning columns, e.g. List("x", "y") means partition on x first then y
     // return boxes
     val s = ceil(sqrt(numPartitions)).toInt
@@ -161,21 +171,26 @@ object STRPartitioner {
     }
     gen_boxes(x_boundaries, y_boundaries)
   }
+
 }
 
-class STRPartitioner(val num: Int, val boxesWIthID: Map[Int, List[Double]]) extends Partitioner {
+class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], Int)]]) extends Partitioner {
   // calculate number of partitions - partition x and y dimension both into numPartitions partitions (totally numPartitions^2 partitions)
   override def numPartitions: Int = num
 
   // the way to implement grid partitioning
   override def getPartition(key: Any): Int = {
     val K = key.asInstanceOf[Rectangle].center
-    for ((k, v) <- boxesWIthID) {
-      if (K.lat > v(0) && K.lat <= v(2) && K.long > v(1) && K.long <= v(3)) {
-        return k
+    for (k <- boxMap.keys) {
+      if (K.lat > k(0) && K.lat <= k(2) && K.long > k(1) && K.long <= k(3)) {
+        for (v <- boxMap(k)) {
+          if (K.lat > v._1(0) && K.lat <= v._1(2) && K.long > v._1(1) && K.long <= v._1(3)) {
+            return v._2
+          }
+        }
       }
     }
-    return num - 1
+    num - 1
   }
 }
 
