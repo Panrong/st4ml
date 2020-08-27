@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MapMatching.iml" filepath="$PROJECT_DIR$/MapMatching.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spark-map-matching.iml" filepath="$PROJECT_DIR$/spark-map-matching.iml" />
     </modules>
   </component>
 </project>
