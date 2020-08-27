@@ -1,4 +1,6 @@
 package preprocessing
+
+import RStarTree.{Node, RTree, queryWithTable}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -60,11 +62,11 @@ object preprocessing {
     newTrajRDD
   }
 
-  def removeRedundancy(trajRDD: RDD[Trajectory], sigmaZ:Double = 4.07): RDD[Trajectory] = {
+  def removeRedundancy(trajRDD: RDD[Trajectory], sigmaZ: Double = 4.07): RDD[Trajectory] = {
     val resRDD = trajRDD.map(traj => {
       var newPoints = Array(traj.points(0))
-      for (p<- 1 to traj.points.length -1){
-        if(greatCircleDist(traj.points(p), newPoints.last) >= 2*sigmaZ) newPoints = newPoints :+ traj.points(p)
+      for (p <- 1 to traj.points.length - 1) {
+        if (greatCircleDist(traj.points(p), newPoints.last) >= 2 * sigmaZ) newPoints = newPoints :+ traj.points(p)
       }
       Trajectory(traj.tripID, traj.taxiID, traj.startTime, newPoints)
     })
@@ -88,5 +90,43 @@ object preprocessingTest extends App {
   println("==== Trajectory examples: ")
   for (i <- trajRDD.take(2)) {
     println("tripID: " + i.tripID + " taxiID: " + i.taxiID + " startTime: " + i.startTime + " points: " + i.points.deep)
+  }
+  //rtree test
+
+  val rectangles = trajRDD.map(x => x.mbr.assignID(x.tripID)).collect
+
+  //generate rtree
+  var rootNode = Node(Rectangle(Point(0, 0), Point(10, 10)), isLeaf = true)
+  val capacity = 200
+  var rtree = RTree(rootNode, capacity)
+  var i = 0
+  for (rectangle <- rectangles) {
+    RTree.insertEntry(rectangle, rtree)
+    i += 1
+  }
+  // range query
+  val res = rtree.genTable()
+  val table = res._1
+  val entries = rtree.leafEntries
+  val queryRange = Rectangle(Point(-8.625, 41.145), Point(-8.615, 41.155))
+  val retrieved = queryWithTable(table.map {case (key, value) => (key, value.mbr)}, entries, capacity, queryRange)
+  //printRetrieved(retrieved)
+  for(r <- retrieved) println(r.id)
+  println(retrieved.length + " trajectories retrieved in the range "+ queryRange.x_min, queryRange.y_min, queryRange.x_max, queryRange.y_max)
+  sc.stop()
+
+  def printRetrieved(retrieved: Array[Shape]) {
+    println("-------------")
+    for (i <- retrieved) {
+      if (i.isInstanceOf[Point]) {
+        val p = i.asInstanceOf[Point]
+        println(p.x, p.y)
+      }
+      else {
+        val r = i.asInstanceOf[Rectangle]
+        println(r.x_min, r.y_min, r.x_max, r.y_max)
+      }
+    }
+    println("-------------")
   }
 }

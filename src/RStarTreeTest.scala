@@ -1,5 +1,6 @@
 import org.apache.spark.{SparkConf, SparkContext}
-import RStarTree.{Node, Point, RTree, Rectangle, Shape, queryWithTable}
+import RStarTree._
+import SpatialClasses._
 
 object RStarTreeTest extends App {
   override def main(args: Array[String]): Unit = {
@@ -33,7 +34,7 @@ object RStarTreeTest extends App {
 
      */
 
-    var rootNode = Node(Rectangle(RStarTree.Point(0, 0), RStarTree.Point(10, 10)), isLeaf = true)
+    var rootNode = Node(Rectangle(Point(0, 0), Point(10, 10)), isLeaf = true)
     val capacity = 5
     var rtree = RTree(rootNode, capacity)
     //for(i <- rtree.leaves) println(i.mbr)
@@ -90,7 +91,7 @@ object RStarTreeTest extends App {
     }
   }
 
-  def genRandomPoints(num: Int, range: Int): Array[RStarTree.Point] = {
+  def genRandomPoints(num: Int, range: Int): Array[Point] = {
     val r = new scala.util.Random(5)
     var x: Int = 0
     var y: Int = 0
@@ -104,7 +105,7 @@ object RStarTreeTest extends App {
     points
   }
 
-  def genRandomRectangles(num: Int, range: Int): Array[RStarTree.Rectangle] = {
+  def genRandomRectangles(num: Int, range: Int): Array[Rectangle] = {
     val r = new scala.util.Random(5)
     var x: Int = 0
     var y: Int = 0

@@ -2,6 +2,7 @@ package RStarTree
 
 import scala.math.{max, min, abs}
 import Array._
+import SpatialClasses._
 import scala.util.control._
 
 object RStarTree {
@@ -10,7 +11,7 @@ object RStarTree {
     val b = Rectangle(Point(2, 2), Point(4, 4))
   }
 }
-
+/*
 case class Point(xc: Double, yc: Double) extends Shape {
   val x: Double = xc
   val y: Double = yc
@@ -106,6 +107,8 @@ abstract class Shape() {
 
   def center(): Point
 }
+
+ */
 
 case class Node(m_box: Rectangle, m_child: Array[Node] = new Array[Node](0), isLeaf: Boolean) {
   var leaf: Boolean = isLeaf
@@ -544,7 +547,7 @@ object RTree {
     if (rtree.root.child.length > M || (rtree.root.isLeaf && rtree.root.entries.length > M)) {
       val new_root = Node(rtree.root.mbr, Array(rtree.root), false)
       rtree.root = new_root
-      RTree.printTree(rtree.root)
+      //RTree.printTree(rtree.root)
     }
     //val ancestors = findAncestor(rtree.root, child)
     val ancestors = rtree.findAncestors(child)

@@ -13,12 +13,18 @@ abstract class Shape() {
   def dist(point: Point): Double
 
   def center(): Point
+
+  var id: Long
 }
 
-case class Point(lat: Double, long: Double, t: Long = 0) extends Shape with Serializable {
+case class Point(lat: Double, long: Double, t: Long = 0, ID:Long = 0) extends Shape with Serializable {
   val x: Double = lat
   val y: Double = long
-
+  override var id:Long = ID
+  def assignID(i:Long):Point = {
+    id = i
+    this
+  }
   override def intersect(rectangle: Rectangle): Boolean = {
     inside(rectangle)
   }
@@ -35,9 +41,13 @@ case class Point(lat: Double, long: Double, t: Long = 0) extends Shape with Seri
   override def center(): Point = this
 }
 
-case class Rectangle(bottomLeft: Point, topRight: Point) extends Shape with Serializable {
+case class Rectangle(bottomLeft: Point, topRight: Point, ID:Long = 0) extends Shape with Serializable {
   override def center(): Point = Point((bottomLeft.lat + topRight.lat) / 2, (bottomLeft.long + topRight.long) / 2)
-
+  override var id:Long = ID
+  def assignID(i:Long) :Rectangle= {
+    id = i
+    this
+  }
   def dilate(d: Double): Rectangle = {
     // dilate the rectangle with d meter
     //approx 1 latitude degree = 111km
@@ -147,7 +157,15 @@ case class Line(start: Point, end: Point, id: Long = 0) extends Serializable {
 }
 
 case class Trajectory(tripID: Long, taxiID: Long, startTime: Long, points: Array[Point]) extends Serializable {
-
+  def mbr:Rectangle = {
+    var lat = new Array[Double](0)
+    var long = new Array[Double](0)
+    for(p <- points){
+      lat = lat :+ p.lat
+      long  =long :+ p.long
+    }
+    Rectangle(Point(lat.min, long.min), Point(lat.max, long.max))
+  }
 }
 
 object greatCircleDist {
