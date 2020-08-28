@@ -1,6 +1,6 @@
 import org.apache.spark.{SparkConf, SparkContext}
 import RStarTree._
-import SpatialClasses._
+import main.scala.mapmatching.SpatialClasses._
 
 object RStarTreeTest extends App {
   override def main(args: Array[String]): Unit = {

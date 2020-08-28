@@ -4,7 +4,7 @@ import RStarTree.{Node, RTree, queryWithTable}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import SpatialClasses._
+import main.scala.mapmatching.SpatialClasses._
 
 object preprocessing {
 
