@@ -5,10 +5,10 @@ object RoadGraphTest extends App {
     val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
 
     println("Test getNearestVertex")
-    rg.getNearestVertex(-8.6152995, 41.1427807, 3).foreach(println)
+    rg.getNearestVertex(41.1427807, -8.6152995, 3).foreach(println)
     println("--------------------")
     println("Test getNearestEdge")
-    rg.getNearestEdge(-8.6152995, 41.1427807, 3).foreach(println)
+    rg.getNearestEdge( 41.1427807,-8.6152995, 3).foreach(println)
     println("--------------------")
 
     println("Test getShortestPath: normal query")

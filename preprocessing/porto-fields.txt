@@ -1,5 +1,5 @@
 Lines with node information:
-node, node_id, lat, lon
+node, node_id, lon, lat
 
 Example:
 edge,7826085926,-8.6860519,41.1754507

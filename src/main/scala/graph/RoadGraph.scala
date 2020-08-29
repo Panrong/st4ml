@@ -13,6 +13,9 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   val minLon: Double = vertexes.map(x => x.lon).min
   val maxLat: Double = vertexes.map(x => x.lat).max
   val maxLon: Double = vertexes.map(x => x.lon).max
+  val id2vertex: Map[String, RoadVertex] = vertexes.map(x => x.id -> x).toMap
+  val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
+
   val gridStride: Double = gridSize * (360.0/40075.0)  // 40075 is the circumference of the Earth in kilometers
   val gridNumOverLat: Int = ceil((maxLat - minLat) / gridStride).toInt
   val gridNumOverLon: Int = ceil((maxLon - minLon) / gridStride).toInt
@@ -20,8 +23,8 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   val grids: Map[GridId, GridBoundary] = buildSimpleGrids()
   val grid2Vertex: Map[GridId, Array[RoadVertex]] = buildGrid2Vertex()
   val grid2Edge: Map[GridId, Array[RoadEdge]] = buildGrid2Edge()
+
   val g: RouteGraph[String] = buildGraph()
-  val edgeId2Length: Map[String, Double] = edges.map(x => x.id -> x.length).toMap
 
   /**
     A grid's index, starting from 0 at the bottom left point (minLat, minLon)
@@ -141,7 +144,7 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     val length = path match {
       case Nil => Double.MaxValue
       case l if l.size == 1 => 0
-      case l if l.size > 1 => l.sliding(2).map(x => edgeId2Length(s"${x(0)}-${x(1)}")).sum
+      case l if l.size > 1 => l.sliding(2).map(x => id2edge(s"${x(0)}-${x(1)}").length).sum
     }
     (path, length)
   }
@@ -157,7 +160,7 @@ object RoadGraph {
 
     for (line <- source.getLines) {
       if (line.startsWith("node")) {
-        val Array(_, nodeId, nodeLat, nodeLon) = line.split(",").map(_.trim)
+        val Array(_, nodeId, nodeLon, nodeLat) = line.split(",").map(_.trim)
         vertexArrayBuffer += RoadVertex(nodeId,
                                         nodeLat.toDouble,
                                         nodeLon.toDouble)
@@ -166,8 +169,8 @@ object RoadGraph {
                                                                               .map(_.trim)
 
         val gpsArray = gpsString.split("%").map(x => x.split(" ")).map(x => (x(0).toDouble, x(1).toDouble))
-        val midLat = gpsArray.map(_._1).sum / gpsArray.length
-        val midLon = gpsArray.map(_._2).sum / gpsArray.length
+        val midLon = gpsArray.map(_._1).sum / gpsArray.length
+        val midLat = gpsArray.map(_._2).sum / gpsArray.length
 
         edgeArrayBuffer += RoadEdge(s"$fromNodeId-$toNodeId",
                                     fromNodeId,
