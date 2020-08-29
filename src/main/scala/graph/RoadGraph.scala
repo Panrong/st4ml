@@ -1,11 +1,8 @@
 package main.scala.graph
 
-import org.scalameter.Log
-
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.math.{abs, acos, ceil, cos, floor, sin}
-
 
 class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Serializable {
   // parameters
@@ -22,6 +19,7 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   val gridNum: Int = gridNumOverLat * gridNumOverLon
   val grids: Map[GridId, GridBoundary] = buildSimpleGrids()
   val grid2Vertex: Map[GridId, Array[RoadVertex]] = buildGrid2Vertex()
+  val grid2Edge: Map[GridId, Array[RoadEdge]] = buildGrid2Edge()
   val g: RouteGraph[String] = buildGraph()
   val edgeId2Length: Map[String, Double] = edges.map(x => x.id -> x.length).toMap
 
@@ -39,6 +37,9 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
                                 upperRightLat: Double, upperRightLon: Double)
 
 
+  /**
+    RouteGraph for calculating dijkstra and shortest path
+   */
   final case class RouteGraph[N](succs: Map[N, Map[N, Int]]) extends Graph[N] {
     def apply(n: N): Map[N, Int] = succs.getOrElse(n, Map.empty)
 
@@ -64,7 +65,15 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     val grid2vertex = vertex2grid.groupBy(_._2).map { case (k, v) =>
       k -> v.keys.toArray
     }
-    grid2vertex.withDefaultValue(Array.empty)  // returns an empty Array when the input key doesn't exist
+    grid2vertex
+  }
+
+  def buildGrid2Edge(): Map[GridId, Array[RoadEdge]] = {
+    val edge2grid = edges.map(x => x -> getSimpleGrid(x.midLat, x.midLon)).toMap
+    val grid2edge = edge2grid.groupBy(_._2).map { case (k, v) =>
+      k -> v.keys.toArray
+    }
+    grid2edge
   }
 
   def buildGraph() : RouteGraph[String] = {
@@ -105,8 +114,16 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   def getNearestVertex(lat: Double, lon: Double, k: Int): Array[(RoadVertex, Double)] = {
     val grid = getSimpleGrid(lat, lon)
     val grids = getSurroundingSimpleGrids(grid)
-    val vertexes = grids.flatMap(x => grid2Vertex(x))
+    val vertexes = grids.flatMap(x => grid2Vertex.getOrElse(x, Array.empty))
     val distance = vertexes.map(x => x -> greatCircleDistance(lat, lon, x.lat, x.lon)).sortBy(_._2)
+    distance.take(k)
+  }
+
+  def getNearestEdge(lat: Double, lon: Double, k: Int): Array[(RoadEdge, Double)] = {
+    val grid = getSimpleGrid(lat, lon)
+    val grids = getSurroundingSimpleGrids(grid)
+    val edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
+    val distance = edges.map(x => x -> greatCircleDistance(lat, lon, x.midLat, x.midLon)).sortBy(_._2)
     distance.take(k)
   }
 
@@ -129,6 +146,9 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     (path, length)
   }
 
+  def getShortestPathLength(sourceVertexId: String, targetVertexId: String): Double = {
+    0.0
+  }
 }
 
 object RoadGraph {
@@ -147,17 +167,26 @@ object RoadGraph {
       } else if (line.startsWith("edge")) {
         val Array(_, fromNodeId, toNodeId, isOneWay, length, gpsString) = line.split(",")
                                                                               .map(_.trim)
+
+        val gpsArray = gpsString.split("%").map(x => x.split(" ")).map(x => (x(0).toDouble, x(1).toDouble))
+        val midLat = gpsArray.map(_._1).sum / gpsArray.length
+        val midLon = gpsArray.map(_._2).sum / gpsArray.length
+
         edgeArrayBuffer += RoadEdge(s"$fromNodeId-$toNodeId",
                                     fromNodeId,
                                     toNodeId,
+                                    midLat,
+                                    midLon,
                                     length.toDouble,
-                                    gpsString)
+                                    gpsArray)
         if (isOneWay.toInt == 0) {
           edgeArrayBuffer += RoadEdge(s"$toNodeId-$fromNodeId",
                                       toNodeId,
                                       fromNodeId,
+                                      midLat,
+                                      midLon,
                                       length.toDouble,
-                                      gpsString)}
+                                      gpsArray)}
       } else {
         throw new Exception(s"CSV Parsing Error: unknown type in line: $line")
       }

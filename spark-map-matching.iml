@@ -11,5 +11,6 @@
     <orderEntry type="library" name="org.apache.spark:spark-core_2.12:3.0.0" level="project" />
     <orderEntry type="library" name="com.storm-enroute:scalameter-core_2.11:0.19" level="project" />
     <orderEntry type="library" name="org.scalacheck:scalacheck_2.12:1.14.3" level="project" />
+    <orderEntry type="library" name="org.apache.spark:spark-sql_2.12:3.0.0" level="project" />
   </component>
 </module>
