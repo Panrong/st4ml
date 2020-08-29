@@ -1,8 +1,10 @@
 package main.scala.graph
 
+import org.scalameter.Log
+
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
-import scala.math.{ceil, floor, sin, cos, abs, acos}
+import scala.math.{abs, acos, ceil, cos, floor, sin}
 
 
 class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Serializable {
@@ -113,13 +115,18 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     router.shortestPath(g)(sourceVertexId, targetVertexId)
   }
 
-  def getShortestPathLength(sourceVertexId: String, targetVertexId: String): Double = {
-    val path = getShortestPath(sourceVertexId, targetVertexId)
-    val length = path match {
-      case Some(l) => l.sliding(2).map(x => edgeId2Length(s"${x(0)}-${x(1)}")).sum
-      case None => Double.MaxValue
+  def getShortestPathAndLength(sourceVertexId: String, targetVertexId: String): (List[String], Double) = {
+    val res = getShortestPath(sourceVertexId, targetVertexId)
+    val path = res match {
+      case Some(l) => l
+      case None => List.empty
     }
-    length
+    val length = path match {
+      case Nil => Double.MaxValue
+      case l if l.size == 1 => 0
+      case l if l.size > 1 => l.sliding(2).map(x => edgeId2Length(s"${x(0)}-${x(1)}")).sum
+    }
+    (path, length)
   }
 
 }
