@@ -146,9 +146,6 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     (path, length)
   }
 
-  def getShortestPathLength(sourceVertexId: String, targetVertexId: String): Double = {
-    0.0
-  }
 }
 
 object RoadGraph {
