@@ -1,5 +1,4 @@
-package SpatialClasses
-
+package main.scala.mapmatching.SpatialClasses
 
 import scala.math._
 
@@ -180,3 +179,4 @@ object greatCircleDist {
     r * deltaSigma
   }
 }
+

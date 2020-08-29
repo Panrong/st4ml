@@ -1,10 +1,9 @@
 package STRPartition
 
-import org.apache.spark.{Partitioner}
+import org.apache.spark.Partitioner
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import SpatialClasses._
-
+import main.scala.mapmatching.SpatialClasses.{Line, Point, Rectangle}
 
 import scala.math.{ceil, sqrt}
 
@@ -48,7 +47,7 @@ object STRTest extends App {
       val v = line._2
       var r = i.toString()
       for (p <- v) {
-        r = r + ' ' + p.topLeft.lat.toString + ' ' + p.topLeft.long.toString + ' ' + p.bottomRight.lat.toString + ' ' + p.bottomRight.long.toString + ","
+        r = r + ' ' + p.bottomLeft.lat.toString + ' ' + p.bottomLeft.long.toString + ' ' + p.topRight.lat.toString + ' ' + p.topRight.long.toString + ","
       }
       r
     })

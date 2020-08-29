@@ -2,7 +2,7 @@ package RStarTree
 
 import scala.math.{max, min, abs}
 import Array._
-import SpatialClasses._
+import main.scala.mapmatching.SpatialClasses._
 import scala.util.control._
 
 object RStarTree {
