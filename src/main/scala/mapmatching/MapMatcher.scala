@@ -76,7 +76,7 @@ object MapMatcher {
   def getCandidates(trajectory: Trajectory, g: RoadGraph, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
     var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val c = g.getNearestEdge(point.lat, point.long, num)
+      val c = g.getNearestEdge(point.long, point.lat, num)
       pairs += (point -> c)
     }
     pairs

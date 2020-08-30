@@ -1,11 +1,12 @@
 import main.scala.mapmatching.MapMatcher._
-import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.apache.spark.sql.{SQLContext, SparkSession, Row}
 import org.apache.spark.{SparkConf, SparkContext, sql}
 import RStarTree.{Node, RTree, queryWithTable}
 import preprocessing._
 import main.scala.graph.RoadGraph
 import scala.reflect.io.Directory
 import java.io.File
+
 object RunMapMatching extends App {
   override def main(args: Array[String]): Unit = {
     val filename = args(0) //read file name from argument input
@@ -17,26 +18,33 @@ object RunMapMatching extends App {
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\porto.csv")
-    val trajRDD = preprocessing(filename,  List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
+    val trajRDD = preprocessing(filename, List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
 
-    val mapmatchedRDD = sc.parallelize(trajRDD.take(10)).map(traj => {
+    val mapmatchedRDD = sc.parallelize(trajRDD.take(2)).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)
       val roadDistArray = MapMatcher.getRoadDistArray(candidates, rg)
       val ids = MapMatcher(candidates, roadDistArray)
-      val vertexIDs = MapMatcher.connectRoads(ids,rg)
+      val vertexIDs = MapMatcher.connectRoads(ids, rg)
       var vertexIDString = ""
-      for(v <- vertexIDs) vertexIDString = vertexIDString + v + " "
+      for (v <- vertexIDs) vertexIDString = vertexIDString + v + " "
       vertexIDString = vertexIDString.dropRight(1)
       var pointString = ""
-      for(i <- traj.points) pointString = pointString +"(" + i.lat + " " + i.long + ")"
-      traj.taxiID.toString +","+ traj.tripID.toString +","+ pointString +","+ vertexIDString
+      for (i <- traj.points) pointString = pointString + "(" + i.lat + " " + i.long + ")"
+      Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString)
     })
-    for(i <- mapmatchedRDD.collect) println(i)
+    for (i <- mapmatchedRDD.collect) println(i)
 
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
-    val df = mapmatchedRDD.toDF()
-    df.write.option("header", true).option("encoding", "UTF-8").text("file:///C://Users//kaiqi001//Desktop//res")
+
+    val df = mapmatchedRDD.map({
+      case Row(val1: String, val2: String, val3: String, val4: String) => (val1, val2, val3, val4)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID")
+
+    //val df = mapmatchedRDD.toDF()
+    df.write.option("header", true).option("encoding", "UTF-8").csv("file:///C://Users//kaiqi001//Desktop//res")
+
+
 
 
 
