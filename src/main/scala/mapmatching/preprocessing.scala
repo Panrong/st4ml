@@ -23,7 +23,7 @@ object preprocessing {
       for (i <- pointsString.split(',')) pointsCoord = pointsCoord :+ i.replaceAll("[\\[\\]]", "").toDouble
       var points = new Array[Point](0)
       for (i <- 0 to pointsCoord.length - 2 by 2) {
-        points = points :+ Point(pointsCoord(i), pointsCoord(i + 1), startTime + samplingRate * i / 2)
+        points = points :+ Point(pointsCoord(i + 1), pointsCoord(i), startTime + samplingRate * i / 2)
       }
       Trajectory(tripID, taxiID, startTime, points)
     })
@@ -76,15 +76,16 @@ object preprocessing {
     resRDD
   }
 
-  def checkMapCoverage(trajRDD: RDD[Trajectory],mapRange: List[Double]): RDD[Trajectory] = {
+  def checkMapCoverage(trajRDD: RDD[Trajectory], mapRange: List[Double]): RDD[Trajectory] = {
     val resRDD = trajRDD.filter(traj => {
       var check = true
       val loop = new Breaks;
-      loop.breakable{
-        for(point <- traj.points){
-          if (point.lat < mapRange(1) || point.lat > mapRange(3) || point.long < mapRange(0) || point.long > mapRange(2))
-          check = false
-          loop.break
+      loop.breakable {
+        for (point <- traj.points) {
+          if (point.lat < mapRange(0) || point.lat > mapRange(2) || point.long < mapRange(1) || point.long > mapRange(3)) {
+            check = false
+            loop.break
+          }
         }
       }
       check
@@ -93,6 +94,7 @@ object preprocessing {
     println("--- Now total number of entries: " + resRDD.count + " in the map range of " + mapRange)
     resRDD
   }
+
   def apply(filename: String, mapRange: List[Double]): RDD[Trajectory] = {
     checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename))), mapRange)
   }
@@ -104,7 +106,7 @@ object preprocessingTest extends App {
   val sc = new SparkContext(conf)
   sc.setLogLevel("ERROR")
   val filename = "C:\\Users\\kaiqi001\\Map Matching\\src\\Porto_taxi_data_training.csv"
-  val trajRDD = preprocessing(filename, List(-10e6,10e6,-10e6,10e6))
+  val trajRDD = preprocessing(filename, List(-10e6, 10e6, -10e6, 10e6))
   println("==== Trajectory examples: ")
   for (i <- trajRDD.take(2)) {
     println("tripID: " + i.tripID + " taxiID: " + i.taxiID + " startTime: " + i.startTime + " points: " + i.points.deep)
@@ -127,10 +129,10 @@ object preprocessingTest extends App {
   val table = res._1
   val entries = rtree.leafEntries
   val queryRange = Rectangle(Point(-8.625, 41.145), Point(-8.615, 41.155))
-  val retrieved = queryWithTable(table.map {case (key, value) => (key, value.mbr)}, entries, capacity, queryRange)
+  val retrieved = queryWithTable(table.map { case (key, value) => (key, value.mbr) }, entries, capacity, queryRange)
   //printRetrieved(retrieved)
-  for(r <- retrieved) println(r.id)
-  println(retrieved.length + " trajectories retrieved in the range "+ queryRange.x_min, queryRange.y_min, queryRange.x_max, queryRange.y_max)
+  for (r <- retrieved) println(r.id)
+  println(retrieved.length + " trajectories retrieved in the range " + queryRange.x_min, queryRange.y_min, queryRange.x_max, queryRange.y_max)
   sc.stop()
 
   def printRetrieved(retrieved: Array[Shape]) {
