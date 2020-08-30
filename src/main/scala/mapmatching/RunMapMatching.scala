@@ -20,7 +20,7 @@ object RunMapMatching extends App {
     sc.setLogLevel("ERROR")
 
     val trajRDD = preprocessing(filename)
-    val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\test.csv")
+    val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\porto.csv")
     /*
     val mapmatchedRDD = trajRDD.take(10).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)

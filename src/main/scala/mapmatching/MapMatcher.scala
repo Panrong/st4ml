@@ -90,7 +90,7 @@ object MapMatcher {
       val candidateSet2 = roadArray(i + 1)
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
-        for (road2 <- candidateSet2) roadDist = roadDist :+ g.getShortestPathLength(road1._1.id, road2._1.id)
+        for (road2 <- candidateSet2) roadDist = roadDist :+ g.getShortestPathAndLength(road1._1.id, road2._1.id)._2
         pairRoadDist = pairRoadDist :+ roadDist
       }
       roadDistArray = roadDistArray :+ pairRoadDist
