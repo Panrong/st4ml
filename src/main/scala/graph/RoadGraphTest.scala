@@ -2,13 +2,14 @@ package main.scala.graph
 
 object RoadGraphTest extends App {
   override def main(args: Array[String]): Unit = {
-    val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
+//    val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
+    val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\porto.csv")
 
     println("Test getNearestVertex")
-    rg.getNearestVertex(41.1427807, -8.6152995, 3).foreach(println)
+    rg.getNearestVertex(-8.6152995, 41.1427807, 3).foreach(println)
     println("--------------------")
     println("Test getNearestEdge")
-    rg.getNearestEdge( 41.1427807,-8.6152995, 3).foreach(println)
+    rg.getNearestEdge( -8.6152995, 41.1427807, 3).foreach(println)
     println("--------------------")
 
     println("Test getShortestPath: normal query")

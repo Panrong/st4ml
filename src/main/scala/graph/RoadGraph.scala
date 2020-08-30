@@ -2,24 +2,24 @@ package main.scala.graph
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
-import scala.math.{abs, acos, ceil, cos, floor, sin}
+import scala.math.{abs, acos, ceil, cos, floor, sin, min, max}
 
 class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Serializable {
   // parameters
   val gridSize: Double = 0.1 // kilometers
 
   // fields
-  val minLat: Double = vertexes.map(x => x.lat).min
-  val minLon: Double = vertexes.map(x => x.lon).min
-  val maxLat: Double = vertexes.map(x => x.lat).max
-  val maxLon: Double = vertexes.map(x => x.lon).max
+  val minLon: Double = min(vertexes.map(_.lon).min, edges.map(_.midLon).min)
+  val minLat: Double = min(vertexes.map(_.lat).min, edges.map(_.midLat).min)
+  val maxLon: Double = max(vertexes.map(_.lon).max, edges.map(_.midLon).max)
+  val maxLat: Double = max(vertexes.map(_.lat).max, edges.map(_.midLat).max)
   val id2vertex: Map[String, RoadVertex] = vertexes.map(x => x.id -> x).toMap
   val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
 
   val gridStride: Double = gridSize * (360.0/40075.0)  // 40075 is the circumference of the Earth in kilometers
-  val gridNumOverLat: Int = ceil((maxLat - minLat) / gridStride).toInt
   val gridNumOverLon: Int = ceil((maxLon - minLon) / gridStride).toInt
-  val gridNum: Int = gridNumOverLat * gridNumOverLon
+  val gridNumOverLat: Int = ceil((maxLat - minLat) / gridStride).toInt
+  val gridNum: Int =  gridNumOverLon * gridNumOverLat
   val grids: Map[GridId, GridBoundary] = buildSimpleGrids()
   val grid2Vertex: Map[GridId, Array[RoadVertex]] = buildGrid2Vertex()
   val grid2Edge: Map[GridId, Array[RoadEdge]] = buildGrid2Edge()
@@ -27,7 +27,7 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   val g: RouteGraph[String] = buildGraph()
 
   /**
-    A grid's index, starting from 0 at the bottom left point (minLat, minLon)
+    A grid's index, starting from 0 at the bottom left point (minLon, minLat)
     x is the grid index over longitude
     y is the grid index over latitude
    */
@@ -36,8 +36,8 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   /**
     A grid's boundary, represented by the gps of its bottom-left point and upper-right point
    */
-  final case class GridBoundary(bottomLeftLat: Double, bottomLeftLon: Double,
-                                upperRightLat: Double, upperRightLon: Double)
+  final case class GridBoundary(bottomLeftLon: Double, bottomLeftLat: Double,
+                                upperRightLon: Double, upperRightLat: Double)
 
 
   /**
@@ -54,17 +54,17 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     (for {
       idOverLat <- Range(0, gridNumOverLat)
       idOverLon <- Range(0, gridNumOverLon)
-      bottomLeftLat = minLat + idOverLat*gridStride
       bottomLeftLon = minLon + idOverLon*gridStride
-      upperRightLat = bottomLeftLat + gridStride
+      bottomLeftLat = minLat + idOverLat*gridStride
       upperRightLon = bottomLeftLon + gridStride
-    } yield GridId(idOverLat, idOverLon) -> GridBoundary(bottomLeftLat, bottomLeftLon,
-                                                         upperRightLat, upperRightLon)
+      upperRightLat = bottomLeftLat + gridStride
+    } yield GridId(idOverLon, idOverLat) -> GridBoundary(bottomLeftLon, bottomLeftLat,
+                                                         upperRightLon, upperRightLat)
     ).toMap
   }
 
   def buildGrid2Vertex(): Map[GridId, Array[RoadVertex]] = {
-    val vertex2grid = vertexes.map(x => x -> getSimpleGrid(x.lat, x.lon)).toMap
+    val vertex2grid = vertexes.map(x => x -> getSimpleGrid(x.lon, x.lat)).toMap
     val grid2vertex = vertex2grid.groupBy(_._2).map { case (k, v) =>
       k -> v.keys.toArray
     }
@@ -72,7 +72,7 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
   }
 
   def buildGrid2Edge(): Map[GridId, Array[RoadEdge]] = {
-    val edge2grid = edges.map(x => x -> getSimpleGrid(x.midLat, x.midLon)).toMap
+    val edge2grid = edges.map(x => x -> getSimpleGrid(x.midLon, x.midLat)).toMap
     val grid2edge = edge2grid.groupBy(_._2).map { case (k, v) =>
       k -> v.keys.toArray
     }
@@ -86,25 +86,25 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     RouteGraph(gInfo)
   }
 
-  def getSimpleGrid(lat: Double, lon: Double): GridId = {
-    var y = 0
+  def getSimpleGrid(lon: Double, lat: Double): GridId = {
     var x = 0
-    if (lat < minLat || lat > maxLat || lon < minLon || lon > maxLon) {
-      throw new Exception(s"Input Error: input point ($lat, $lon) " +
-        s"exceeds map boundary ($minLat, $minLon, $maxLat, $maxLon)")
+    var y = 0
+    if (lon < minLon || lon > maxLon || lat < minLat || lat > maxLat ) {
+      throw new Exception(s"Input Error: input point (lon=$lon, lat=$lat) " +
+        s"exceeds map boundary (minLon=$minLon, minLat=$minLat, maxLon=$maxLon, maxLat=$maxLat)")
     } else {
-      y += floor((lat-minLat)/gridStride).toInt
       x += floor((lon-minLon)/gridStride).toInt
+      y += floor((lat-minLat)/gridStride).toInt
     }
     GridId(x, y)
   }
 
   def getSurroundingSimpleGrids(gridId: GridId): Array[GridId] = for {
-      y <- Array(-1, 0, 1).map(_ + gridId.y).filter(_ >= 0).filter(_ < gridNumOverLat)
-      x <- Array(-1, 0, 1).map(_ + gridId.x).filter(_ >= 0).filter(_ < gridNumOverLon)
+    x <- Array(-1, 0, 1).map(_ + gridId.x).filter(_ >= 0).filter(_ < gridNumOverLon)
+    y <- Array(-1, 0, 1).map(_ + gridId.y).filter(_ >= 0).filter(_ < gridNumOverLat)
   } yield GridId(x, y)
 
-  def greatCircleDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double ={
+  def greatCircleDistance(lon1: Double, lat1: Double, lon2: Double, lat2: Double): Double ={
     val r = 6371009 // earth radius in meter
     val phi1 = lat1.toRadians
     val lambda1 = lon1.toRadians
@@ -114,19 +114,19 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Ser
     r * deltaSigma
   }
 
-  def getNearestVertex(lat: Double, lon: Double, k: Int): Array[(RoadVertex, Double)] = {
-    val grid = getSimpleGrid(lat, lon)
+  def getNearestVertex(lon: Double, lat: Double, k: Int): Array[(RoadVertex, Double)] = {
+    val grid = getSimpleGrid(lon, lat)
     val grids = getSurroundingSimpleGrids(grid)
     val vertexes = grids.flatMap(x => grid2Vertex.getOrElse(x, Array.empty))
-    val distance = vertexes.map(x => x -> greatCircleDistance(lat, lon, x.lat, x.lon)).sortBy(_._2)
+    val distance = vertexes.map(x => x -> greatCircleDistance(lon, lat, x.lon, x.lat)).sortBy(_._2)
     distance.take(k)
   }
 
-  def getNearestEdge(lat: Double, lon: Double, k: Int): Array[(RoadEdge, Double)] = {
-    val grid = getSimpleGrid(lat, lon)
+  def getNearestEdge(lon: Double, lat: Double, k: Int): Array[(RoadEdge, Double)] = {
+    val grid = getSimpleGrid(lon, lat)
     val grids = getSurroundingSimpleGrids(grid)
     val edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
-    val distance = edges.map(x => x -> greatCircleDistance(lat, lon, x.midLat, x.midLon)).sortBy(_._2)
+    val distance = edges.map(x => x -> greatCircleDistance(lon, lat, x.midLon, x.midLat)).sortBy(_._2)
     distance.take(k)
   }
 
@@ -162,8 +162,8 @@ object RoadGraph {
       if (line.startsWith("node")) {
         val Array(_, nodeId, nodeLon, nodeLat) = line.split(",").map(_.trim)
         vertexArrayBuffer += RoadVertex(nodeId,
-                                        nodeLat.toDouble,
-                                        nodeLon.toDouble)
+                                        nodeLon.toDouble,
+                                        nodeLat.toDouble)
       } else if (line.startsWith("edge")) {
         val Array(_, fromNodeId, toNodeId, isOneWay, length, gpsString) = line.split(",")
                                                                               .map(_.trim)
@@ -175,16 +175,16 @@ object RoadGraph {
         edgeArrayBuffer += RoadEdge(s"$fromNodeId-$toNodeId",
                                     fromNodeId,
                                     toNodeId,
-                                    midLat,
                                     midLon,
+                                    midLat,
                                     length.toDouble,
                                     gpsArray)
         if (isOneWay.toInt == 0) {
           edgeArrayBuffer += RoadEdge(s"$toNodeId-$fromNodeId",
                                       toNodeId,
                                       fromNodeId,
-                                      midLat,
                                       midLon,
+                                      midLat,
                                       length.toDouble,
                                       gpsArray)}
       } else {
