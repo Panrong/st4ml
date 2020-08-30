@@ -100,17 +100,20 @@ object MapMatcher {
   }
 
   def connectRoads(ids: Array[String], g: RoadGraph): Array[String] = {
-    var vertexIDs = Array(ids(0).split("-")(0))
-    for (i <- ids) {
-      for (v <- i.split("-")) {
-        if (v != vertexIDs.last) vertexIDs = vertexIDs :+ v
+    if(ids(0) == "-1") return Array("-1")
+    else {
+      var vertexIDs = Array(ids(0).split("-")(0))
+      for (i <- ids) {
+        for (v <- i.split("-")) {
+          if (v != vertexIDs.last) vertexIDs = vertexIDs :+ v
+        }
       }
+      var roadIDs = Array(vertexIDs(0))
+      for (i <- 0 to vertexIDs.length - 2) {
+        roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
+      }
+      roadIDs
     }
-    var roadIDs = Array(vertexIDs(0))
-    for (i <- 0 to vertexIDs.length - 2) {
-      roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
-    }
-    roadIDs
   }
 
   def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], beta: Double): Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]] = {
@@ -123,7 +126,7 @@ object MapMatcher {
     var i = 0
     var breakPoints = new Array[Int](0)
     var restart = true
-    while (i < points.length - 1) {
+    while (i < points.length - 2) {
       var point1 = points(0)
       var point2 = points(0)
       if (!restart) {

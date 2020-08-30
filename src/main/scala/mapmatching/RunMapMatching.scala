@@ -21,18 +21,17 @@ object RunMapMatching extends App {
     sc.setLogLevel("ERROR")
     val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\porto.csv")
     val trajRDD = preprocessing(filename,  List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
-    /*
-    val mapmatchedRDD = trajRDD.take(10).map(traj => {
+
+    val mapmatchedRDD = sc.parallelize(trajRDD.take(5)).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)
       val roadDistArray = MapMatcher.getRoadDistArray(candidates, rg)
       val ids = MapMatcher(candidates, roadDistArray)
       val vertexIDs = MapMatcher.connectRoads(ids,rg)
+      Array(traj.taxiID, traj.tripID, traj.points, vertexIDs)
     })
-    
-     */
+    for(i <- mapmatchedRDD.collect) println(i.deep)
 
-
-
+    /*
     val traj = trajRDD.take(4)(0)
     println(traj.points.deep)
     val candidates = MapMatcher.getCandidates(traj, rg)
@@ -40,5 +39,7 @@ object RunMapMatching extends App {
     val ids = MapMatcher(candidates, roadDistArray)
     val vertexIDs = MapMatcher.connectRoads(ids,rg)
     println(vertexIDs.deep)
+
+     */
   }
 }
