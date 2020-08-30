@@ -1,10 +1,11 @@
 package main.scala.mapmatching.MapMatcher
 
-import main.scala.graph.RoadVertex
+import main.scala.graph.{RoadEdge, RoadGraph, RoadVertex}
+
 import scala.math._
 import scala.collection.mutable
-import main.scala.graph.RoadGraph
 import main.scala.mapmatching.SpatialClasses._
+
 import Array.concat
 
 
@@ -72,16 +73,16 @@ object MapMatcher {
     states.reverse
   }
 
-  def getCandidates(trajectory: Trajectory, g: RoadGraph, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadVertex, Double)]] = {
-    var pairs: mutable.LinkedHashMap[Point, Array[(RoadVertex, Double)]] = mutable.LinkedHashMap()
+  def getCandidates(trajectory: Trajectory, g: RoadGraph, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
+    var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val c = g.getNearestVertex(point.lat, point.long, num)
+      val c = g.getNearestEdge(point.lat, point.long, num)
       pairs += (point -> c)
     }
     pairs
   }
 
-  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadVertex, Double)]], g: RoadGraph): Array[Array[Array[Double]]] = {
+  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], g: RoadGraph): Array[Array[Array[Double]]] = {
     var roadDistArray = new Array[Array[Array[Double]]](0)
     val roadArray = candidates.values.toArray
     for (i <- 0 to roadArray.length - 2) {
@@ -106,7 +107,7 @@ object MapMatcher {
     roadIDs
   }
 
-  def apply(pairs: mutable.LinkedHashMap[Point, Array[(RoadVertex, Double)]], roadDistArray: Array[Array[Array[Double]]]): Array[String] = {
+  def apply(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]]): Array[String] = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07

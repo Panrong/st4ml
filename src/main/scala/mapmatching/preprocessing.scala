@@ -5,6 +5,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import main.scala.mapmatching.SpatialClasses._
+import scala.util.control._
 
 object preprocessing {
 
@@ -75,8 +76,25 @@ object preprocessing {
     resRDD
   }
 
-  def apply(filename: String): RDD[Trajectory] = {
-    removeRedundancy(trajBreak(genTrajRDD(filename)))
+  def checkMapCoverage(trajRDD: RDD[Trajectory],mapRange: List[Double]): RDD[Trajectory] = {
+    val resRDD = trajRDD.filter(traj => {
+      var check = true
+      val loop = new Breaks;
+      loop.breakable{
+        for(point <- traj.points){
+          if (point.lat < mapRange(1) || point.lat > mapRange(3) || point.long < mapRange(0) || point.long > mapRange(2))
+          check = false
+          loop.break
+        }
+      }
+      check
+    })
+    println("==== Check Map Coverage Range Done")
+    println("--- Now total number of entries: " + resRDD.count + " in the map range of " + mapRange)
+    resRDD
+  }
+  def apply(filename: String, mapRange: List[Double]): RDD[Trajectory] = {
+    checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename))), mapRange)
   }
 }
 
@@ -86,7 +104,7 @@ object preprocessingTest extends App {
   val sc = new SparkContext(conf)
   sc.setLogLevel("ERROR")
   val filename = "C:\\Users\\kaiqi001\\Map Matching\\src\\Porto_taxi_data_training.csv"
-  val trajRDD = preprocessing(filename)
+  val trajRDD = preprocessing(filename, List(-10e6,10e6,-10e6,10e6))
   println("==== Trajectory examples: ")
   for (i <- trajRDD.take(2)) {
     println("tripID: " + i.tripID + " taxiID: " + i.taxiID + " startTime: " + i.startTime + " points: " + i.points.deep)
