@@ -26,7 +26,7 @@ object preprocessing {
       for (i <- pointsString.split(',')) pointsCoord = pointsCoord :+ i.replaceAll("[\\[\\]]", "").toDouble
       var points = new Array[Point](0)
       for (i <- 0 to pointsCoord.length - 2 by 2) {
-        points = points :+ Point(pointsCoord(i + 1), pointsCoord(i), startTime + samplingRate * i / 2)
+        points = points :+ Point(pointsCoord(i), pointsCoord(i + 1), startTime + samplingRate * i / 2)
       }
       Trajectory(tripID, taxiID, startTime, points)
     })

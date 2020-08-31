@@ -16,7 +16,7 @@ abstract class Shape() {
   var id: Long
 }
 
-case class Point(lat: Double, long: Double, t: Long = 0, ID:Long = 0) extends Shape with Serializable {
+case class Point(long: Double, lat: Double, t: Long = 0, ID:Long = 0) extends Shape with Serializable {
   val x: Double = lat
   val y: Double = long
   override var id:Long = ID

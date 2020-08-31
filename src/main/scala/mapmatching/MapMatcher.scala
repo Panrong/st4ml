@@ -258,7 +258,6 @@ object MapMatcher {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
-        println(ids.deep)
         var bestRoadsP = new Array[String](0)
         for (j <- 0 to ids.length - 1) {
           val candidates = pairs.values.toArray
@@ -269,7 +268,6 @@ object MapMatcher {
       var cleanedPoints = new Array[Point](0)
       for (p <- cleanedPairs) cleanedPoints = concat(cleanedPoints, p.keys.toArray)
       println(bestRoads.deep)
-      println(cleanedPoints.deep)
       (cleanedPoints, bestRoads)
     }
   }

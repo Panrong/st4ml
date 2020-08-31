@@ -83,6 +83,10 @@ object RunMapMatching extends App {
     }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates")
 
     //val df = mapmatchedRDD.toDF()
+    import scala.reflect.io.Directory
+    import java.io.File
+    val directory = new Directory(new File(args(2)))
+    directory.deleteRecursively()
     df.write.option("header", true).option("encoding", "UTF-8").csv(args(2))
 
 
