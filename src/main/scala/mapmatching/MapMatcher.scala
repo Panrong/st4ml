@@ -17,7 +17,9 @@ object MapMatcher {
 
   def transitionProb(point1: Point, point2: Point, roadDist: Double, beta: Double = 0.2): Double = {
     val dt = abs(greatCircleDist(point1, point2) - roadDist)
-    if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) 0
+    if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) {
+      0
+    }
     else 1 / beta * pow(E, -dt / beta)
   }
 
@@ -33,6 +35,28 @@ object MapMatcher {
     probs
 
   }
+
+  /*
+      def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
+        val numTimeStamps = eProbs.length
+        val numCandidates = eProbs.map(x=>x.length).max
+        var stateProb = Array.ofDim[Double](numTimeStamps, numCandidates) // the prob of getting to a certain candidate at a certain time
+        var statePath = Array.ofDim[Array[Int]](numTimeStamps, numCandidates) // the path of getting to a certain candidate at a certain time
+        stateProb(0) = eProbs(0)
+        for(i<-0 to numCandidates - 1) statePath(0)(i) = Array(i)
+        for(t<-1 to numTimeStamps - 1){
+          for(c<- 0 to numCandidates -1){
+            val probs = new Array[Double](numCandidates)
+            for(lastTimeStamp <- 0 to numCandidates - 1) probs(lastTimeStamp) = stateProb(t-1)(lastTimeStamp) * tProbs(t-1)(lastTimeStamp)(c)
+            val bestLastCandidate = probs.indexOf(probs.max)
+            stateProb(t)(c) = probs.max * eProbs(t)(c)
+            statePath(t)(c) = statePath(t-1)(bestLastCandidate) :+ c
+          }
+        }
+        val finalBestIndex = stateProb(numTimeStamps - 1).indexOf(stateProb(numTimeStamps - 1).max)
+        statePath(numTimeStamps-1)(finalBestIndex)
+      }
+  */
 
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
     var biggestProb = new Array[Array[Double]](0)
@@ -73,6 +97,7 @@ object MapMatcher {
     states.reverse
   }
 
+
   def getCandidates(trajectory: Trajectory, g: RoadGraph, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
     var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
@@ -91,7 +116,11 @@ object MapMatcher {
       val candidateSet2 = roadArray(i + 1)
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
-        for (road2 <- candidateSet2) roadDist = roadDist :+ g.getShortestPathAndLength(road1._1.id, road2._1.id)._2
+        for (road2 <- candidateSet2) {
+          val startVertex = road1._1.id.split("-")(1)
+          val endVertex = road2._1.id.split("-")(0)
+          roadDist = roadDist :+ g.getShortestPathAndLength(startVertex, endVertex)._2
+        }
         pairRoadDist = pairRoadDist :+ roadDist
       }
       roadDistArray = roadDistArray :+ pairRoadDist
@@ -100,7 +129,7 @@ object MapMatcher {
   }
 
   def connectRoads(ids: Array[String], g: RoadGraph): Array[String] = {
-    if(ids(0) == "-1") return Array("-1")
+    if (ids(0) == "-1") return Array("-1")
     else {
       var vertexIDs = Array(ids(0).split("-")(0))
       for (i <- ids) {
@@ -109,10 +138,16 @@ object MapMatcher {
         }
       }
       var roadIDs = Array(vertexIDs(0))
-      for (i <- 0 to vertexIDs.length - 2) {
-        roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
+      try {
+        for (i <- 0 to vertexIDs.length - 2) {
+          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
+        }
+        return roadIDs
+      } catch {
+        case ex: NoSuchElementException => {
+          return Array("-1")
+        }
       }
-      roadIDs
     }
   }
 
@@ -120,7 +155,6 @@ object MapMatcher {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
-
     var filteredPoints = new Array[Point](0)
     val points = pairs.keys.toArray
     var i = 0
@@ -138,7 +172,7 @@ object MapMatcher {
         i += 1
         point2 = points(i)
       }
-      val tProb = transitionProbArray(points(i), points(i + 1), roadDistArray(i), beta)
+      val tProb = transitionProbArray(point1, point2, roadDistArray(i), beta)
       var sum: Double = 0
       for (j <- tProb) sum += j.sum
       if (sum != 0) {
@@ -178,15 +212,19 @@ object MapMatcher {
     }
   }
 
-  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]]): Array[String] = {
+  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGraph): (Array[Point], Array[String]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
     val cleanedPairs = hmmBreak(p, roadDistArray, beta)
-    if (cleanedPairs.size < 1) return Array("-1")
+    //println(p)
+    //println(cleanedPairs(0))
+    //val cleanedPairs = Array(p)
+    if (cleanedPairs.size < 1) return (p.keys.toArray, Array("-1"))
     else {
       var bestRoads = new Array[String](0)
       for (pairs <- cleanedPairs) {
+        val newRoadDistArray = getRoadDistArray(pairs, g)
         var eProbs = new Array[Array[Double]](0)
         for (i <- pairs.values) {
           var p = new Array[Double](0)
@@ -198,10 +236,11 @@ object MapMatcher {
         var tProbs = new Array[Array[Array[Double]]](0)
         val points = pairs.keys.toArray
         for (i <- 0 to points.length - 2) {
-          val tProb = transitionProbArray(points(i), points(i + 1), roadDistArray(i), beta)
+          val tProb = transitionProbArray(points(i), points(i + 1), newRoadDistArray(i), beta)
           tProbs = tProbs :+ tProb
         }
         val ids = viterbi(eProbs, tProbs)
+        println(ids.deep)
         var bestRoadsP = new Array[String](0)
         for (j <- 0 to ids.length - 1) {
           val candidates = pairs.values.toArray
@@ -209,7 +248,11 @@ object MapMatcher {
         }
         bestRoads = concat(bestRoads, bestRoadsP)
       }
-      bestRoads
+      var cleanedPoints = new Array[Point](0)
+      for (p <- cleanedPairs) cleanedPoints = concat(cleanedPoints, p.keys.toArray)
+      println(bestRoads.deep)
+      println(cleanedPoints.deep)
+      (cleanedPoints, bestRoads)
     }
   }
 }

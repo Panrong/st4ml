@@ -1,11 +1,9 @@
 import main.scala.mapmatching.MapMatcher._
-import org.apache.spark.sql.{SQLContext, SparkSession, Row}
+import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext, sql}
 import RStarTree.{Node, RTree, queryWithTable}
 import preprocessing._
 import main.scala.graph.RoadGraph
-import scala.reflect.io.Directory
-import java.io.File
 
 object RunMapMatching extends App {
   override def main(args: Array[String]): Unit = {
@@ -20,16 +18,19 @@ object RunMapMatching extends App {
     val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\porto.csv")
     val trajRDD = preprocessing(filename, List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
 
-    val mapmatchedRDD = sc.parallelize(trajRDD.take(2)).map(traj => {
+    val mapmatchedRDD = sc.parallelize(trajRDD.take(15)).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)
       val roadDistArray = MapMatcher.getRoadDistArray(candidates, rg)
-      val ids = MapMatcher(candidates, roadDistArray)
+      val res = MapMatcher(candidates, roadDistArray, rg)
+      val cleanedPoints = res._1
+      val ids = res._2
       val vertexIDs = MapMatcher.connectRoads(ids, rg)
       var vertexIDString = ""
       for (v <- vertexIDs) vertexIDString = vertexIDString + v + " "
       vertexIDString = vertexIDString.dropRight(1)
       var pointString = ""
-      for (i <- traj.points) pointString = pointString + "(" + i.lat + " " + i.long + ")"
+      //for (i <- traj.points) pointString = pointString + "(" + i.lat + " " + i.long + ")"
+      for (i <- cleanedPoints) pointString = pointString + "(" + i.lat + " " + i.long + ")"
       Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString)
     })
     for (i <- mapmatchedRDD.collect) println(i)
