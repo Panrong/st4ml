@@ -56,7 +56,10 @@ object RunMapMatching extends App {
         println("==== Map Matching Done")
         t = nanoTime
       }
-      val vertexIDs = finalRes.map(x => x._1)
+      if(timeCount)  {
+        println("... Total Map Matching time is: " + (nanoTime - t) / 1e9d + "s")
+        t = nanoTime
+      }
       var vertexIDString = ""
       for (v <- finalRes) vertexIDString = vertexIDString + "(" + v._1 + ":" + v._2.toString + ") "
       vertexIDString = vertexIDString.dropRight(1)
