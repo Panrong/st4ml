@@ -1,15 +1,15 @@
 package main.scala.mapmatching.MapMatcher
 
-import main.scala.graph.{RoadEdge, RoadGraph, RoadVertex}
-
+import main.scala.graph.{RoadEdge, RoadGraph}
 import scala.math._
 import scala.collection.mutable
 import main.scala.mapmatching.SpatialClasses._
-
 import Array.concat
-
+import System.nanoTime
 
 object MapMatcher {
+
+  val timeCount = true
 
   def emissionProb(d: Double, sigmaZ: Double = 4.07): Double = {
     1 / (sqrt(2 * Pi) * sigmaZ) * pow(E, -0.5 * pow(d / sigmaZ, 2))
@@ -128,8 +128,8 @@ object MapMatcher {
     roadDistArray
   }
 
-  def connectRoads(ids: Array[String], g: RoadGraph): Array[String] = {
-    if (ids(0) == "-1") return Array("-1")
+  def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
+    if (ids(0) == "-1") return Array(("-1", 0))
     else {
       var vertexIDs = Array(ids(0).split("-")(0))
       for (i <- ids) {
@@ -142,10 +142,15 @@ object MapMatcher {
         for (i <- 0 to vertexIDs.length - 2) {
           roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
         }
-        return roadIDs
+        var res = new Array[(String, Int)](0)
+        for(e <- roadIDs){
+          if(vertexIDs.contains(e)) res = res :+ (e, 1)
+          else res = res :+ (e,0)
+        }
+        return res
       } catch {
         case ex: NoSuchElementException => {
-          return Array("-1")
+          return Array(("-1",1))
         }
       }
     }
@@ -216,7 +221,12 @@ object MapMatcher {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
+    var t = nanoTime
     val cleanedPairs = hmmBreak(p, roadDistArray, beta)
+    if(timeCount)  {
+      println(".... Cleaning points with graph took: " + (nanoTime - t) / 1e9d + "s")
+      t = nanoTime
+    }
     //println(p)
     //println(cleanedPairs(0))
     //val cleanedPairs = Array(p)
@@ -239,7 +249,15 @@ object MapMatcher {
           val tProb = transitionProbArray(points(i), points(i + 1), newRoadDistArray(i), beta)
           tProbs = tProbs :+ tProb
         }
+        if(timeCount)  {
+          println(".... Generating transition prob matrix took: " + (nanoTime - t) / 1e9d + "s")
+          t = nanoTime
+        }
         val ids = viterbi(eProbs, tProbs)
+        if(timeCount)  {
+          println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
+          t = nanoTime
+        }
         println(ids.deep)
         var bestRoadsP = new Array[String](0)
         for (j <- 0 to ids.length - 1) {

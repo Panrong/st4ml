@@ -6,10 +6,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import main.scala.mapmatching.SpatialClasses._
 import scala.util.control._
-
+import System.nanoTime
 object preprocessing {
 
+  val timeCount = true
+
   def genTrajRDD(filename: String): RDD[Trajectory] = {
+    val t = nanoTime
     val spark = SparkSession.builder().getOrCreate()
     val df = spark.read.option("header", "true").csv(filename)
     val samplingRate = 15
@@ -30,6 +33,7 @@ object preprocessing {
     println("==== Read CSV Done")
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
+    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
     resRDD
   }
 
@@ -47,6 +51,7 @@ object preprocessing {
   }
 
   def trajBreak(trajRDD: RDD[Trajectory], speed: Double = 50, timeInterval: Double = 180): RDD[Trajectory] = {
+    val t = nanoTime
     println("==== Split trajectories with speed limit " + speed + " m/s and time interval limit " + timeInterval + " s")
     // speed and time interval check
     val newTrajRDD = trajRDD.flatMap(traj => {
@@ -60,10 +65,12 @@ object preprocessing {
     }).filter(traj => traj.points.length > 1)
     println("==== Split Trajectories Done")
     println("--- Now total number of entries: " + newTrajRDD.count)
+    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
     newTrajRDD
   }
 
   def removeRedundancy(trajRDD: RDD[Trajectory], sigmaZ: Double = 4.07): RDD[Trajectory] = {
+    val t = nanoTime
     val resRDD = trajRDD.map(traj => {
       var newPoints = Array(traj.points(0))
       for (p <- 1 to traj.points.length - 1) {
@@ -73,10 +80,12 @@ object preprocessing {
     })
     println("==== Remove Redundancy Done")
     println("--- Now total number of entries: " + resRDD.count)
+    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
     resRDD
   }
 
   def checkMapCoverage(trajRDD: RDD[Trajectory], mapRange: List[Double]): RDD[Trajectory] = {
+    val t = nanoTime
     val resRDD = trajRDD.filter(traj => {
       var check = true
       val loop = new Breaks;
@@ -92,6 +101,7 @@ object preprocessing {
     })
     println("==== Check Map Coverage Range Done")
     println("--- Now total number of entries: " + resRDD.count + " in the map range of " + mapRange)
+    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
     resRDD
   }
 
