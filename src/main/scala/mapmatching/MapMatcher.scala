@@ -253,7 +253,10 @@ object MapMatcher {
           println(".... Generating transition prob matrix took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
-        val ids = viterbi(eProbs, tProbs)
+        var ids = Array(-1)
+        try{
+          ids = viterbi(eProbs, tProbs)
+        } catch {case _: Throwable => println("... Map matching failed ...")}
         if(timeCount)  {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
