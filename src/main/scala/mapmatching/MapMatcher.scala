@@ -300,7 +300,10 @@ object MapMatcher {
         try {
           ids = viterbi(eProbs, tProbs)
         } catch {
-          case _: Throwable => println("... Map matching failed ...")
+          case _: Throwable => {
+            println("... Map matching failed ...")
+            return (points, Array("-1"))
+          }
         }
         if (timeCount) {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")

@@ -74,10 +74,6 @@ object RunMapMatching extends App {
       }
       Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString)
     })
-    if(timeCount)  {
-      println("... Total Map Matching time is: " + (nanoTime - t0) / 1e9d + "s")
-      t = nanoTime
-    }
     for (i <- mapmatchedRDD.collect) println(i)
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
