@@ -117,8 +117,8 @@ object MapMatcher {
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
         for (road2 <- candidateSet2) {
-          val startVertex = road1._1.id.split("-")(1)
-          val endVertex = road2._1.id.split("-")(0)
+          val startVertex = road1._1.to
+          val endVertex = road2._1.from
           roadDist = roadDist :+ g.getShortestPathAndLength(startVertex, endVertex)._2
         }
         pairRoadDist = pairRoadDist :+ roadDist
@@ -143,24 +143,42 @@ object MapMatcher {
           roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
         }
         var res = new Array[(String, Int)](0)
-        for(e <- roadIDs){
-          if(vertexIDs.contains(e)) res = res :+ (e, 1)
-          else res = res :+ (e,0)
+        for (e <- roadIDs) {
+          if (vertexIDs.contains(e)) res = res :+ (e, 1)
+          else res = res :+ (e, 0)
         }
         return res
       } catch {
         case ex: NoSuchElementException => {
-          return Array(("-1",1))
+          return Array(("-1", 1))
         }
       }
     }
   }
 
-  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], beta: Double): Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]] = {
+  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGraph, beta: Double): (Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]], Array[Array[Array[Array[Double]]]]) = {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
+    // return new pairs array(if split then have multiple pairs) and new corresponding roadDistArray(to prevent recalculation)
+
+    /** helper function */
+    def splitArray[T](xs: Array[T], sep: T): List[Array[T]] = {
+      var (res, i) = (List[Array[T]](), 0)
+
+      while (i < xs.length) {
+        var j = xs.indexOf(sep, i)
+        if (j == -1) j = xs.length
+        if (j != i) res ::= xs.slice(i, j)
+        i = j + 1
+      }
+
+      res.reverse
+    }
+
+    /** */
     var filteredPoints = new Array[Point](0)
+    var filteredPointsID = new Array[Int](0)
     val points = pairs.keys.toArray
     var i = 0
     var breakPoints = new Array[Int](0)
@@ -181,24 +199,49 @@ object MapMatcher {
       var sum: Double = 0
       for (j <- tProb) sum += j.sum
       if (sum != 0) {
-        if (filteredPoints contains (point1)) filteredPoints = filteredPoints :+ point2
-        else filteredPoints = filteredPoints :+ point1 :+ point2
+        if (filteredPoints contains (point1)) {
+          filteredPoints = filteredPoints :+ point2
+          filteredPointsID = filteredPointsID :+ i
+        }
+        else {
+          filteredPoints = filteredPoints :+ point1 :+ point2
+          filteredPointsID = filteredPointsID :+ i - 1 :+ i
+        }
         restart = false
       }
       else if (point2.t - point1.t > 180) {
         breakPoints = breakPoints :+ i
+        filteredPointsID = filteredPointsID :+ -1
         restart = true
       }
       i += 1
     }
+    //generate new transProb
+    var newTransPorbArray = new Array[Array[Array[Array[Double]]]](0)
+    val ids = splitArray(filteredPointsID, -1)
+    for (subTraj <- ids) {
+      var subTransProbArray = new Array[Array[Array[Double]]](0)
+      for (p <- 0 to subTraj.length - 2) {
+        if (subTraj(p + 1) - subTraj(p) == 1) subTransProbArray = subTransProbArray :+ roadDistArray(p)
+        else {
+          val startCandidates = points(subTraj(p))
+          val endCandidates = points(subTraj(p + 1))
+          var newPair: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
+          newPair += (startCandidates -> pairs(startCandidates))
+          newPair += (endCandidates -> pairs(endCandidates))
+          subTransProbArray = subTransProbArray :+ getRoadDistArray(newPair, g)(0)
+        }
+      }
+      newTransPorbArray = newTransPorbArray :+ subTransProbArray
+    }
     if (breakPoints.length == 0) {
-      if (filteredPoints.length < 2) return new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]](0)
+      if (filteredPoints.length < 2) (new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]](0), new Array[Array[Array[Array[Double]]]](0))
       else {
         var newPairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
         for (p <- filteredPoints) {
           newPairs += (p -> pairs(p))
         }
-        return Array(newPairs)
+        (Array(newPairs), newTransPorbArray)
       }
     }
     else {
@@ -213,7 +256,7 @@ object MapMatcher {
         }
         if (newPair.size >= 2) newPairs = newPairs :+ newPair
       }
-      newPairs
+      (newPairs, newTransPorbArray)
     }
   }
 
@@ -222,8 +265,8 @@ object MapMatcher {
     val beta = 0.2
     // val deltaZ = 4.07
     var t = nanoTime
-    val cleanedPairs = hmmBreak(p, roadDistArray, beta)
-    if(timeCount)  {
+    val (cleanedPairs, newRoadDistMatrix) = hmmBreak(p, roadDistArray, g, beta)
+    if (timeCount) {
       println(".... Cleaning points with graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
@@ -233,8 +276,8 @@ object MapMatcher {
     if (cleanedPairs.size < 1) return (p.keys.toArray, Array("-1"))
     else {
       var bestRoads = new Array[String](0)
-      for (pairs <- cleanedPairs) {
-        val newRoadDistArray = getRoadDistArray(pairs, g)
+      for ((pairs, id) <- cleanedPairs.zipWithIndex) {
+        val newRoadDistArray = newRoadDistMatrix(id)
         var eProbs = new Array[Array[Double]](0)
         for (i <- pairs.values) {
           var p = new Array[Double](0)
@@ -249,15 +292,17 @@ object MapMatcher {
           val tProb = transitionProbArray(points(i), points(i + 1), newRoadDistArray(i), beta)
           tProbs = tProbs :+ tProb
         }
-        if(timeCount)  {
+        if (timeCount) {
           println(".... Generating transition prob matrix took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
         var ids = Array(-1)
-        try{
+        try {
           ids = viterbi(eProbs, tProbs)
-        } catch {case _: Throwable => println("... Map matching failed ...")}
-        if(timeCount)  {
+        } catch {
+          case _: Throwable => println("... Map matching failed ...")
+        }
+        if (timeCount) {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
