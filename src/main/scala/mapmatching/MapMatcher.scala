@@ -16,11 +16,14 @@ object MapMatcher {
   }
 
   def transitionProb(point1: Point, point2: Point, roadDist: Double, beta: Double = 0.2): Double = {
-    val dt = abs(greatCircleDist(point1, point2) - roadDist)
-    if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) {
-      0
+    if(roadDist == 0) 1 / beta * pow(E, 0)
+    else {
+      val dt = abs(greatCircleDist(point1, point2) - roadDist)
+      if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) {
+        0
+      }
+      else 1 / beta * pow(E, -dt / beta)
     }
-    else 1 / beta * pow(E, -dt / beta)
   }
 
   def transitionProbArray(point1: Point, point2: Point, roadDistArray: Array[Array[Double]], beta: Double): Array[Array[Double]] = {
@@ -117,9 +120,12 @@ object MapMatcher {
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
         for (road2 <- candidateSet2) {
-          val startVertex = road1._1.to
-          val endVertex = road2._1.from
-          roadDist = roadDist :+ g.getShortestPathAndLength(startVertex, endVertex)._2
+          if(road1._1.from == road2._1.from && road1._1.to == road2._1.to) roadDist = roadDist :+ 0.0 // TODO: can be improved
+          else {
+            val startVertex = road1._1.to
+            val endVertex = road2._1.from
+            roadDist = roadDist :+ g.getShortestPathAndLength(startVertex, endVertex)._2
+          }
         }
         pairRoadDist = pairRoadDist :+ roadDist
       }
@@ -129,7 +135,7 @@ object MapMatcher {
   }
 
   def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
-    if (ids(0) == "-1") return Array(("-1", 0))
+    if (ids(0) == "-1") return Array(("-1", -1))
     else {
       var vertexIDs = Array(ids(0).split("-")(0))
       for (i <- ids) {
@@ -150,7 +156,7 @@ object MapMatcher {
         return res
       } catch {
         case ex: NoSuchElementException => {
-          return Array(("-1", 1))
+          return Array(("-1", -1))
         }
       }
     }

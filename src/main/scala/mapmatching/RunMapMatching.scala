@@ -8,6 +8,7 @@ import System.nanoTime
 
 object RunMapMatching extends App {
   def timeCount = true
+
   override def main(args: Array[String]): Unit = {
     var t = nanoTime
     val t0 = t
@@ -17,42 +18,43 @@ object RunMapMatching extends App {
     conf.setAppName("MapMatching_v1").setMaster(args(3))
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
-    if(timeCount)  {
+    if (timeCount) {
       println("... Setting Spark up took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
     val filename = args(0) //read file name from argument input
     val rg = RoadGraph(args(1))
-    if(timeCount)  {
+    if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
     val trajRDD = preprocessing(filename, List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
-    if(timeCount)  {
+    if (timeCount) {
       println("... Generating trajRDD took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
     println("==== Start Map Matching")
-    val mapmatchedRDD = sc.parallelize(trajRDD.take(15)).map(traj => {
+    val mapmatchedRDD = sc.parallelize(trajRDD.take(10)).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)
-      if(timeCount)  {
+      if (timeCount) {
         println("... Looking for candidates took: " + (nanoTime - t) / 1e9d + "s")
         t = nanoTime
       }
       val roadDistArray = MapMatcher.getRoadDistArray(candidates, rg)
-      if(timeCount)  {
+      if (timeCount) {
         println("... Calculating road distances took: " + (nanoTime - t) / 1e9d + "s")
         t = nanoTime
       }
       val res = MapMatcher(candidates, roadDistArray, rg)
-      if(timeCount)  {
+      if (timeCount) {
         println("... HMM took: " + (nanoTime - t) / 1e9d + "s")
         t = nanoTime
       }
       val cleanedPoints = res._1
       val ids = res._2
+      var pointRoadPair = ""
       val finalRes = MapMatcher.connectRoads(ids, rg)
-      if(timeCount)  {
+      if (timeCount) {
         println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
         println("==== Map Matching Done")
         t = nanoTime
@@ -62,14 +64,18 @@ object RunMapMatching extends App {
       vertexIDString = vertexIDString.dropRight(1)
       var pointString = ""
       //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
-      for (i <- cleanedPoints) pointString = pointString + "(" + i.long + " " + i.lat + ")"
+      var o = "0"
+      for (i <- candidates.keys.toArray) {
+        if (cleanedPoints.contains(i)) o = "1"
+        pointString = pointString + "(" + i.long + " " + i.lat + " : " + o + ")"
+      }
       var candidateString = ""
       for (i <- 0 to candidates.size - 1) {
         val v = candidates.values.toArray
         val c = v(i)
         val r = c.map(x => x._1.id)
         candidateString = candidateString + i.toString + ":("
-        for(rr <- r) candidateString = candidateString +  rr +" "
+        for (rr <- r) candidateString = candidateString + rr + " "
         candidateString = candidateString + ");"
       }
       Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString)
