@@ -53,6 +53,11 @@ object RunMapMatching extends App {
       val cleanedPoints = res._1
       val ids = res._2
       var pointRoadPair = ""
+      if(ids(0)!="-1") {
+        for (i <- 0 to cleanedPoints.length - 1) {
+          pointRoadPair = pointRoadPair + (cleanedPoints(i).long, cleanedPoints(i).lat, ids(i))
+        }
+      }
       val finalRes = MapMatcher.connectRoads(ids, rg)
       if (timeCount) {
         println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
@@ -78,15 +83,15 @@ object RunMapMatching extends App {
         for (rr <- r) candidateString = candidateString + rr + " "
         candidateString = candidateString + ");"
       }
-      Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString)
+      Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
     })
     for (i <- mapmatchedRDD.collect) println(i)
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
     val df = mapmatchedRDD.map({
-      case Row(val1: String, val2: String, val3: String, val4: String, val5: String) => (val1, val2, val3, val4, val5)
-    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates")
+      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
 
     //val df = mapmatchedRDD.toDF()
     import scala.reflect.io.Directory
