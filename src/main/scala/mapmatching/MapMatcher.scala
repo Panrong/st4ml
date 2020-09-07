@@ -324,7 +324,6 @@ object MapMatcher {
       }
       var cleanedPoints = new Array[Point](0)
       for (p <- cleanedPairs) cleanedPoints = concat(cleanedPoints, p.keys.toArray)
-      println(bestRoads.deep)
       (cleanedPoints, bestRoads)
     }
   }

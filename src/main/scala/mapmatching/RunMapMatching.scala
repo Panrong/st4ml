@@ -34,7 +34,7 @@ object RunMapMatching extends App {
       t = nanoTime
     }
     println("==== Start Map Matching")
-    val mapmatchedRDD = sc.parallelize(trajRDD.take(10)).map(traj => {
+    val mapmatchedRDD = sc.parallelize(trajRDD.take(args(4).toInt)).map(traj => {
       val candidates = MapMatcher.getCandidates(traj, rg)
       if (timeCount) {
         println("... Looking for candidates took: " + (nanoTime - t) / 1e9d + "s")
@@ -85,7 +85,7 @@ object RunMapMatching extends App {
       }
       Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
     })
-    for (i <- mapmatchedRDD.collect) println(i)
+    //for (i <- mapmatchedRDD.collect) println(i)
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
