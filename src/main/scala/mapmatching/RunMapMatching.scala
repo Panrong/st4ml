@@ -43,6 +43,7 @@ object RunMapMatching extends App {
       try {
         val candidates = MapMatcher.getCandidates(traj, rg)
         if (timeCount) {
+          println("--- Total GPS points: " + traj.points.length)
           println("... Looking for candidates took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
@@ -89,8 +90,7 @@ object RunMapMatching extends App {
           for (rr <- r) candidateString = candidateString + rr + " "
           candidateString = candidateString + ");"
         }
-        Row(traj.taxiID.toString, traj.tripID.toString, pointStri
-          g, vertexIDString, candidateString, pointRoadPair)
+        Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
       } catch {
         case _: Throwable => {
           val candidates = MapMatcher.getCandidates(traj, rg)
