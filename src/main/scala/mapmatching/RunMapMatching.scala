@@ -14,7 +14,7 @@ object RunMapMatching extends App {
   def timeCount = true
 
   override def main(args: Array[String]): Unit = {
-    
+
     var t = nanoTime
     //set up spark environment
     val conf = new SparkConf()
@@ -38,6 +38,7 @@ object RunMapMatching extends App {
       t = nanoTime
     }
     println("==== Start Map Matching")
+
     val mapmatchedRDD = sc.parallelize(trajRDD.take(args(4).toInt)).map(traj => {
       try {
         val candidates = MapMatcher.getCandidates(traj, rg)
@@ -88,9 +89,29 @@ object RunMapMatching extends App {
           for (rr <- r) candidateString = candidateString + rr + " "
           candidateString = candidateString + ");"
         }
-        Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
+        Row(traj.taxiID.toString, traj.tripID.toString, pointStri
+          g, vertexIDString, candidateString, pointRoadPair)
       } catch {
-        case _: Throwable => Row(traj.taxiID.toString, traj.tripID.toString, "-1", "-1", "-1", "-1")
+        case _: Throwable => {
+          val candidates = MapMatcher.getCandidates(traj, rg)
+          var pointString = ""
+          //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
+          var o = "0"
+          for (i <- candidates.keys.toArray) {
+            if (candidates.keys.toArray.contains(i)) o = "1"
+            pointString = pointString + "(" + i.long + " " + i.lat + " : " + o + ")"
+          }
+          var candidateString = ""
+          for (i <- 0 to candidates.size - 1) {
+            val v = candidates.values.toArray
+            val c = v(i)
+            val r = c.map(x => x._1.id)
+            candidateString = candidateString + i.toString + ":("
+            for (rr <- r) candidateString = candidateString + rr + " "
+            candidateString = candidateString + ");"
+          }
+          Row(traj.taxiID.toString, traj.tripID.toString, "-1", "-1", "-1", "-1")
+        }
       }
     })
     //for (i <- mapmatchedRDD.collect) println(i)
