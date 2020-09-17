@@ -43,6 +43,7 @@ object RunMapMatching extends App {
       try {
         val candidates = MapMatcher.getCandidates(traj, rg)
         if (timeCount) {
+          println("--- trip ID: " + traj.tripID)
           println("--- Total GPS points: " + traj.points.length)
           println("... Looking for candidates took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
