@@ -1,7 +1,7 @@
 import main.scala.mapmatching.MapMatcher._
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext, sql}
-import RStarTree.{Node, RTree, queryWithTable}
+import main.scala.mapmatching.RStarTree.{Node, RTree, queryWithTable}
 import preprocessing._
 import main.scala.graph.RoadGraph
 import System.nanoTime

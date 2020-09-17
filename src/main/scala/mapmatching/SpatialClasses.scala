@@ -17,8 +17,8 @@ abstract class Shape() {
 }
 
 case class Point(long: Double, lat: Double, t: Long = 0, ID:Long = 0) extends Shape with Serializable {
-  val x: Double = lat
-  val y: Double = long
+  val x: Double = long
+  val y: Double = lat
   override var id:Long = ID
   def assignID(i:Long):Point = {
     id = i
@@ -166,7 +166,9 @@ case class Trajectory(tripID: Long, taxiID: Long, startTime: Long, points: Array
     Rectangle(Point(lat.min, long.min), Point(lat.max, long.max))
   }
 }
+case class mmTrajectory(tripID: String, taxiID: String, startTime: Long = 0, points: Array[String]) extends Serializable {
 
+}
 object greatCircleDist {
   def apply(s: Point, f: Point): Double = {
     val r = 6371009 // earth radius in meter

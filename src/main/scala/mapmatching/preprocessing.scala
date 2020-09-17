@@ -1,12 +1,18 @@
 package preprocessing
 
-import RStarTree.{Node, RTree, queryWithTable}
+import main.scala.mapmatching.RStarTree.{Node, RTree, queryWithTable}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import main.scala.mapmatching.SpatialClasses._
+
 import scala.util.control._
 import System.nanoTime
+
+import org.apache.spark.sql.types._
+
+import Array.concat
+
 object preprocessing {
 
   val timeCount = true
@@ -33,7 +39,7 @@ object preprocessing {
     println("==== Read CSV Done")
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
-    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
+    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     resRDD
   }
 
@@ -65,7 +71,7 @@ object preprocessing {
     }).filter(traj => traj.points.length > 1)
     println("==== Split Trajectories Done")
     println("--- Now total number of entries: " + newTrajRDD.count)
-    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
+    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     newTrajRDD
   }
 
@@ -80,7 +86,7 @@ object preprocessing {
     })
     println("==== Remove Redundancy Done")
     println("--- Now total number of entries: " + resRDD.count)
-    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
+    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     resRDD
   }
 
@@ -101,12 +107,38 @@ object preprocessing {
     })
     println("==== Check Map Coverage Range Done")
     println("--- Now total number of entries: " + resRDD.count + " in the map range of " + mapRange)
-    if(timeCount)  println("... Time used: " + (nanoTime - t) / 1e9d+ "s")
+    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     resRDD
   }
 
   def apply(filename: String, mapRange: List[Double]): RDD[Trajectory] = {
     checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename))), mapRange)
+  }
+
+  def readMMTrajFile(filename: String): RDD[mmTrajectory] = {
+    val customSchema = StructType(Array(
+      StructField("taxiID", LongType, true),
+      StructField("tripID", LongType, true),
+      StructField("GPSPoints", StringType, true),
+      StructField("VertexID", StringType, true),
+      StructField("Candidates", StringType, true),
+      StructField("pointRoadPair", StringType, true))
+    )
+    val spark = SparkSession.builder().getOrCreate()
+    val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
+    //val trajRDD = df.rdd.filter(row => row(3).toString.split(':').length > 2) // remove invalid entries
+    val trajRDD = df.rdd.filter(row => row(3)!="(-1:-1)" && row(3)!="-1") // remove invalid entries
+
+    val resRDD = trajRDD.map(row => {
+      val tripID = row(1).toString
+      val taxiID = row(0).toString
+      val vertexString = row(3).toString
+      var vertices = new Array[String](0)
+      for (i <- vertexString.split(',')) vertices = concat(vertices, i.replaceAll("[(),]", "").split(" "))
+      vertices = vertices.map(x => x.dropRight(2))
+      mmTrajectory(tripID, taxiID, points = vertices)
+    })
+    resRDD
   }
 }
 
@@ -159,4 +191,5 @@ object preprocessingTest extends App {
     }
     println("-------------")
   }
+
 }
