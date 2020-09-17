@@ -9,7 +9,7 @@ object testRangeQuery extends App {
     /** input arguments */
     val master = args(0)
     val roadGraphFile = args(1)
-    //val numPartitions = args(2).toInt
+    val numPartitions = args(2).toInt
     val queryTestNum = args(3)
     val trajectoryFile = args(4) //map-matched
 
@@ -20,7 +20,7 @@ object testRangeQuery extends App {
     sc.setLogLevel("ERROR")
 
     /** generate road vertex RDD */
-    val rg = RoadGraph(roadGraphFile, 0.1)
+    val rg = RoadGraph(roadGraphFile, 2)
     /*
     var roadVertices = new Array[Point](0)
     for(p <- rg.id2vertex.values) roadVertices = roadVertices :+ Point(p.lon, p.lat, ID = p.id.toLong)
@@ -35,7 +35,7 @@ object testRangeQuery extends App {
     for ((k, v) <- gridVertexMap) {
       gridVertexArray = gridVertexArray :+ (k, v)
     }
-    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(rg.gridNum)) //k: grid index, v: Array[Point]
+    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid index, v: Array[Point]
     /** to see the contents of each partition */
     /*
   val pointsWithIndex = roadVertexRDD.mapPartitionsWithIndex {
@@ -71,7 +71,7 @@ object testRangeQuery extends App {
       var res = new Array[(Int, Rectangle)](0)
       for (i <- x._2) res = res :+ (i, x._1)
       res
-    }).groupByKey(rg.gridNum).map(x => (x._1, x._2.toArray)) // key: gridID, value: Array[queryRanges]
+    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: gridID, value: Array[queryRanges]
     val resRDD = queriedGridRDD.join(roadVertexRDD).flatMap(x => {
       var res = new Array[(Rectangle, String)](0)
       val queries = x._2._1
@@ -82,14 +82,14 @@ object testRangeQuery extends App {
         }
       }
       res
-    }).groupByKey(rg.gridNum).map(x => (x._1, x._2.toArray)) //key: queryRange, value: vertex IDs
+    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) //key: queryRange, value: vertex IDs
 
     /** map road vertex to trajectory */
     val mmTrajectoryRDD = preprocessing.readMMTrajFile(trajectoryFile).flatMap(x => {
       var pairs = new Array[( String, mmTrajectory)](0)
       for(p <- x.points) pairs = pairs :+ (p, x)
       pairs
-    }).groupByKey(rg.gridNum).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectory
+    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectory
 
     val queries = resRDD.collect
     for(q <- queries){
