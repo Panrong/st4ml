@@ -1,4 +1,4 @@
-package RStarTree
+package main.scala.mapmatching.RStarTree
 
 import scala.math.{max, min, abs}
 import Array._

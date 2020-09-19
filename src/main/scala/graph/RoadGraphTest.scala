@@ -3,7 +3,7 @@ package main.scala.graph
 object RoadGraphTest extends App {
   override def main(args: Array[String]): Unit = {
 //    val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
-    val rg = RoadGraph("D:\\spark-projects\\spark-map-matching\\preprocessing\\porto.csv")
+    val rg = RoadGraph("C:\\Users\\kaiqi001\\Documents\\GitHub\\spark-map-matching\\preprocessing\\porto.csv")
 
     println("Test getNearestVertex")
     rg.getNearestVertex(-8.6152995, 41.1427807, 3).foreach(println)
@@ -17,7 +17,7 @@ object RoadGraphTest extends App {
     println(rg.getShortestPath("2214758555", "6551282170"))
     println("Test getShortestPath: query where sourceVertex = targetVertex")
     println("Expected result: Some(List(2214758555))")
-    println(rg.getShortestPath("2214758555", "2214758555"))
+    println(rg.getShortestPathAndLength("2214758555", "2214758555"))
     println("--------------------")
     println("Test getShortestPath: query where targetVertex are non-reachable from sourceVertex")
     println("Expected result: None")

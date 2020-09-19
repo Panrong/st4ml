@@ -4,9 +4,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.math.{abs, acos, ceil, cos, floor, sin, min, max}
 
-class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge]) extends Serializable {
+class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge], gridSize: Double) extends Serializable {
   // parameters
-  val gridSize: Double = 0.1 // kilometers
+  //val gridSize: Double = 0.1 // kilometers
 
   // fields
   val minLon: Double = min(vertexes.map(_.lon).min, edges.map(_.midLon).min)
@@ -196,9 +196,9 @@ object RoadGraph {
     (vertexArrayBuffer.toArray,edgeArrayBuffer.toArray)
   }
 
-  def apply(sourceFilePath: String): RoadGraph = {
+  def apply(sourceFilePath: String, gridSize: Double = 0.1): RoadGraph = {
     val (vertexes, edges) = fromCSV(sourceFilePath)
-    val rg = new RoadGraph(vertexes, edges)
+    val rg = new RoadGraph(vertexes, edges, gridSize)
     rg
   }
 

@@ -1,5 +1,5 @@
 import org.apache.spark.{SparkConf, SparkContext}
-import RStarTree._
+import main.scala.mapmatching.RStarTree._
 import main.scala.mapmatching.SpatialClasses._
 
 object RStarTreeTest extends App {
