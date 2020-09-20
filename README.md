@@ -1,4 +1,14 @@
 # spark-map-matching
+
+20200920 - panrong
+
+add functionalities:
+1. graph/SpatialDistances: helper functions for projection point and distances
+
+bug fix: 
+1. preprocessing/graphml_to_csv: remove duplicate src and dst coordinates in linestring
+
+
 Main function on AWS (Currently only read data):
 
   $su spark

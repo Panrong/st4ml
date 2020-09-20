@@ -4,6 +4,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.math.{abs, acos, ceil, cos, floor, sin, min, max}
 
+import SpatialDistances.greatCircleDistance
+
 class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge], gridSize: Double) extends Serializable {
   // parameters
   //val gridSize: Double = 0.1 // kilometers
@@ -104,21 +106,12 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge], gridSize: D
     y <- Array(-1, 0, 1).map(_ + gridId.y).filter(_ >= 0).filter(_ < gridNumOverLat)
   } yield GridId(x, y)
 
-  def greatCircleDistance(lon1: Double, lat1: Double, lon2: Double, lat2: Double): Double ={
-    val r = 6371009 // earth radius in meter
-    val phi1 = lat1.toRadians
-    val lambda1 = lon1.toRadians
-    val phi2 = lat2.toRadians
-    val lambda2 = lon2.toRadians
-    val deltaSigma = acos(sin(phi1) * sin(phi2) + cos(phi1) * cos(phi2) * cos(abs(lambda2 - lambda1)))
-    r * deltaSigma
-  }
 
   def getNearestVertex(lon: Double, lat: Double, k: Int): Array[(RoadVertex, Double)] = {
     val grid = getSimpleGrid(lon, lat)
     val grids = getSurroundingSimpleGrids(grid)
     val vertexes = grids.flatMap(x => grid2Vertex.getOrElse(x, Array.empty))
-    val distance = vertexes.map(x => x -> greatCircleDistance(lon, lat, x.lon, x.lat)).sortBy(_._2)
+    val distance = vertexes.map(x => x -> greatCircleDistance(Point(lon, lat), Point(x.lon, x.lat))).sortBy(_._2)
     distance.take(k)
   }
 
@@ -126,7 +119,7 @@ class RoadGraph(vertexes: Array[RoadVertex], edges: Array[RoadEdge], gridSize: D
     val grid = getSimpleGrid(lon, lat)
     val grids = getSurroundingSimpleGrids(grid)
     val edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
-    val distance = edges.map(x => x -> greatCircleDistance(lon, lat, x.midLon, x.midLat)).sortBy(_._2)
+    val distance = edges.map(x => x -> greatCircleDistance(Point(lon, lat), Point(x.midLon, x.midLat))).sortBy(_._2)
     distance.take(k)
   }
 
