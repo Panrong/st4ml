@@ -17,13 +17,13 @@ object preprocessing {
 
   val timeCount = true
 
-  def genTrajRDD(filename: String): RDD[Trajectory] = {
+  def genTrajRDD(filename: String, num: Int): RDD[Trajectory] = {
     val t = nanoTime
     val spark = SparkSession.builder().getOrCreate()
-    val df = spark.read.option("header", "true").csv(filename)
+    val df = spark.read.option("header", "true").csv(filename).limit(num)
     val samplingRate = 15
     val trajRDD = df.rdd.filter((row => row(8).toString.split(',').length >= 4)) // each traj should have no less than 2 recorded points
-    val resRDD = trajRDD.map(row => {
+    var resRDD = trajRDD.map(row => {
       val tripID = row(0).toString.toLong
       val taxiID = row(4).toString.toLong
       val startTime = row(5).toString.toLong
@@ -111,8 +111,9 @@ object preprocessing {
     resRDD
   }
 
-  def apply(filename: String, mapRange: List[Double]): RDD[Trajectory] = {
-    checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename))), mapRange)
+  def apply(filename: String, mapRange: List[Double], clean: Boolean = true, num:Int = 2147483647): RDD[Trajectory] = {
+    if (clean) checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename, num))), mapRange)
+    else genTrajRDD(filename, num)
   }
 
   def readMMTrajFile(filename: String): RDD[mmTrajectory] = {
