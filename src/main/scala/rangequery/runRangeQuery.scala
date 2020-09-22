@@ -44,7 +44,7 @@ object runRangeQuery extends App {
       }
       Trajectory(tripID, taxiID, x.startTime, points)
     })
-    for(i <-trajRDD.take(2)) println(i.points.deep)
+    println(trajRDD.count)
     println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
     val capacity = args(3).toInt
@@ -55,7 +55,6 @@ object runRangeQuery extends App {
       Iterator((index, rangeQuery.genRTree(iter.toArray, capacity)))
     })
     RTreeRDD.cache
-    for (i <- RTreeRDD.collect()) println(i)
     println("... RTree generation time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
 

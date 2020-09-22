@@ -90,7 +90,6 @@ object testRangeQuery extends App {
       for(p <- x.points) pairs = pairs :+ (p, x)
       pairs
     }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectory
-
     val queries = resRDD.collect
     for(q <- queries){
       val queryRDD = sc.parallelize(q._2).map(x => (x.toString, 1))
