@@ -1,5 +1,7 @@
 package main.scala.graph
 
+import main.scala.geometry.Graph
+
 /** Simple implementation of graphs using a map. */
 case class SimpleGraph[N](succs: Map[N, Map[N, Int]]) extends Graph[N] {
   def apply(n: N): Map[N, Int] = succs.getOrElse(n, Map.empty)

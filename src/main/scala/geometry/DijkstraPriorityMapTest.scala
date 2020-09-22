@@ -1,5 +1,6 @@
-package main.scala.graph
+package main.scala.geometry
 
+import main.scala.graph.SimpleGraph
 import org.scalacheck.Gen
 
 object DijkstraPriorityMapTest extends App {
@@ -30,7 +31,3 @@ object DijkstraPriorityMapTest extends App {
   println(dijkstra.shortestPath(g)(0, 4))
 
 }
-
-
-
-

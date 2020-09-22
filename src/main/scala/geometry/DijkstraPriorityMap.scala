@@ -1,8 +1,8 @@
-package main.scala.graph
+package main.scala.geometry
 
-import scala.annotation.tailrec
 import main.scala.prioritymap.PriorityMap
 
+import scala.annotation.tailrec
 
 /** Implementation of Dijkstra's algorithm using a priority map. */
 object DijkstraPriorityMap extends Dijkstra {

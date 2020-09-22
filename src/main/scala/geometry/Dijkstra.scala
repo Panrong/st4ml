@@ -1,6 +1,7 @@
-package main.scala.graph
+package main.scala.geometry
 
-import Util.iterateRight
+import main.scala.graph.Util.iterateRight
+
 import scala.language.implicitConversions
 
 /** A trait for Dijkstra's algorithm. */

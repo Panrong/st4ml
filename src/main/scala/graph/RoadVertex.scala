@@ -1,5 +1,7 @@
 package main.scala.graph
 
-final case class RoadVertex(id: String,
-                            lon: Double,
-                            lat: Double)
+import main.scala.geometry.Point
+
+final case class RoadVertex(id: String, point: Point) {
+  def geoDistance(other: Point): Double = this.point.geoDistance(other)
+}

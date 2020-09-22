@@ -1,9 +1,17 @@
 package main.scala.graph
 
-final case class RoadEdge(id: String,
-                          from: String,
-                          to: String,
-                          midLon: Double,
-                          midLat: Double,
-                          length: Double,
-                          gpsArray: Array[(Double, Double)])
+import main.scala.geometry.{Point, Line, LineString}
+
+final case class RoadEdge(id: String, from: String, to: String, length: Double, ls: LineString) {
+  def midPoint: Point = Line(ls.points(0), ls.points.last).midPoint
+
+  def midPointDistance(p: Point): (String, Double, Point) = {
+    val (distance, midPoint) = ls.midPointDistance(p)
+    (id, distance, midPoint)
+  }
+
+  def projectionDistance(p: Point): (String, Double, Point) = {
+    val (distance, projectedPoint) = ls.projectionDistance(p)
+    (id, distance, projectedPoint)
+  }
+}
