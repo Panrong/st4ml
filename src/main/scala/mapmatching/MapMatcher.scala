@@ -18,7 +18,7 @@ object MapMatcher {
   }
 
   def transitionProb(point1: Point, point2: Point, roadDist: Double, beta: Double = 0.2): Double = {
-    if(roadDist == 0) 1 / beta * pow(E, 0)
+    if (roadDist == 0) 1 / beta * pow(E, 0)
     else {
       val dt = abs(greatCircleDist(point1, point2) - roadDist)
       if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) {
@@ -103,17 +103,17 @@ object MapMatcher {
   }
 
 
-  def getCandidates(trajectory: Trajectory, g: RoadGraph, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
+  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
     var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
       val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num)
-      val c = r.map(x=>(g.id2edge(x._1), x._2))
+      val c = r.map(x => (rGird.id2edge(x._1), x._2))
       pairs += (point -> c)
     }
     pairs
   }
 
-  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], g: RoadGraph): Array[Array[Array[Double]]] = {
+  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], rGrid: RoadGrid): Array[Array[Array[Double]]] = {
     var roadDistArray = new Array[Array[Array[Double]]](0)
     val roadArray = candidates.values.toArray
     for (i <- 0 to roadArray.length - 2) {
@@ -123,13 +123,15 @@ object MapMatcher {
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
         for (road2 <- candidateSet2) {
-          if(road1._1.from == road2._1.from && road1._1.to == road2._1.to) roadDist = roadDist :+ 0.0 // TODO: can be improved
+          if (road1._1.from == road2._1.from && road1._1.to == road2._1.to) roadDist = roadDist :+ 0.0 // TODO: can be improved
           else {
             val startVertex = road1._1.to
             val endVertex = road2._1.from
-//            val edges = rGrid.getSurroundingEdge(p0, p1) // using default r=50, about 500 meter
-//            val rGraph = RoadGraph(edges)
-            roadDist = roadDist :+ g.getShortestPathAndLength(startVertex, endVertex)._2
+            val p0 = rGrid.id2vertex(startVertex).point
+            val p1 = rGrid.id2vertex(endVertex).point
+            val edges = rGrid.getSurroundingEdge(p0, p1) // using default r=50, about 500 meter
+            val rGraph = RoadGraph(edges)
+            roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2
           }
         }
         pairRoadDist = pairRoadDist :+ roadDist
@@ -167,7 +169,7 @@ object MapMatcher {
     }
   }
 
-  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGraph, beta: Double): (Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]], Array[Array[Array[Array[Double]]]]) = {
+  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid, beta: Double): (Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]], Array[Array[Array[Array[Double]]]]) = {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
@@ -187,7 +189,6 @@ object MapMatcher {
       res.reverse
     }
 
-    /** */
     var filteredPoints = new Array[Point](0)
     var filteredPointsID = new Array[Int](0)
     val points = pairs.keys.toArray
@@ -271,7 +272,7 @@ object MapMatcher {
     }
   }
 
-  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGraph): (Array[Point], Array[String]) = {
+  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[String]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07

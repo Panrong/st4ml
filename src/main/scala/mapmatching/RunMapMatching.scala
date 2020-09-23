@@ -45,19 +45,19 @@ object RunMapMatching extends App {
     for (i <- Range(0, totalTraj, batchSize)) {
       val mapmatchedRDD = sc.parallelize(trajRDD.take(i + batchSize).filterNot(trajRDD.take(i).contains(_))).map(traj => {
         try {
-          val candidates = MapMatcher.getCandidates(traj, rg, rGrid)
+          val candidates = MapMatcher.getCandidates(traj, rGrid)
           if (timeCount) {
             println("--- trip ID: " + traj.tripID)
             println("--- Total GPS points: " + traj.points.length)
             println("... Looking for candidates took: " + (nanoTime - t) / 1e9d + "s")
             t = nanoTime
           }
-          val roadDistArray = MapMatcher.getRoadDistArray(candidates, rg)
+          val roadDistArray = MapMatcher.getRoadDistArray(candidates, rGrid)
           if (timeCount) {
             println("... Calculating road distances took: " + (nanoTime - t) / 1e9d + "s")
             t = nanoTime
           }
-          val res = MapMatcher(candidates, roadDistArray, rg)
+          val res = MapMatcher(candidates, roadDistArray, rGrid)
           if (timeCount) {
             println("... HMM took: " + (nanoTime - t) / 1e9d + "s")
             t = nanoTime
@@ -98,7 +98,7 @@ object RunMapMatching extends App {
           Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
         } catch {
           case _: Throwable => {
-            val candidates = MapMatcher.getCandidates(traj, rg, rGrid)
+            val candidates = MapMatcher.getCandidates(traj, rGrid)
             var pointString = ""
             //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
             var o = "0"
