@@ -5,7 +5,7 @@ import main.scala.geometry.{DijkstraPriorityMap, Graph}
 class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
   // fields
   val g: RouteGraph[String] = buildGraph()
-  val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
+  private val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
 
   /**
     RouteGraph for calculating dijkstra and shortest path
