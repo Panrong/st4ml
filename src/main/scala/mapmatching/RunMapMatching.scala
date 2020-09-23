@@ -42,7 +42,6 @@ object RunMapMatching extends App {
     val batchSize = args(5).toInt
     val totalTraj = args(4).toInt
     for (i <- Range(0, totalTraj, batchSize)) {
-      println(sc.parallelize(trajRDD.take(i + batchSize)).filter(x => x._2 >= i).count)
       val mapmatchedRDD = sc.parallelize(trajRDD.take(i + batchSize)).filter(x => x._2 > i).map(x => x._1)
         .map(traj => {
         try {
