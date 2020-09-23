@@ -40,7 +40,7 @@ object RunMapMatching extends App {
     }
     println("==== Start Map Matching")
     /** do map matching per batch */
-    val batchSize = 5
+    val batchSize = args(5).toInt
     val totalTraj = args(4).toInt
     for (i <- Range(0, totalTraj, batchSize)) {
       val mapmatchedRDD = sc.parallelize(trajRDD.take(i + batchSize).filterNot(trajRDD.take(i).contains(_))).map(traj => {
