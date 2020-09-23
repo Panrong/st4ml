@@ -3,7 +3,7 @@ import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext, sql}
 import main.scala.mapmatching.RStarTree.{Node, RTree, queryWithTable}
 import preprocessing._
-import main.scala.graph.RoadGraph
+import main.scala.graph.{RoadGraph, RoadGrid}
 import System.nanoTime
 
 import main.scala.mapmatching.SpatialClasses.Trajectory
@@ -27,24 +27,25 @@ object RunMapMatching extends App {
       t = nanoTime
     }
     val filename = args(0) //read file name from argument input
-    val rg = RoadGraph(args(1))
+    val rGrid = RoadGrid(args(1))
+    val rg = RoadGraph(rGrid.edges)
     if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
-    val trajRDD = preprocessing(filename, List(rg.minLat, rg.minLon, rg.maxLat, rg.maxLon))
+    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon))
     if (timeCount) {
       println("... Generating trajRDD took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
     println("==== Start Map Matching")
     /** do map matching per batch */
-    val batchSize = 500
+    val batchSize = 5
     val totalTraj = args(4).toInt
     for (i <- Range(0, totalTraj, batchSize)) {
       val mapmatchedRDD = sc.parallelize(trajRDD.take(i + batchSize).filterNot(trajRDD.take(i).contains(_))).map(traj => {
         try {
-          val candidates = MapMatcher.getCandidates(traj, rg)
+          val candidates = MapMatcher.getCandidates(traj, rg, rGrid)
           if (timeCount) {
             println("--- trip ID: " + traj.tripID)
             println("--- Total GPS points: " + traj.points.length)
@@ -97,7 +98,7 @@ object RunMapMatching extends App {
           Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
         } catch {
           case _: Throwable => {
-            val candidates = MapMatcher.getCandidates(traj, rg)
+            val candidates = MapMatcher.getCandidates(traj, rg, rGrid)
             var pointString = ""
             //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
             var o = "0"

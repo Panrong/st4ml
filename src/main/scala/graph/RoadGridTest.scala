@@ -6,7 +6,7 @@ import main.scala.geometry.Point
 
 object RoadGridTest extends App {
 //  val rGrid = RoadGrid("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
-  val rGrid = RoadGrid("D:\\spark-projects\\spark-map-matching\\preprocessing\\porto.csv")
+  val rGrid = RoadGrid("preprocessing\\porto.csv")
   println(rGrid)
   println("--------------------")
 
