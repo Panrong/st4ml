@@ -38,7 +38,6 @@ object MapMatcher {
       probs = probs :+ prob
     }
     probs
-
   }
 
   /*
@@ -103,17 +102,17 @@ object MapMatcher {
   }
 
 
-  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = {
-    var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
+  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = {
+    var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num)
-      val c = r.map(x => (rGird.id2edge(x._1), x._2))
+      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num, r = 20)
+      val c = r.map(x => (rGird.id2edge(x._1), x._2, x._3))
       pairs += (point -> c)
     }
     pairs
   }
 
-  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], rGrid: RoadGrid): Array[Array[Array[Double]]] = {
+  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]], rGrid: RoadGrid): Array[Array[Array[Double]]] = {
     var roadDistArray = new Array[Array[Array[Double]]](0)
     val roadArray = candidates.values.toArray
     for (i <- 0 to roadArray.length - 2) {
@@ -123,15 +122,17 @@ object MapMatcher {
       for (road1 <- candidateSet1) {
         var roadDist = new Array[Double](0)
         for (road2 <- candidateSet2) {
-          if (road1._1.from == road2._1.from && road1._1.to == road2._1.to) roadDist = roadDist :+ 0.0 // TODO: can be improved
+          if (road1._1.from == road2._1.from && road1._1.to == road2._1.to) {
+            roadDist = roadDist :+ road1._3.geoDistance(road2._3)
+          } // improved
           else {
             val startVertex = road1._1.to
             val endVertex = road2._1.from
             val p0 = rGrid.id2vertex(startVertex).point
             val p1 = rGrid.id2vertex(endVertex).point
-            val edges = rGrid.getSurroundingEdge(p0, p1) // using default r=50, about 500 meter
+            val edges = rGrid.getSurroundingEdge(p0, p1, 100) // using default r=50, about 500 meter
             val rGraph = RoadGraph(edges)
-            roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2
+            roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + road1._3.geoDistance(p0) + road2._3.geoDistance(p1)
           }
         }
         pairRoadDist = pairRoadDist :+ roadDist
@@ -169,7 +170,7 @@ object MapMatcher {
     }
   }
 
-  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid, beta: Double): (Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]], Array[Array[Array[Array[Double]]]]) = {
+  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid, beta: Double): (Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]]], Array[Array[Array[Array[Double]]]]) = {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
@@ -238,7 +239,7 @@ object MapMatcher {
         else {
           val startCandidates = points(subTraj(p))
           val endCandidates = points(subTraj(p + 1))
-          var newPair: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
+          var newPair: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
           newPair += (startCandidates -> pairs(startCandidates))
           newPair += (endCandidates -> pairs(endCandidates))
           subTransProbArray = subTransProbArray :+ getRoadDistArray(newPair, g)(0)
@@ -247,9 +248,9 @@ object MapMatcher {
       newTransPorbArray = newTransPorbArray :+ subTransProbArray
     }
     if (breakPoints.length == 0) {
-      if (filteredPoints.length < 2) (new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]](0), new Array[Array[Array[Array[Double]]]](0))
+      if (filteredPoints.length < 2) (new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]]](0), new Array[Array[Array[Array[Double]]]](0))
       else {
-        var newPairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
+        var newPairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
         for (p <- filteredPoints) {
           newPairs += (p -> pairs(p))
         }
@@ -258,11 +259,11 @@ object MapMatcher {
     }
     else {
       breakPoints = -1 +: breakPoints
-      var newPairs = new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]]](0)
+      var newPairs = new Array[mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]]](0)
       for (b <- 0 to breakPoints.length - 2) {
         filteredPoints = filteredPoints.drop(breakPoints(b) + 1)
         val subPoints = filteredPoints.take(breakPoints(b + 1) + 1)
-        var newPair: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]] = mutable.LinkedHashMap()
+        var newPair: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
         for (p <- subPoints) {
           newPair += (p -> pairs(p))
         }
@@ -272,7 +273,7 @@ object MapMatcher {
     }
   }
 
-  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[String]) = {
+  def apply(p: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[String]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
@@ -285,7 +286,9 @@ object MapMatcher {
     //println(p)
     //println(cleanedPairs(0))
     //val cleanedPairs = Array(p)
-    if (cleanedPairs.size < 1) return (p.keys.toArray, Array("-1"))
+    //val newRoadDistMatrix = Array(roadDistArray)
+
+    if (cleanedPairs.size < 1)  (p.keys.toArray, Array("-1"))
     else {
       var bestRoads = new Array[String](0)
       for ((pairs, id) <- cleanedPairs.zipWithIndex) {
@@ -309,14 +312,15 @@ object MapMatcher {
           t = nanoTime
         }
         var ids = Array(-1)
-        try {
-          ids = viterbi(eProbs, tProbs)
-        } catch {
-          case _: Throwable => {
-            println("... Map matching failed ...")
-            return (points, Array("-1"))
-          }
-        }
+        ids = viterbi(eProbs, tProbs)
+//        try {
+//          ids = viterbi(eProbs, tProbs)
+//        } catch {
+//          case _: Throwable => {
+//            println("... Map matching failed ...")
+//            return (points, Array("-1"))
+//          }
+//        }
         if (timeCount) {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime

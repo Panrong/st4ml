@@ -96,7 +96,8 @@ object RunMapMatching extends App {
             candidateString = candidateString + ");"
           }
           Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
-        } catch {
+        }
+        catch {
           case _: Throwable => {
             val candidates = MapMatcher.getCandidates(traj, rGrid)
             var pointString = ""
