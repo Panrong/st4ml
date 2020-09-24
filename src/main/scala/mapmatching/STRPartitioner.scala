@@ -3,7 +3,7 @@ package STRPartition
 import org.apache.spark.Partitioner
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import main.scala.mapmatching.SpatialClasses.{Line, Point, Rectangle}
+import main.scala.geometry.{Line, Point, Rectangle}
 
 import scala.math.{ceil, sqrt}
 
@@ -47,7 +47,7 @@ object STRTest extends App {
       val v = line._2
       var r = i.toString()
       for (p <- v) {
-        r = r + ' ' + p.bottomLeft.lat.toString + ' ' + p.bottomLeft.long.toString + ' ' + p.topRight.lat.toString + ' ' + p.topRight.long.toString + ","
+        r = r + ' ' + p.bottomLeft.lat.toString + ' ' + p.bottomLeft.lon.toString + ' ' + p.topRight.lat.toString + ' ' + p.topRight.lon.toString + ","
       }
       r
     })
@@ -64,7 +64,7 @@ object STRPartitioner {
 
   def apply(origin: RDD[(Rectangle, Line)], numPartition: Int, spark: SparkSession): ShuffledRDD[Rectangle, Line, Line] = {
     // gen dataframeRDD on MBR
-    val rectangleRDD = origin.map(x => (x._1.center.lat, x._1.center.long))
+    val rectangleRDD = origin.map(x => (x._1.center.lat, x._1.center.lon))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, numPartition, List("x", "y"), true)
     val boxes = res._1
@@ -181,9 +181,9 @@ class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], In
   override def getPartition(key: Any): Int = {
     val K = key.asInstanceOf[Rectangle].center
     for (k <- boxMap.keys) {
-      if (K.lat > k(0) && K.lat <= k(2) && K.long > k(1) && K.long <= k(3)) {
+      if (K.lat > k(0) && K.lat <= k(2) && K.lon > k(1) && K.lon <= k(3)) {
         for (v <- boxMap(k)) {
-          if (K.lat > v._1(0) && K.lat <= v._1(2) && K.long > v._1(1) && K.long <= v._1(3)) {
+          if (K.lat > v._1(0) && K.lat <= v._1(2) && K.lon > v._1(1) && K.lon <= v._1(3)) {
             return v._2
           }
         }
