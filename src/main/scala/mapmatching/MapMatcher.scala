@@ -4,10 +4,12 @@ import main.scala.graph.{RoadEdge, RoadGraph, RoadGrid}
 
 import scala.math._
 import scala.collection.mutable
-import main.scala.mapmatching.SpatialClasses._
+import main.scala.geometry._
 
 import Array.concat
 import System.nanoTime
+
+import main.scala.geometry.Distances.greatCircleDistance
 
 object MapMatcher {
 
@@ -20,7 +22,7 @@ object MapMatcher {
   def transitionProb(point1: Point, point2: Point, roadDist: Double, beta: Double = 0.2): Double = {
     if (roadDist == 0) 1 / beta * pow(E, 0)
     else {
-      val dt = abs(greatCircleDist(point1, point2) - roadDist)
+      val dt = abs(greatCircleDistance(point1, point2) - roadDist)
       if (dt > 2000 || roadDist / (point2.t - point1.t) > 50) {
         0
       }
@@ -105,7 +107,7 @@ object MapMatcher {
   def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = {
     var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num, r = 1)
+      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.lon, point.lat), num, r = 1)
       val c = r.map(x => (rGird.id2edge(x._1), x._2, x._3))
       pairs += (point -> c)
     }

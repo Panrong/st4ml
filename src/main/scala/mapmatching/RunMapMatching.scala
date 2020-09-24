@@ -67,7 +67,7 @@ object RunMapMatching extends App {
           var pointRoadPair = ""
           if (ids(0) != "-1") {
             for (i <- 0 to cleanedPoints.length - 1) {
-              pointRoadPair = pointRoadPair + (cleanedPoints(i).long, cleanedPoints(i).lat, ids(i))
+              pointRoadPair = pointRoadPair + (cleanedPoints(i).lon, cleanedPoints(i).lat, ids(i))
             }
           }
           val finalRes = MapMatcher.connectRoads(ids, rg)
@@ -84,7 +84,7 @@ object RunMapMatching extends App {
           var o = "0"
           for (i <- candidates.keys.toArray) {
             if (cleanedPoints.contains(i)) o = "1"
-            pointString = pointString + "(" + i.long + " " + i.lat + " : " + o + ")"
+            pointString = pointString + "(" + i.lon + " " + i.lat + " : " + o + ")"
           }
           var candidateString = ""
           for (i <- 0 to candidates.size - 1) {
@@ -105,7 +105,7 @@ object RunMapMatching extends App {
             var o = "0"
             for (i <- candidates.keys.toArray) {
               if (candidates.keys.toArray.contains(i)) o = "1"
-              pointString = pointString + "(" + i.long + " " + i.lat + " : " + o + ")"
+              pointString = pointString + "(" + i.lon + " " + i.lat + " : " + o + ")"
             }
             var candidateString = ""
             for (i <- 0 to candidates.size - 1) {

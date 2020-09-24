@@ -1,14 +1,9 @@
 package main.scala.rangequery
 
 import org.apache.spark.Partitioner
-import main.scala.mapmatching.SpatialClasses._
-
 
 import main.scala.RStarTree._
-import main.scala.mapmatching.SpatialClasses._
-import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
-import preprocessing.preprocessing
+import main.scala.geometry._
 import System.nanoTime
 
 object rangeQuery {

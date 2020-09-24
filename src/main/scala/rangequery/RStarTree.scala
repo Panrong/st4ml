@@ -1,7 +1,7 @@
 package main.scala.RStarTree
 
 import Array._
-import main.scala.mapmatching.SpatialClasses._
+import main.scala.geometry._
 
 case class Node(m_box: Rectangle, m_child: Array[Node] = new Array[Node](0), isLeaf: Boolean) {
   var leaf: Boolean = isLeaf

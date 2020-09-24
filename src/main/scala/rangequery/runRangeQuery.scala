@@ -1,5 +1,5 @@
 import main.scala.rangequery.rangeQuery
-import main.scala.mapmatching.SpatialClasses.{Point, Rectangle, Trajectory}
+import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import preprocessing.preprocessing
 import System.nanoTime
@@ -43,7 +43,7 @@ object runRangeQuery extends App {
         }
       }
       Trajectory(tripID, taxiID, x.startTime, points)
-    })
+    }).repartition(args(2).toInt)
     println(trajRDD.count)
     println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime

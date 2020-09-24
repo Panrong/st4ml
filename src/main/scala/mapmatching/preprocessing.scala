@@ -4,11 +4,12 @@ import main.scala.mapmatching.RStarTree.{Node, RTree, queryWithTable}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import main.scala.mapmatching.SpatialClasses._
+import main.scala.geometry._
 
 import scala.util.control._
 import System.nanoTime
 
+import main.scala.geometry.Distances.greatCircleDistance
 import org.apache.spark.sql.types._
 
 import Array.concat
@@ -64,7 +65,7 @@ object preprocessing {
       var splitPoints = new Array[Int](0)
       for (i <- 0 to traj.points.length - 2 by 2) {
         val t = traj.points(i + 1).t - traj.points(i).t
-        val l = greatCircleDist(traj.points(i + 1), traj.points(i))
+        val l = greatCircleDistance(traj.points(i + 1), traj.points(i))
         if (l / t > speed || t > timeInterval) splitPoints = splitPoints :+ i
       }
       splitTraj(traj, 0 +: splitPoints)
@@ -80,7 +81,7 @@ object preprocessing {
     val resRDD = trajRDD.map(traj => {
       var newPoints = Array(traj.points(0))
       for (p <- 1 to traj.points.length - 1) {
-        if (greatCircleDist(traj.points(p), newPoints.last) >= 2 * sigmaZ) newPoints = newPoints :+ traj.points(p)
+        if (greatCircleDistance(traj.points(p), newPoints.last) >= 2 * sigmaZ) newPoints = newPoints :+ traj.points(p)
       }
       Trajectory(traj.tripID, traj.taxiID, traj.startTime, newPoints)
     })
@@ -97,7 +98,7 @@ object preprocessing {
       val loop = new Breaks;
       loop.breakable {
         for (point <- traj.points) {
-          if (point.lat < mapRange(0) || point.lat > mapRange(2) || point.long < mapRange(1) || point.long > mapRange(3)) {
+          if (point.lat < mapRange(0) || point.lat > mapRange(2) || point.lon < mapRange(1) || point.lon > mapRange(3)) {
             check = false
             loop.break
           }

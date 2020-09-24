@@ -1,5 +1,5 @@
 import main.scala.graph.{RoadGraph, RoadGrid}
-import main.scala.mapmatching.SpatialClasses._
+import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.rangequery._
 import preprocessing.preprocessing
@@ -88,7 +88,7 @@ object testRangeQuery extends App {
     /** map road vertex to trajectory */
     val mmTrajectoryRDD = preprocessing.readMMTrajFile(trajectoryFile).flatMap(x => {
       var pairs = new Array[( String, mmTrajectory)](0)
-      for(p <- x.points) pairs = pairs :+ (p, x)
+      for(p <- x.points) pairs = pairs :+ (p, x.asInstanceOf[mmTrajectory])
       pairs
     }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectory
     val queries = resRDD.collect
