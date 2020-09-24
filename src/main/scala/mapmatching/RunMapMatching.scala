@@ -26,7 +26,7 @@ object RunMapMatching extends App {
       t = nanoTime
     }
     val filename = args(0) //read file name from argument input
-    val rGrid = RoadGrid(args(1))
+    val rGrid = RoadGrid(args(1), 0.1)
     val rg = RoadGraph(rGrid.edges)
     if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")

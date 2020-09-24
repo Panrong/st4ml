@@ -105,7 +105,7 @@ object MapMatcher {
   def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = {
     var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num, r = 20)
+      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.long, point.lat), num, r = 1)
       val c = r.map(x => (rGird.id2edge(x._1), x._2, x._3))
       pairs += (point -> c)
     }
@@ -130,7 +130,7 @@ object MapMatcher {
             val endVertex = road2._1.from
             val p0 = rGrid.id2vertex(startVertex).point
             val p1 = rGrid.id2vertex(endVertex).point
-            val edges = rGrid.getSurroundingEdge(p0, p1, 100) // using default r=50, about 500 meter
+            val edges = rGrid.getSurroundingEdge(p0, p1, 10) // using default r=50, about 500 meter
             val rGraph = RoadGraph(edges)
             roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + road1._3.geoDistance(p0) + road2._3.geoDistance(p1)
           }
