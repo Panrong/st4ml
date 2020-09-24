@@ -7,7 +7,11 @@ edge,7826085926,-8.6860519,41.1754507
 edge: 
 edge, from_node_id, to_node_id, is_one_way, length, linestring
 
-is_one_way="0" means that the edge is bi-directional
+bi-directional edge:
+1. is_one_way="0" means that the edge is bi-directional
+2. bi-directional edges are recorded as two rows
+
+
 
 linestring is the gps coordinates of the edge, where
 1. the first coordinate is the coordinate of from_node_id

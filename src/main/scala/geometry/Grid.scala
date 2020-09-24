@@ -32,8 +32,6 @@ case class Grid(minLon: Double, minLat: Double, maxLon: Double, maxLat: Double, 
       bottomLeftLat = minLat + idOverLat*gridStride
       upperRightLon = bottomLeftLon + gridStride
       upperRightLat = bottomLeftLat + gridStride
-      centerLon = (bottomLeftLon + upperRightLon) / 2
-      centerLat = (bottomLeftLat + upperRightLat) / 2
     } yield GridId(idOverLon, idOverLat) -> GridBoundary(
       bottomLeftLon, bottomLeftLat,
       upperRightLon, upperRightLat)

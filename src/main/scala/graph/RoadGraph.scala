@@ -28,8 +28,17 @@ class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
     router.shortestPath(g)(sourceVertexId, targetVertexId)
   }
 
-  def getShortestPathAndLength(sourceVertexId: String, targetVertexId: String): (List[String], Double) = {
-    val res = getShortestPath(sourceVertexId, targetVertexId)
+  def getShortestPathAndLength(sourceId: String, targetId: String): (List[String], Double) = {
+    var src = sourceId
+    var dst = targetId
+
+    if (sourceId.contains('-')) {
+      // input Ids are edge id
+      src = sourceId.split("-")(0)
+      dst = targetId.split("-")(1)
+    }
+
+    val res = getShortestPath(src, dst)
     val path = res match {
       case Some(l) => l
       case None => List.empty

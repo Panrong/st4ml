@@ -11,21 +11,22 @@ object RoadGridTest extends App {
   println("--------------------")
 
   val p0 = Point(-8.6152995, 41.1427807)
+  val k =5
   println("Test getNearestVertex")
-  rGrid.getNearestVertex(p0, 3).foreach(println)
+  rGrid.getNearestVertex(p0, k).foreach(println)
   println("--------------------")
   println("Test getNearestVertex with expanding search region")
-  rGrid.getNearestVertex(p0, 3, r=6).foreach(println)
+  rGrid.getNearestVertex(p0, k, r=6).foreach(println)
   println("--------------------")
   println("Test getNearestEdge with middle point distance")
-  rGrid.getNearestEdge(p0, 3, "middle", r=6).foreach(println)
+  rGrid.getNearestEdge(p0, k, "middle", r=6).foreach(println)
   println("--------------------")
   println("Test getNearestEdge with projection point distance")
-  rGrid.getNearestEdge(p0, 3, "projection", r=6).foreach(println)
+  rGrid.getNearestEdge(p0, k, "projection", r=6).foreach(println)
   println("--------------------")
 
   val p1 = Point(-8.614661, 41.143212)
-  val edges = rGrid.getSurroundingEdge(p0, p1) // using default r=50, about 500 meter
+  val edges = rGrid.getGraphEdgesByPoint(p0, p1) // using default r=50, about 500 meter
   val rGraph = RoadGraph(edges)
 
   println("Test getShortestPath: normal query")

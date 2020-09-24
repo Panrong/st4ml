@@ -130,7 +130,7 @@ object MapMatcher {
             val endVertex = road2._1.from
             val p0 = rGrid.id2vertex(startVertex).point
             val p1 = rGrid.id2vertex(endVertex).point
-            val edges = rGrid.getSurroundingEdge(p0, p1, 10) // using default r=50, about 500 meter
+            val edges = rGrid.getGraphEdgesByPoint(p0, p1, 10) // using default r=50, about 500 meter
             val rGraph = RoadGraph(edges)
             roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + road1._3.geoDistance(p0) + road2._3.geoDistance(p1)
           }

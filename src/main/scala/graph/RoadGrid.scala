@@ -51,8 +51,15 @@ class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
 
   def getNearestEdge(p: Point, k: Int, metric: String = "projection", r: Int = 1): Array[(String, Double, Point)] = {
     val grid = getSimpleGrid(p)
-    val grids = getSurroundingSimpleGrids(grid, r)
-    val edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
+    var grids = getSurroundingSimpleGrids(grid, r)
+    var edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
+
+    // double the search area if not enough edges
+    if (edges.length <= k) {
+      grids = getSurroundingSimpleGrids(grid, 2*r)
+      edges = grids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
+    }
+
     metric match {
       case "projection" => edges.map(_.projectionDistance(p)).sortBy(_._2).take(k)
       case "middle" => edges.map(_.midPointDistance(p)).sortBy(_._2).take(k)
@@ -62,9 +69,16 @@ class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
   }
 
   // TODO: dynamically determine radius
-  def getSurroundingEdge(o: Point, d: Point, radius: Int = 50): Array[RoadEdge] = {
+  def getGraphEdgesByPoint(o: Point, d: Point, radius: Int = 5): Array[RoadEdge] = {
     val oGridId = getSimpleGrid(o)
     val dGridId = getSimpleGrid(d)
+    val surroundingGrids = getSurroundingSimpleGrids(oGridId, dGridId, radius)
+    surroundingGrids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
+  }
+
+  def getGraphEdgesByEdgeId(o: String, d: String, radius: Int = 5): Array[RoadEdge] = {
+    val oGridId = getSimpleGrid(id2edge(o).midPoint)
+    val dGridId = getSimpleGrid(id2edge(d).midPoint)
     val surroundingGrids = getSurroundingSimpleGrids(oGridId, dGridId, radius)
     surroundingGrids.flatMap(x => grid2Edge.getOrElse(x, Array.empty))
   }
@@ -72,6 +86,7 @@ class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
 }
 
 object RoadGrid {
+
   def fromCSV(csvFilePath: String) : (Array[RoadVertex], Array[RoadEdge]) = {
     val source = Source.fromFile(csvFilePath)
 
@@ -95,15 +110,7 @@ object RoadGrid {
           length.toDouble,
           gpsLineString
         )
-        if (isOneWay.toInt == 0) {
-          edgeArrayBuffer += RoadEdge(
-            s"$toNodeId-$fromNodeId",
-            toNodeId,
-            fromNodeId,
-            length.toDouble,
-            gpsLineString
-          )
-        }
+
       } else {
         throw new Exception(s"CSV Parsing Error: unknown type in line: $line")
       }
@@ -113,7 +120,7 @@ object RoadGrid {
     (vertexArrayBuffer.toArray,edgeArrayBuffer.toArray)
   }
 
-  def apply(sourceFilePath: String, gridSize: Double = 0.01): RoadGrid = {
+  def apply(sourceFilePath: String, gridSize: Double = 0.1): RoadGrid = {
     val (vertexes, edges) = fromCSV(sourceFilePath)
     val minLon: Double = List(
       vertexes.map(_.point.lon).min,
@@ -138,3 +145,4 @@ object RoadGrid {
     new RoadGrid(vertexes, edges, minLon, minLat, maxLon, maxLat, gridSize)
   }
 }
+
