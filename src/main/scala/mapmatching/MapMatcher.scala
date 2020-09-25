@@ -10,6 +10,7 @@ import Array.concat
 import System.nanoTime
 
 import main.scala.geometry.Distances.greatCircleDistance
+import scala.collection.mutable.ListBuffer
 
 object MapMatcher {
 
@@ -64,57 +65,104 @@ object MapMatcher {
       }
   */
 
+  //  def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
+  //    println("--------------eProbs:")
+  //    println("("+eProbs.size+","+eProbs(0).length+")")
+  //    println("--------------tProbs:")
+  //    println("("+tProbs.size+","+tProbs(0).length+","+tProbs(0)(0).length+")")
+  //    println("--------------")
+  //
+  //    var biggestProb = new Array[Array[Double]](0)
+  //    var lastState = new Array[Array[Int]](0)
+  //    /** for inital timestamp */
+  //    biggestProb = biggestProb :+ eProbs(0)
+  //    lastState = lastState :+ Range(0, eProbs(0).length).toArray
+  //    /** for rest timestamps */
+  //    for (t <- 1 to eProbs.length - 1) { // each time step
+  //      var prob = new Array[Double](0) //
+  //      var state = new Array[Int](0)
+  //      for (s <- 0 to eProbs(t).length - 1) { // s: each possible road of t
+  //        val lastBiggest = biggestProb(t - 1).max
+  //        var lastBiggestIndexCandidates = new Array[Int](0)
+  //        for (p <- 0 to biggestProb(t - 1).length - 1) {
+  //          if (biggestProb(t - 1)(p) == lastBiggest) lastBiggestIndexCandidates = lastBiggestIndexCandidates :+ p
+  //        }
+  //        println("lastBiggestIndexCandidates:" + lastBiggestIndexCandidates.deep)
+  //        println("lastBiggest: "+lastBiggest)
+  //        var probs = new Array[Double](0)
+  //        for (c <- lastBiggestIndexCandidates) {
+  //          println(t, s, c)
+  //          probs = probs :+ eProbs(t)(s) * tProbs(t - 1)(c)(s) * eProbs(t - 1)(c)
+  //        }
+  //        prob = prob :+ probs.max
+  //        //val lastBiggestIndex = biggestProb(t - 1).indexOf(lastBiggest)
+  //        val lastBiggestIndex = lastBiggestIndexCandidates(probs.indexOf(probs.max))
+  //        state = state :+ lastBiggestIndex
+  //        //prob = prob :+ eProbs(t)(s) * tProbs(t - 1)(lastBiggestIndex)(s) * eProbs(t - 1)(lastBiggestIndex)
+  //      }
+  //      biggestProb = biggestProb :+ prob
+  //      lastState = lastState :+ state
+  //    }
+  //    val t = eProbs.length - 1
+  //    var states = new Array[Int](0)
+  //    var v = biggestProb(t).max
+  //    states = states :+ biggestProb(t).indexOf(v)
+  //    for (t <- eProbs.length - 1 to 1 by -1) {
+  //      v = biggestProb(t).max
+  //      val i = biggestProb(t).indexOf(v)
+  //      states = states :+ lastState(t)(i)
+  //    }
+  //    states.reverse
+  //  }
+
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
-    var biggestProb = new Array[Array[Double]](0)
-    var lastState = new Array[Array[Int]](0)
-    biggestProb = biggestProb :+ eProbs(0)
-    lastState = lastState :+ Range(0, eProbs(0).length).toArray
-    for (t <- 1 to eProbs.length - 1) { // each time step
-      var prob = new Array[Double](0)
-      var state = new Array[Int](0)
-      for (s <- 0 to eProbs(t).length - 1) { // each possible road of t
-        val lastBiggest = biggestProb(t - 1).max
-        var lastBiggestIndexCandidates = new Array[Int](0)
-        for (p <- 0 to biggestProb(t - 1).length - 1) {
-          if (biggestProb(t - 1)(p) == lastBiggest) lastBiggestIndexCandidates = lastBiggestIndexCandidates :+ p
+//    println("--------------eProbs:")
+//    println("(" + eProbs.size + "," + eProbs(0).length + ")")
+    var states = Array.ofDim[List[Int]](eProbs.size, eProbs(0).length) // records the route getting to a candidate
+    var probs = Array.ofDim[Double](eProbs.size, eProbs(0).length) // records the probability getting to a candidate
+    for (i <- 0 to eProbs(0).length - 1) states(0)(i) = List(i) //set initial states
+    probs(0) = eProbs(0)
+//    println(states.size)
+//    println(probs.size)
+    for (t <- 1 to eProbs.size - 1) { //timestamp
+      for (c <- 0 to eProbs(t).length - 1) { //candidate
+//        println(t, c)
+        var candiProbs = new Array[Double](0) // to find the best way to get to this candidate
+        for (last <- 0 to eProbs(0).length - 1) {
+          val newProb = probs(t - 1)(last) * tProbs(t - 1)(last)(c) * eProbs(t)(c)
+//          if(newProb.isNaN) println(probs(t - 1)(last) , tProbs(t - 1)(last)(c) , eProbs(t)(c))
+          candiProbs = candiProbs :+ newProb
         }
-        var probs = new Array[Double](0)
-        for (c <- lastBiggestIndexCandidates) {
-          probs = probs :+ eProbs(t)(s) * tProbs(t - 1)(c)(s) * eProbs(t - 1)(c)
-        }
-        prob = prob :+ probs.max
-        //val lastBiggestIndex = biggestProb(t - 1).indexOf(lastBiggest)
-        val lastBiggestIndex = lastBiggestIndexCandidates(probs.indexOf(probs.max))
-        state = state :+ lastBiggestIndex
-        //prob = prob :+ eProbs(t)(s) * tProbs(t - 1)(lastBiggestIndex)(s) * eProbs(t - 1)(lastBiggestIndex)
+        val index = max(0, candiProbs.indexOf(candiProbs.max))
+//        println("000")
+//        println(candiProbs.deep, index)
+        probs(t)(c) = candiProbs(index)
+//        println("!!!")
+//        println(eProbs(0).length)
+//        println(candiProbs.size)
+//        println(probs.size)
+//        println(index)
+//        println(states(t-1)(index))
+        states(t)(c) = c :: states(t - 1)(index)
       }
-      biggestProb = biggestProb :+ prob
-      lastState = lastState :+ state
     }
-    val t = eProbs.length - 1
-    var states = new Array[Int](0)
-    var v = biggestProb(t).max
-    states = states :+ biggestProb(t).indexOf(v)
-    for (t <- eProbs.length - 1 to 1 by -1) {
-      v = biggestProb(t).max
-      val i = biggestProb(t).indexOf(v)
-      states = states :+ lastState(t)(i)
-    }
-    states.reverse
+    val finalProb = probs(eProbs.length - 1)
+    val maxLastCandidate = finalProb.indexOf(finalProb.max)
+    states(eProbs.length - 1)(maxLastCandidate).reverse.toArray
   }
 
 
-  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = {
-    var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
+  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, Point)]] = {
+    var pairs: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, Point)]] = mutable.LinkedHashMap()
     for (point <- trajectory.points) {
-      val r = rGird.getNearestEdge(main.scala.geometry.Point(point.lon, point.lat), num, r = 1)
+      val r = rGird.getNearestEdge(Point(point.lon, point.lat), num, r = 1)
       val c = r.map(x => (rGird.id2edge(x._1), x._2, x._3))
       pairs += (point -> c)
     }
     pairs
   }
 
-  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, main.scala.geometry.Point)]], rGrid: RoadGrid): Array[Array[Array[Double]]] = {
+  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(RoadEdge, Double, Point)]], rGrid: RoadGrid): Array[Array[Array[Double]]] = {
     var roadDistArray = new Array[Array[Array[Double]]](0)
     val roadArray = candidates.values.toArray
     for (i <- 0 to roadArray.length - 2) {
@@ -132,7 +180,7 @@ object MapMatcher {
             val endVertex = road2._1.from
             val p0 = rGrid.id2vertex(startVertex).point
             val p1 = rGrid.id2vertex(endVertex).point
-            val edges = rGrid.getGraphEdgesByPoint(p0, p1, 10) // using default r=50, about 500 meter
+            val edges = rGrid.getGraphEdgesByPoint(p0, p1) // using default r=50, about 500 meter
             val rGraph = RoadGraph(edges)
             roadDist = roadDist :+ rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + road1._3.geoDistance(p0) + road2._3.geoDistance(p1)
           }
@@ -290,7 +338,7 @@ object MapMatcher {
     //val cleanedPairs = Array(p)
     //val newRoadDistMatrix = Array(roadDistArray)
 
-    if (cleanedPairs.size < 1)  (p.keys.toArray, Array("-1"))
+    if (cleanedPairs.size < 1) (p.keys.toArray, Array("-1"))
     else {
       var bestRoads = new Array[String](0)
       for ((pairs, id) <- cleanedPairs.zipWithIndex) {
@@ -315,14 +363,14 @@ object MapMatcher {
         }
         var ids = Array(-1)
         ids = viterbi(eProbs, tProbs)
-//        try {
-//          ids = viterbi(eProbs, tProbs)
-//        } catch {
-//          case _: Throwable => {
-//            println("... Map matching failed ...")
-//            return (points, Array("-1"))
-//          }
-//        }
+        //        try {
+        //          ids = viterbi(eProbs, tProbs)
+        //        } catch {
+        //          case _: Throwable => {
+        //            println("... Map matching failed ...")
+        //            return (points, Array("-1"))
+        //          }
+        //        }
         if (timeCount) {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime

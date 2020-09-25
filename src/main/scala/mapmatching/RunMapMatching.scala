@@ -46,6 +46,9 @@ object RunMapMatching extends App {
         .map(traj => {
         try {
           val candidates = MapMatcher.getCandidates(traj, rGrid)
+          for(i <- candidates.keys) {
+            if(candidates(i).size < 5) println("!!!\n" + traj.tripID)
+          }
           if (timeCount) {
             println("--- trip ID: " + traj.tripID)
             println("--- Total GPS points: " + traj.points.length)
@@ -99,6 +102,7 @@ object RunMapMatching extends App {
         }
         catch {
           case _: Throwable => {
+            println("****")
             val candidates = MapMatcher.getCandidates(traj, rGrid)
             var pointString = ""
             //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
@@ -116,7 +120,7 @@ object RunMapMatching extends App {
               for (rr <- r) candidateString = candidateString + rr + " "
               candidateString = candidateString + ");"
             }
-            Row(traj.taxiID.toString, traj.tripID.toString, "-1", "-1", "-1", "-1")
+            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
           }
         }
       })
