@@ -1,13 +1,16 @@
-import main.scala.mapmatching.MapMatcher._
+import main.scala.mapmatching.MapMatcher
 import org.apache.spark.sql.{Row, SQLContext, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext, sql}
 import preprocessing._
 import main.scala.graph.{RoadGraph, RoadGrid}
 import System.nanoTime
+
 import org.apache.hadoop.fs._
 
 import scala.reflect.io.Directory
 import java.io.File
+
+import main.scala.geometry.Point
 
 object RunMapMatching extends App {
   def timeCount = true
@@ -27,7 +30,7 @@ object RunMapMatching extends App {
     }
     val filename = args(0) //read file name from argument input
     val rGrid = RoadGrid(args(1), 0.1)
-    val rg = RoadGraph(rGrid.edges)
+//    val rg = RoadGraph(rGrid.edges)
     if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
@@ -73,6 +76,13 @@ object RunMapMatching extends App {
               pointRoadPair = pointRoadPair + (cleanedPoints(i).lon, cleanedPoints(i).lat, ids(i))
             }
           }
+
+          val lx = cleanedPoints.map(_.lon).min
+          val hx = cleanedPoints.map(_.lon).max
+          val ly = cleanedPoints.map(_.lat).min
+          val hy = cleanedPoints.map(_.lat).max
+          val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(lx, ly), Point(hx, hy))
+          val rg = RoadGraph(connRoadEdges)
           val finalRes = MapMatcher.connectRoads(ids, rg)
           if (timeCount) {
             println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
@@ -93,7 +103,7 @@ object RunMapMatching extends App {
           for (i <- 0 to candidates.size - 1) {
             val v = candidates.values.toArray
             val c = v(i)
-            val r = c.map(x => x._1.id)
+            val r = c.map(x => x._1)
             candidateString = candidateString + i.toString + ":("
             for (rr <- r) candidateString = candidateString + rr + " "
             candidateString = candidateString + ");"
@@ -115,7 +125,7 @@ object RunMapMatching extends App {
             for (i <- 0 to candidates.size - 1) {
               val v = candidates.values.toArray
               val c = v(i)
-              val r = c.map(x => x._1.id)
+              val r = c.map(x => x._1)
               candidateString = candidateString + i.toString + ":("
               for (rr <- r) candidateString = candidateString + rr + " "
               candidateString = candidateString + ");"

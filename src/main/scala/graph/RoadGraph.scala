@@ -1,6 +1,7 @@
 package main.scala.graph
 
 import main.scala.geometry.{DijkstraPriorityMap, Graph}
+import org.scalacheck.Prop.False
 
 class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
   // fields
@@ -49,6 +50,13 @@ class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
       case l if l.size > 1 => l.sliding(2).map(x => id2edge(s"${x(0)}-${x(1)}").length).sum
     }
     (path, length)
+  }
+
+  def hasEdge(from: String, to:String): Boolean = {
+    id2edge.get(s"$from-$to") match {
+      case None => false
+      case _ => true
+    }
   }
 
 }
