@@ -1,5 +1,33 @@
-# spark-map-matching
+# Spark Map Matching
 
+## Mapmatched result file format for visualization use:
+20200926 - Kaiqi
+
+Example file location: 
+`master:/home/ubuntu/mm2000.csv` 
+
+Header: `taxiID	tripID GPSPoints VertexID Candidates PointRoadPair`
+
+ - taxiID and tripID: for identidfication
+ - GPSPoints: recorded GPS info in free space of format: `(lon lat:flag)` where flag indicates whether a point is map matched (`1`) or removed (`0`)
+ - VertexID: the vertex ID of the map matched trajectory, each two consecutive IDs form an edge on the road graph. The format is `(ID:flag)` where flag indicates whether a vertex is directly matched from GPS points (`1`) or interpolated from shortest path connection (`0`)
+ - Candidates: possible road edges to be mapped to each feasible GPSPoints (with flag 1). The format is `idx:(edge1 edge2 ...)` seperated by `;`
+ -  PointRoadPair: information aggregated from GPSPoints and VetexID. The format is `(lon,lat,edge)`
+ 
+ ## Run map matching on single machine
+ Input arguments
+ `"path_to_raw_traj_file.csv" "path_to_road_graph_.csv" "directory_to_save_results" "local" num_of_total_traj batch_size`
+ 
+ The total trajectories will be split by batch_size and saved seperately to overcome out of memory.
+ 
+ Example:
+ 
+ `"path\to\train_short.csv" "path\to\porto.csv" "path\to\spark-map-matching\out\res" "local" 2000 100`
+ 
+ The object to run: `RunMapMatching`
+ 
+ ##
+ 
 20200922 - Panrong
 
 updates:
