@@ -24,9 +24,13 @@ class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
     RouteGraph(gInfo)
   }
 
-  def getShortestPath(sourceVertexId: String, targetVertexId: String): Option[List[String]] = {
+  def getShortestPath(sourceVertexId: String, targetVertexId: String): List[String] = {
     val router = DijkstraPriorityMap
-    router.shortestPath(g)(sourceVertexId, targetVertexId)
+    val res = router.shortestPath(g)(sourceVertexId, targetVertexId)
+    res match {
+      case Some(l) => l
+      case None => List.empty
+    }
   }
 
   def getShortestPathAndLength(sourceId: String, targetId: String): (List[String], Double) = {
@@ -39,11 +43,7 @@ class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
       dst = targetId.split("-")(1)
     }
 
-    val res = getShortestPath(src, dst)
-    val path = res match {
-      case Some(l) => l
-      case None => List.empty
-    }
+    val path = getShortestPath(src, dst)
     val length = path match {
       case Nil => Double.MaxValue
       case l if l.size == 1 => 0

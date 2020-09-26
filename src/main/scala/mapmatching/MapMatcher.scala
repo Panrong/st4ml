@@ -109,21 +109,40 @@ object MapMatcher {
   def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
     if (ids(0) == "-1") return Array(("-1", -1))
     else {
-      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
+
+//      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
+//        case Array(a, b) if a != b => b
+//      }.toArray
+
+      // remove consecutive duplicates
+      val vertexIDs = ids(0) +: ids.flatMap(_.split("-")).sliding(2).collect {
         case Array(a, b) if a != b => b
       }.toArray
 
-      var roadIDs = Array(vertexIDs(0))
+
+//      var roadIDs = Array(vertexIDs(0))
       try {
-        for (i <- 0 to vertexIDs.length - 2) {
-          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).get.toArray.drop(1))
+//        for (i <- 0 to vertexIDs.length - 2) {
+//          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).toArray.drop(1))
+//        }
+//        var res = new Array[(String, Int)](0)
+//        for (e <- roadIDs) {
+//          if (vertexIDs.contains(e)) res = res :+ (e, 1)
+//          else res = res :+ (e, 0)
+//        }
+
+        val filledVertexIDs = vertexIDs.sliding(2).toArray.map{
+          case Array(oVertex, dVertex) =>
+            if (g.hasEdge(oVertex, dVertex)) Array((oVertex, 1), (dVertex, 1))
+            else g.getShortestPath(oVertex, dVertex).toArray.map(x => (x, 0))
         }
-        var res = new Array[(String, Int)](0)
-        for (e <- roadIDs) {
-          if (vertexIDs.contains(e)) res = res :+ (e, 1)
-          else res = res :+ (e, 0)
-        }
-        return res
+
+        val filledVertexIDsFlatten = filledVertexIDs.flatten
+        // remove consecutive duplicates
+        filledVertexIDsFlatten(0) +: filledVertexIDsFlatten.sliding(2).collect {
+          case Array(a, b) if a._1 != b._1 => b
+        }.toArray
+
       } catch {
         case ex: NoSuchElementException => {
           return Array(("-1", -1))
