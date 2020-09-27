@@ -2,7 +2,7 @@ import main.scala.graph.{RoadGraph, RoadGrid}
 import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.rangequery._
-import preprocessing.preprocessing
+import main.scala.mapmatching.preprocessing
 
 object testRangeQuery extends App {
   override def main(args: Array[String]): Unit = {

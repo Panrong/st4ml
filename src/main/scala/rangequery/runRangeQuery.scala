@@ -1,13 +1,9 @@
 import main.scala.rangequery.rangeQuery
-import main.scala.geometry._
+import main.scala.geometry.{Point, Rectangle, Trajectory}
 import org.apache.spark.{SparkConf, SparkContext}
-import preprocessing.preprocessing
+import main.scala.mapmatching.preprocessing
+import main.scala.graph.{RoadGrid}
 import System.nanoTime
-
-import main.scala.STRPartitioner.STRPartitioner
-import main.scala.graph.{RoadGraph, RoadGrid}
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 
 object runRangeQuery extends App {
   override def main(args: Array[String]): Unit = {
@@ -30,7 +26,7 @@ object runRangeQuery extends App {
       try {
         tripID = x.tripID.toLong
       } catch {
-        case ex:java.lang.NumberFormatException => {
+        case ex: java.lang.NumberFormatException => {
           tripID = 1
         }
       }
@@ -38,7 +34,7 @@ object runRangeQuery extends App {
       try {
         taxiID = x.taxiID.toLong
       } catch {
-        case ex:java.lang.NumberFormatException => {
+        case ex: java.lang.NumberFormatException => {
           taxiID = 1
         }
       }
@@ -49,7 +45,7 @@ object runRangeQuery extends App {
     t = nanoTime
     val capacity = args(3).toInt
     val mbrRDD = trajRDD.map(traj => traj.mbr.assignID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
-    for(i <-mbrRDD.take(2)) println(i)
+    for (i <- mbrRDD.take(2)) println(i)
     /** generate RTree for each partition */
     val RTreeRDD = mbrRDD.mapPartitionsWithIndex((index, iter) => {
       Iterator((index, rangeQuery.genRTree(iter.toArray, capacity)))
@@ -64,11 +60,11 @@ object runRangeQuery extends App {
       val queriedTrajRDD = RTreeRDD.flatMap(x => {
         rangeQuery.query(x._2._1, x._2._2, queryRange)
       })
-        /*.filter(x => {
-        rangeQuery.refinement(x, queryRange)
-      })
+      /*.filter(x => {
+      rangeQuery.refinement(x, queryRange)
+    })
 
-         */
+       */
       println("=== " + queriedTrajRDD.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
       //val avgSpeed = queriedTrajRDD.map(x => x.asInstanceOf[Rectangle].trajectory.calAvgSpeed(queryRange)).mean
       //println("--- Average Speed: " + avgSpeed)

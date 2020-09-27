@@ -1,7 +1,7 @@
-package main.scala.RStarTree
+package  main.scala.RTree
 
-import Array._
-import main.scala.geometry._
+import Array.concat
+import main.scala.geometry.{Rectangle, Shape, Point}
 
 case class Node(m_box: Rectangle, m_child: Array[Node] = new Array[Node](0), isLeaf: Boolean) {
   var leaf: Boolean = isLeaf

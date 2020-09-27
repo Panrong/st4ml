@@ -1,16 +1,13 @@
 package main.scala.mapmatching
 
-import main.scala.graph.{RoadEdge, RoadGraph, RoadGrid}
-
-import scala.math._
+import main.scala.graph.{RoadGraph, RoadGrid}
+import scala.math.{sqrt, pow, abs, Pi, E, max}
 import scala.collection.mutable.LinkedHashMap
-import main.scala.geometry._
+import main.scala.geometry.{Point, Trajectory}
+import main.scala.geometry.Distances.greatCircleDistance
 
 import Array.concat
 import System.nanoTime
-
-import main.scala.geometry.Distances.greatCircleDistance
-
 
 object MapMatcher {
 
@@ -35,18 +32,16 @@ object MapMatcher {
                           beta: Double): Array[Array[Double]] = roadDistArray.map(_.map(transitionProb(point1, point2, _, beta)))
 
 
-
-
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
     //    println("--------------eProbs:")
     //    println("(" + eProbs.size + "," + eProbs(0).length + ")")
     var states = Array.ofDim[List[Int]](eProbs.length, eProbs(0).length) // records the route getting to a candidate
-    var probs = Array.ofDim[Double](eProbs.length, eProbs(0).length)     // records the probability getting to a candidate
-    eProbs(0).indices.foreach(i => states(0)(i) = List(i))             // set initial states
+    var probs = Array.ofDim[Double](eProbs.length, eProbs(0).length) // records the probability getting to a candidate
+    eProbs(0).indices.foreach(i => states(0)(i) = List(i)) // set initial states
     probs(0) = eProbs(0)
     //    println(states.size)
     //    println(probs.size)
-    (1 until  eProbs.length).foreach { t => //timestamp
+    (1 until eProbs.length).foreach { t => //timestamp
       eProbs(t).indices.foreach { c => //candidate
         //        println(t, c)
         var candiProbs = new Array[Double](0) // to find the best way to get to this candidate
@@ -87,21 +82,21 @@ object MapMatcher {
     val roadArray = candidates.values.toArray
 
     val candiSetPairs = roadArray.sliding(2).toArray
-    val roadDist = candiSetPairs.map{ candiSetPair =>
+    val roadDist = candiSetPairs.map { candiSetPair =>
       val pairs = candiSetPair(0).map(x => candiSetPair(1).map(y => (x, y)))
       pairs.map(pair =>
-        pair.map{ case (x, y) =>
-        if (x == y) x._3.geoDistance(y._3)
-        else {
-          val startVertex = x._1.split("-")(1)  // to vertex of the src edge
-          val endVertex = y._1.split("-")(0)    // from vertex of the dst edge
-          val p0 = rGrid.id2vertex(startVertex).point
-          val p1 = rGrid.id2vertex(endVertex).point
-          val edges = rGrid.getGraphEdgesByPoint(p0, p1)
-          val rGraph = RoadGraph(edges)
-          rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + x._3.geoDistance(p0) + y._3.geoDistance(p1)
-        }
-      })
+        pair.map { case (x, y) =>
+          if (x == y) x._3.geoDistance(y._3)
+          else {
+            val startVertex = x._1.split("-")(1) // to vertex of the src edge
+            val endVertex = y._1.split("-")(0) // from vertex of the dst edge
+            val p0 = rGrid.id2vertex(startVertex).point
+            val p1 = rGrid.id2vertex(endVertex).point
+            val edges = rGrid.getGraphEdgesByPoint(p0, p1)
+            val rGraph = RoadGraph(edges)
+            rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + x._3.geoDistance(p0) + y._3.geoDistance(p1)
+          }
+        })
     }
     roadDist
   }
@@ -110,9 +105,9 @@ object MapMatcher {
     if (ids(0) == "-1") return Array(("-1", -1))
     else {
 
-//      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
-//        case Array(a, b) if a != b => b
-//      }.toArray
+      //      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
+      //        case Array(a, b) if a != b => b
+      //      }.toArray
 
       // remove consecutive duplicates
       val vertexIDs = ids(0) +: ids.flatMap(_.split("-")).sliding(2).collect {
@@ -120,18 +115,18 @@ object MapMatcher {
       }.toArray
 
 
-//      var roadIDs = Array(vertexIDs(0))
+      //      var roadIDs = Array(vertexIDs(0))
       try {
-//        for (i <- 0 to vertexIDs.length - 2) {
-//          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).toArray.drop(1))
-//        }
-//        var res = new Array[(String, Int)](0)
-//        for (e <- roadIDs) {
-//          if (vertexIDs.contains(e)) res = res :+ (e, 1)
-//          else res = res :+ (e, 0)
-//        }
+        //        for (i <- 0 to vertexIDs.length - 2) {
+        //          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).toArray.drop(1))
+        //        }
+        //        var res = new Array[(String, Int)](0)
+        //        for (e <- roadIDs) {
+        //          if (vertexIDs.contains(e)) res = res :+ (e, 1)
+        //          else res = res :+ (e, 0)
+        //        }
 
-        val filledVertexIDs = vertexIDs.sliding(2).toArray.map{
+        val filledVertexIDs = vertexIDs.sliding(2).toArray.map {
           case Array(oVertex, dVertex) =>
             if (g.hasEdge(oVertex, dVertex)) Array((oVertex, 1), (dVertex, 1))
             else g.getShortestPath(oVertex, dVertex).toArray.map(x => (x, 0))

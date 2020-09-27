@@ -1,6 +1,6 @@
-package preprocessing
+package main.scala.mapmatching
 
-import main.scala.mapmatching.RStarTree.{Node, RTree, queryWithTable}
+import main.scala.RTree.{Node, RTree}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -173,7 +173,7 @@ object preprocessingTest extends App {
   val table = res._1
   val entries = rtree.leafEntries
   val queryRange = Rectangle(Point(-8.625, 41.145), Point(-8.615, 41.155))
-  val retrieved = queryWithTable(table.map { case (key, value) => (key, value.mbr) }, entries, capacity, queryRange)
+  val retrieved = RTree.queryWithTable(table.map { case (key, value) => (key, value.mbr) }, entries, capacity, queryRange)
   //printRetrieved(retrieved)
   for (r <- retrieved) println(r.id)
   println(retrieved.length + " trajectories retrieved in the range " + queryRange.x_min, queryRange.y_min, queryRange.x_max, queryRange.y_max)

@@ -3,7 +3,7 @@ package main.scala.STRPartitioner
 import org.apache.spark.Partitioner
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import main.scala.geometry._
+import main.scala.geometry.{Rectangle, Trajectory}
 
 import scala.math.{ceil, sqrt}
 

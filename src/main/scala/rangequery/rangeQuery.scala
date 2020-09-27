@@ -2,8 +2,8 @@ package main.scala.rangequery
 
 import org.apache.spark.Partitioner
 
-import main.scala.RStarTree._
-import main.scala.geometry._
+import main.scala.RTree.{RTree, Node}
+import main.scala.geometry.{Shape, Point, Rectangle}
 import System.nanoTime
 
 object rangeQuery {
@@ -28,11 +28,11 @@ object rangeQuery {
     RTree.queryWithTable(rtreeTable.map { case (key, value) => (key, value.mbr) }, entries, rtree.M, queryRange).distinct
   }
 
-  def refinement(box: Shape, range:Rectangle):Boolean = {
-    for( p <- box.attr("points")) {
+  def refinement(box: Shape, range: Rectangle): Boolean = {
+    for (p <- box.attr("points")) {
       val long = p.split(",")(0).toDouble
       val lat = p.split(",")(1).toDouble
-      if(Point(long, lat).inside(range)) return true
+      if (Point(long, lat).inside(range)) return true
     }
     false
   }
