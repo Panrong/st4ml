@@ -15,16 +15,22 @@ Header: `taxiID	tripID GPSPoints VertexID Candidates PointRoadPair`
  -  PointRoadPair: information aggregated from GPSPoints and VetexID. The format is `(lon,lat,edge)`
  
  ## Run map matching on single machine
+ in IDEA:
+ 
  Input arguments
- `"path_to_raw_traj_file.csv" "path_to_road_graph_.csv" "directory_to_save_results" "local" num_of_total_traj batch_size`
- 
- The total trajectories will be split by batch_size and saved seperately to overcome out of memory.
- 
+ `"path_to_raw_traj_file.csv" "path_to_road_graph_.csv" "directory_to_save_results" "local" num_of_total_traj`
+  
  Example:
  
- `"path\to\train_short.csv" "path\to\porto.csv" "path\to\spark-map-matching\out\res" "local" 2000 100`
+ `"path\to\train_short.csv" "path\to\porto.csv" "path\to\spark-map-matching\out\res" "local" 2000`
  
  The object to run: `RunMapMatching`
+ 
+ Otherwise: build to `.jar` and run with `spark-submit`
+  ## Run map matching on aws (distributed)
+  Example script:
+  
+  `master:/home/spark/start.sh`
  
  ##
  
