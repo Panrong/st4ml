@@ -51,6 +51,7 @@ object runRangeQuery extends App {
       Iterator((index, rangeQuery.genRTree(iter.toArray, capacity)))
     })
     RTreeRDD.cache
+    RTreeRDD.foreach(x => println(x))
     println("... RTree generation time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
 

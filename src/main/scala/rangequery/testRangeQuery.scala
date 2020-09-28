@@ -28,8 +28,9 @@ object testRangeQuery extends App {
     val roadVertexRDD = sc.parallelize(roadVertices)
      */
     val gridNumOverLat = rGrid.gridNumOverLat
-    //println(rg.gridNum)
+    println(rGrid.gridNum)
     //println(rg.gridNumOverLon)
+
     //println(rg.gridNumOverLat)
     val gridVertexMap = rGrid.grid2Vertex.map { case (k, v) => (k.x * gridNumOverLat + k.y, v.map(p => Point(p.point.lon, p.point.lat, ID = p.id.toLong))) } // k: grid index, v: Array[Point]
     var gridVertexArray = new Array[(Int, Array[Point])](0)
