@@ -1,4 +1,4 @@
-import main.scala.graph.{RoadGraph, RoadGrid}
+import main.scala.graph.RoadGrid
 import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.rangequery._
@@ -28,7 +28,7 @@ object testRangeQuery extends App {
     val roadVertexRDD = sc.parallelize(roadVertices)
      */
     val gridNumOverLat = rGrid.gridNumOverLat
-    println(rGrid.gridNum)
+    //println(rGrid.gridNum)
     //println(rg.gridNumOverLon)
 
     //println(rg.gridNumOverLat)
@@ -38,30 +38,11 @@ object testRangeQuery extends App {
       gridVertexArray = gridVertexArray :+ (k, v)
     }
     val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid index, v: Array[Point]
-    /** to see the contents of each partition */
-    /*
-  val pointsWithIndex = roadVertexRDD.mapPartitionsWithIndex {
-    (index, partitionIterator) => {
-      val partitionsMap = scala.collection.mutable.Map[Int, List[Array[Point]]]()
-      var partitionList = List[Array[Point]]()
-      while (partitionIterator.hasNext) {
-        //println(partitionIterator.next())
-        partitionList = partitionIterator.next()._2 :: partitionList
-      }
-      partitionsMap(index) = partitionList
-      partitionsMap.iterator
-    }
-  }
-  val r = pointsWithIndex.collect
-  for(i <- r){
-    println(i._1)
-    for(p <- i._2)
-      println(p.deep)
-  }
-    */
+
     /** range query on road vertices */
     val gridBoundary = rGrid.grids.map { case (k, v) => (k.x * gridNumOverLat + k.y, Rectangle(Point(v.bottomLeftLon, v.bottomLeftLat), Point(v.upperRightLon, v.upperRightLat), ID = (k.x * gridNumOverLat + k.y).toLong)) }
     val randRanges = genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), queryTestNum.toInt)
+    println(roadVertexRDD.count)
     val rangeRDD = sc.parallelize(randRanges)
     val queriedGridRDD = rangeRDD.map(x => {
       var res = new Array[Int](0)
