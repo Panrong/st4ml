@@ -34,11 +34,10 @@ object runODQuery extends App {
     //    println(strictQuery(queryRDD, groupedODRDD).deep)
     //    println(thresholdQuery(queryRDD, groupedODRDD, 200, rg).deep)
     /** test on all vertex pairs */
-    val vertices = rg.vertexes.map(x => x.id).take(100)
+    val vertices = rg.vertexes.map(x => x.id).take(queryTestNum.toInt)
     val vertexRDD = sc.parallelize(vertices, numPartitions)
     val pairVertexRDD = vertexRDD.cartesian(vertexRDD).map(x => s"${x._1}->${x._2}")
     println(pairVertexRDD.take(5).deep)
     strictQuery(pairVertexRDD, groupedODRDD).foreach(x => println(x._1, x._2.length))
   }
-
 }
