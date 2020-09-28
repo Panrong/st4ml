@@ -20,8 +20,7 @@ object testRangeQuery extends App {
     sc.setLogLevel("ERROR")
 
     /** generate road vertex RDD */
-    val rGrid = RoadGrid(roadGraphFile, 2)
-    val rg = RoadGraph(rGrid.edges)
+    val rGrid = RoadGrid(roadGraphFile)
     /*
     var roadVertices = new Array[Point](0)
     for(p <- rg.id2vertex.values) roadVertices = roadVertices :+ Point(p.lon, p.lat, ID = p.id.toLong)
@@ -61,8 +60,8 @@ object testRangeQuery extends App {
     /** range query on road vertices */
     val gridBoundary = rGrid.grids.map { case (k, v) => (k.x * gridNumOverLat + k.y, Rectangle(Point(v.bottomLeftLon, v.bottomLeftLat), Point(v.upperRightLon, v.upperRightLat), ID = (k.x * gridNumOverLat + k.y).toLong)) }
     val randRanges = genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), queryTestNum.toInt)
-    val randRangesRDD = sc.parallelize(randRanges)
-    val queriedGridRDD = randRangesRDD.map(x => {
+    val rangeRDD = sc.parallelize(randRanges)
+    val queriedGridRDD = rangeRDD.map(x => {
       var res = new Array[Int](0)
       for (g <- gridBoundary.keys) {
         if (gridBoundary(g).intersect(x)) res = res :+ g
