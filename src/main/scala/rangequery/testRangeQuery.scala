@@ -12,6 +12,7 @@ object testRangeQuery extends App {
     val numPartitions = args(2).toInt
     val queryTestNum = args(3)
     val trajectoryFile = args(4) //map-matched
+    val gridSize = args(5).toDouble
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -20,7 +21,7 @@ object testRangeQuery extends App {
     sc.setLogLevel("ERROR")
 
     /** generate road vertex RDD */
-    val rGrid = RoadGrid(roadGraphFile)
+    val rGrid = RoadGrid(roadGraphFile, gridSize)
     /*
     var roadVertices = new Array[Point](0)
     for(p <- rg.id2vertex.values) roadVertices = roadVertices :+ Point(p.lon, p.lat, ID = p.id.toLong)

@@ -15,7 +15,7 @@ object runRangeQuery extends App {
     /** repartition */
     var t = nanoTime
     val filename = args(1)
-    val rg = RoadGrid(roadGraphFile, 2)
+    val rg = RoadGrid(roadGraphFile, args(8).toDouble)
     val trajRDD = preprocessing.readMMTrajFile(filename).map(x => {
       var points = new Array[Point](0)
       for (p <- x.points) {
