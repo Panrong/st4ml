@@ -33,33 +33,19 @@ object MapMatcher {
 
 
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
-    //    println("--------------eProbs:")
-    //    println("(" + eProbs.size + "," + eProbs(0).length + ")")
-    var states = Array.ofDim[List[Int]](eProbs.length, eProbs(0).length) // records the route getting to a candidate
-    var probs = Array.ofDim[Double](eProbs.length, eProbs(0).length) // records the probability getting to a candidate
+    val states = Array.ofDim[List[Int]](eProbs.length, eProbs(0).length) // records the route getting to a candidate
+    val probs = Array.ofDim[Double](eProbs.length, eProbs(0).length) // records the probability getting to a candidate
     eProbs(0).indices.foreach(i => states(0)(i) = List(i)) // set initial states
     probs(0) = eProbs(0)
-    //    println(states.size)
-    //    println(probs.size)
     (1 until eProbs.length).foreach { t => //timestamp
       eProbs(t).indices.foreach { c => //candidate
-        //        println(t, c)
         var candiProbs = new Array[Double](0) // to find the best way to get to this candidate
         eProbs(0).indices.foreach { last =>
           val newProb = probs(t - 1)(last) * tProbs(t - 1)(last)(c) * eProbs(t)(c)
-          //          if(newProb.isNaN) println(probs(t - 1)(last) , tProbs(t - 1)(last)(c) , eProbs(t)(c))
           candiProbs = candiProbs :+ newProb
         }
         val index = max(0, candiProbs.indexOf(candiProbs.max))
-        //        println("000")
-        //        println(candiProbs.deep, index)
         probs(t)(c) = candiProbs(index)
-        //        println("!!!")
-        //        println(eProbs(0).length)
-        //        println(candiProbs.size)
-        //        println(probs.size)
-        //        println(index)
-        //        println(states(t-1)(index))
         states(t)(c) = c :: states(t - 1)(index)
       }
     }
