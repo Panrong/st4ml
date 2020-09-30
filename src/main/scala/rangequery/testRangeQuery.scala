@@ -28,7 +28,7 @@ object testRangeQuery extends App {
     val roadVertexRDD = sc.parallelize(roadVertices)
      */
     val gridNumOverLat = rGrid.gridNumOverLat
-    println("total grid: "+rGrid.gridNum)
+    //println("total grid: "+rGrid.gridNum)
     //println(rg.gridNumOverLon)
 
     //println(rg.gridNumOverLat)
@@ -51,9 +51,9 @@ object testRangeQuery extends App {
       for(p <- x.points) pairs = pairs :+ (p, x.tripID)
       pairs
     }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectoryID
-    mmTrajectoryRDD.take(1).foreach(x=>println(x._1, x._2.deep))
+    //mmTrajectoryRDD.take(1).foreach(x=>println(x._1, x._2.deep))
     val queries = resRDD.collect
-    println(queries(0)._1, queries(0)._2.deep)
+    //println(queries(0)._1, queries(0)._2.deep)
 
     for(q <- queries){
       val queryRDD = sc.parallelize(q._2).map(x => (x, 1))
