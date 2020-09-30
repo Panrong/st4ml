@@ -7,16 +7,23 @@ import System.nanoTime
 
 object runRangeQuery extends App {
   override def main(args: Array[String]): Unit = {
+    /** input arguments */
+    val master = args(0)
+    val mmTrajFile = args(1)
+    val numRepartition = args(2).toInt
+    val rTreeCapacity = args(3).toInt
+    val numRandomQueries = args(4).toInt
+    val roadGraphFile = args(5)
+    val gridSize = args(6).toDouble
+
     val conf = new SparkConf()
-    conf.setAppName("RangeQuery_v1").setMaster(args(0))
+    conf.setAppName("RangeQuery_v1").setMaster(master)
     val sc = new SparkContext(conf)
-    val roadGraphFile = args(7)
     sc.setLogLevel("ERROR")
     /** repartition */
     var t = nanoTime
-    val filename = args(1)
-    val rg = RoadGrid(roadGraphFile, args(8).toDouble)
-    val trajRDD = preprocessing.readMMTrajFile(filename).map(x => {
+    val rg = RoadGrid(roadGraphFile, gridSize)
+    val trajRDD = preprocessing.readMMTrajFile(mmTrajFile).map(x => {
       var points = new Array[Point](0)
       for (p <- x.points) {
         val v = rg.id2vertex(p)
@@ -39,16 +46,15 @@ object runRangeQuery extends App {
         }
       }
       Trajectory(tripID, taxiID, x.startTime, points)
-    }).repartition(args(2).toInt)
+    }).repartition(numRepartition)
     println(trajRDD.count)
     println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
-    val capacity = args(3).toInt
     val mbrRDD = trajRDD.map(traj => traj.mbr.assignID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
     for (i <- mbrRDD.take(2)) println(i)
     /** generate RTree for each partition */
     val RTreeRDD = mbrRDD.mapPartitionsWithIndex((index, iter) => {
-      Iterator((index, rangeQuery.genRTree(iter.toArray, capacity)))
+      Iterator((index, rangeQuery.genRTree(iter.toArray, rTreeCapacity)))
     })
     RTreeRDD.cache
     RTreeRDD.foreach(x => println(x))
@@ -57,7 +63,7 @@ object runRangeQuery extends App {
 
     /** query with rtree */
 
-    for (queryRange <- genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), args(4).toInt)) {
+    for (queryRange <- genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), numRandomQueries)) {
       val queriedTrajRDD = RTreeRDD.flatMap(x => {
         rangeQuery.query(x._2._1, x._2._2, queryRange)
       })

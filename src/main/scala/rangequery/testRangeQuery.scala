@@ -50,7 +50,7 @@ object testRangeQuery extends App {
       var pairs = new Array[( String, String)](0)
       for(p <- x.points) pairs = pairs :+ (p, x.tripID)
       pairs
-    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectoryID
+    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)).cache() // key: vertexID, value:mmTrajectoryID
     //mmTrajectoryRDD.take(1).foreach(x=>println(x._1, x._2.deep))
     val queries = resRDD.collect
     //println(queries(0)._1, queries(0)._2.deep)
