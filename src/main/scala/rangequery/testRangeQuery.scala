@@ -1,4 +1,4 @@
-import main.scala.graph.RoadGrid
+import main.scala.graph.{RoadGrid, RoadVertex}
 import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.rangequery._
@@ -28,55 +28,36 @@ object testRangeQuery extends App {
     val roadVertexRDD = sc.parallelize(roadVertices)
      */
     val gridNumOverLat = rGrid.gridNumOverLat
-    //println(rGrid.gridNum)
+    println("total grid: "+rGrid.gridNum)
     //println(rg.gridNumOverLon)
 
     //println(rg.gridNumOverLat)
-    val gridVertexMap = rGrid.grid2Vertex.map { case (k, v) => (k.x * gridNumOverLat + k.y, v.map(p => Point(p.point.lon, p.point.lat, ID = p.id.toLong))) } // k: grid index, v: Array[Point]
-    var gridVertexArray = new Array[(Int, Array[Point])](0)
-    for ((k, v) <- gridVertexMap) {
-      gridVertexArray = gridVertexArray :+ (k, v)
-    }
-    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid index, v: Array[Point]
-
+    val gridVertexArray = rGrid.grid2Vertex.map{case(k,v) => (k.x * gridNumOverLat + k.y, v.map(x=>x.id))}.toArray // Array[grid index in single integer, Array[roadVertex]]
+    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid index, v: Array[roadVertex]
+    //println("roadVertexRDD sample: ")
+    //roadVertexRDD.take(2).foreach(x=>println(x._1, x._2.deep))
     /** range query on road vertices */
-    val gridBoundary = rGrid.grids.map { case (k, v) => (k.x * gridNumOverLat + k.y, Rectangle(Point(v.bottomLeftLon, v.bottomLeftLat), Point(v.upperRightLon, v.upperRightLat), ID = (k.x * gridNumOverLat + k.y).toLong)) }
+    val gridBoundary = rGrid.grids.map { case (k, v) => (k.x * gridNumOverLat + k.y, Rectangle(Point(v.bottomLeftLon, v.bottomLeftLat), Point(v.upperRightLon, v.upperRightLat)))}.toArray
+    val gridRDD = sc.parallelize(gridBoundary).partitionBy(keyPartitioner(numPartitions))
     val randRanges = genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), queryTestNum.toInt)
-    println(roadVertexRDD.count)
+    //println(roadVertexRDD.count)
     val rangeRDD = sc.parallelize(randRanges)
-    val queriedGridRDD = rangeRDD.map(x => {
-      var res = new Array[Int](0)
-      for (g <- gridBoundary.keys) {
-        if (gridBoundary(g).intersect(x)) res = res :+ g
-      }
-      (x, res)
-    }).flatMap(x => {
-      var res = new Array[(Int, Rectangle)](0)
-      for (i <- x._2) res = res :+ (i, x._1)
-      res
-    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: gridID, value: Array[queryRanges]
-    val resRDD = queriedGridRDD.join(roadVertexRDD).flatMap(x => {
-      var res = new Array[(Rectangle, String)](0)
-      val queries = x._2._1
-      val vertices = x._2._2
-      for (q <- queries) {
-        for (v <- vertices) {
-          if (v.inside(q)) res = res :+ (q, v.ID.toString)
-        }
-      }
-      res
-    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) //key: queryRange, value: vertex IDs
+    val queriedGridRDD = rangeRDD.cartesian(gridRDD).filter(x=> x._1.intersect(x._2._2)).map(x=> (x._2._1, x._1)).groupByKey().flatMapValues(_.toList) // key: gridID, value: queryRanges
 
+    val resRDD = queriedGridRDD.join(roadVertexRDD).map(x=>x._2) //(range, Array[vertex])
     /** map road vertex to trajectory */
     val mmTrajectoryRDD = preprocessing.readMMTrajFile(trajectoryFile).flatMap(x => {
-      var pairs = new Array[( String, mmTrajectory)](0)
-      for(p <- x.points) pairs = pairs :+ (p, x.asInstanceOf[mmTrajectory])
+      var pairs = new Array[( String, String)](0)
+      for(p <- x.points) pairs = pairs :+ (p, x.tripID)
       pairs
-    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectory
+    }).groupByKey(numPartitions).map(x => (x._1, x._2.toArray)) // key: vertexID, value:mmTrajectoryID
+    mmTrajectoryRDD.take(1).foreach(x=>println(x._1, x._2.deep))
     val queries = resRDD.collect
+    println(queries(0)._1, queries(0)._2.deep)
+
     for(q <- queries){
-      val queryRDD = sc.parallelize(q._2).map(x => (x.toString, 1))
-      val finalRDD = queryRDD.join(mmTrajectoryRDD).flatMap(x=> x._2._2).map(x=>(x.tripID,x.taxiID)).distinct
+      val queryRDD = sc.parallelize(q._2).map(x => (x, 1))
+      val finalRDD = queryRDD.join(mmTrajectoryRDD).flatMap(x=> x._2._2)
       println("range: "+q._1+" trajectories: "+finalRDD.count)
     }
     sc.stop()
