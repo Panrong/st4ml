@@ -132,6 +132,52 @@ object MapMatcher {
     }
   }
 
+  def connectRoadsAndCalSpeed(idsWPoint: Array[(String, Point)], g: RoadGraph,rGrid: RoadGrid): Array[(String, Double, Int)] = {
+    // return edgeID, speed and indicator(1 or 0 for matched or inferred)\
+
+    // check consecutive points, if belong to the same road, use average value to replace
+    val compressedIdsWPoints = idsWPoint.toList.foldLeft(List[(String, Point, Int)]()) { (x, y) =>
+      if (x.isEmpty || x.last._1 != y._1) x ::: List((y._1, y._2, 1))
+      else {
+        val l = x.last
+        val toAdd = List((l._1, (l._2 * l._3 + y._2) * (1 / l._3 + 1), l._3 + 1))
+        x.dropRight(1) ::: toAdd
+      }
+    }.map(x => (x._1, x._2)).toArray
+    if (compressedIdsWPoints(0)._1 == "-1") Array(("-1", -1, -1))
+    else {
+      val connectedSubEdgeArray = compressedIdsWPoints.sliding(2).toArray.flatMap(x => { // x: Array(e1,e2)
+        val e1 = x(0)
+        val e2 = x(1)
+        if (e1._1.split("-")(1) == e2._1.split("-")(0)) Array((e1._1, e1._2, 1, -1: Double))
+        else {
+          val (shortestPath, len) = g.getShortestPathAndLength(e1._1, e2._1)
+          val s = len / (e2._2.t - e1._2.t)
+          val res = (e1._1, e1._2, 1, -1:Double) +: shortestPath.drop(1).dropRight(1).toArray.map(x => {
+            val p = rGrid.id2vertex(x).point
+            val t = (e2._2.t - e1._2.t) * (e1._2.geoDistance(p) / len)
+            (x, p.assignTimeStamp(t.toLong), 0, s)
+          })
+          res
+        }
+      }) :+ (compressedIdsWPoints.last._1, compressedIdsWPoints.last._2, 1, -1: Double) //(roadID, Point, indicator, speed) if indicator =1, speed = -1, else Point = 0
+      connectedSubEdgeArray.sliding(3).toArray.map(x => {
+        val e1 = x(0)
+        val e2 = x(1)
+        val e3 = x(2)
+        if (e2._4 != -1) (e2._1, e2._4, e2._3)
+        else {
+          val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
+          val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
+          val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
+            s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
+            g.id2edge(e2._1).length
+          (e2._1, s, e2._3)
+        }
+      })
+    }
+  }
+
   def hmmBreak(pairs: LinkedHashMap[Point, Array[(String, Double, Point)]],
                roadDistArray: Array[Array[Array[Double]]],
                g: RoadGrid, beta: Double): (Array[LinkedHashMap[Point,
@@ -238,7 +284,7 @@ object MapMatcher {
     }
   }
 
-  def apply(p: LinkedHashMap[Point, Array[(String, Double, Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[String]) = {
+  def apply(p: LinkedHashMap[Point, Array[(String, Double, Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[(String, Point)]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
@@ -253,9 +299,9 @@ object MapMatcher {
     //val cleanedPairs = Array(p)
     //val newRoadDistMatrix = Array(roadDistArray)
 
-    if (cleanedPairs.size < 1) (p.keys.toArray, Array("-1"))
+    if (cleanedPairs.length < 1) (p.keys.toArray, Array(("-1", Point(0, 0))))
     else {
-      var bestRoads = new Array[String](0)
+      var bestRoads = new Array[(String, Point)](0)
       for ((pairs, id) <- cleanedPairs.zipWithIndex) {
         val newRoadDistArray = newRoadDistMatrix(id)
         var eProbs = new Array[Array[Double]](0)
@@ -290,12 +336,12 @@ object MapMatcher {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
-        var bestRoadsP = new Array[String](0)
-        for (j <- 0 to ids.length - 1) {
+        var bestRoadsP = new Array[(String, Point)](0)
+        for (j <- ids.indices) {
           val candidates = pairs.values.toArray
-          bestRoadsP = bestRoadsP :+ candidates(j)(ids(j))._1
+          bestRoadsP = bestRoadsP :+ (candidates(j)(ids(j))._1, candidates(j)(ids(j))._3)
         }
-        bestRoads = concat(bestRoads, bestRoadsP)
+        bestRoads = concat(bestRoads, bestRoadsP) //(roadID, projectionPoint(with timestamp))
       }
       var cleanedPoints = new Array[Point](0)
       for (p <- cleanedPairs) cleanedPoints = concat(cleanedPoints, p.keys.toArray)

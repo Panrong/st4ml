@@ -2,23 +2,39 @@ package main.scala.geometry
 
 import Distances.greatCircleDistance
 
-case class Point(lon: Double, lat: Double, t: Long = 0, ID:Long = 0) extends Shape with Serializable {
+case class Point(lon: Double, lat: Double, timestamp: Long = 0, ID: Long = 0) extends Shape with Serializable {
   val x: Double = lon
   val y: Double = lat
-  override var id:Long = ID
+  var t: Long = timestamp
+  override var id: Long = ID
 
-  def +(other: Point): Point = Point(this.lon + other.lon, this.lat + other.lat)
-  def -(other: Point): Point = Point(this.lon - other.lon, this.lat - other.lat)
+  def +(other: Point): Point = Point(this.lon + other.lon, this.lat + other.lat, this.t + other.t)
+
+  def -(other: Point): Point = Point(this.lon - other.lon, this.lat - other.lat, this.t - other.t)
+
   def dot(other: Point): Double = this.lon * other.lon + this.lat * other.lat
-  def *(scalar: Double): Point = Point(this.lon * scalar, this.lat * scalar)
+
+  def *(scalar: Double): Point = Point(this.lon * scalar, this.lat * scalar, this.t * scalar.toLong)
+
   def normSquare: Double = this.lon * this.lon + this.lat * this.lat
 
   def geoDistance(other: Point): Double = greatCircleDistance(this, other)
 
-  def assignID(i:Long):Point = {
+  def calSpeed(other: Point): Double = {
+    if (other.t == this.t) 0
+    else this.geoDistance(other) / (other.t - this.t)
+  }
+
+  def assignID(i: Long): Point = {
     id = i
     this
   }
+
+  def assignTimeStamp(timestamp: Long): Point = {
+    t = timestamp
+    this
+  }
+
   override def intersect(rectangle: Rectangle): Boolean = {
     inside(rectangle)
   }

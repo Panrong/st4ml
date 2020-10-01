@@ -11,7 +11,7 @@ object runRangeQuery extends App {
     /** input arguments */
     val master = args(0)
     val mmTrajFile = args(1)
-    val numRepartition = args(2).toInt
+    val numPartition = args(2).toInt
     val rTreeCapacity = args(3).toInt
     val query = args(4)
     val roadGraphFile = args(5)
@@ -47,7 +47,7 @@ object runRangeQuery extends App {
         }
       }
       Trajectory(tripID, taxiID, x.startTime, points)
-    }).repartition(numRepartition)
+    }).repartition(numPartition)
     println(trajRDD.count)
     println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime

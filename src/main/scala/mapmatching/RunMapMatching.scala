@@ -46,11 +46,11 @@ object RunMapMatching extends App {
     val totalTraj = args(4).toInt
 
     val mapmatchedRDD = sc.parallelize(trajRDD.take(totalTraj)).map(x => x._1)
-      .map(traj => {
+      .map(f = traj => {
         try {
           val candidates = MapMatcher.getCandidates(traj, rGrid)
           for (i <- candidates.keys) {
-            if (candidates(i).size < 5) println("!!!\n" + traj.tripID)
+            if (candidates(i).length < 5) println("!!!\n" + traj.tripID)
           }
           if (timeCount) {
             println("--- trip ID: " + traj.tripID)
@@ -69,10 +69,11 @@ object RunMapMatching extends App {
             t = nanoTime
           }
           val cleanedPoints = res._1
-          val ids = res._2
+          val idsWPoints = res._2
+          val ids = idsWPoints.map(x => x._1)
           var pointRoadPair = ""
           if (ids(0) != "-1") {
-            for (i <- 0 to cleanedPoints.length - 1) {
+            for (i <- cleanedPoints.indices) {
               pointRoadPair = pointRoadPair + (cleanedPoints(i).lon, cleanedPoints(i).lat, ids(i))
             }
           }
@@ -84,6 +85,8 @@ object RunMapMatching extends App {
           val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(lx, ly), Point(hx, hy))
           val rg = RoadGraph(connRoadEdges)
           val finalRes = MapMatcher.connectRoads(ids, rg)
+          val a = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
+          println(a.deep)
           if (timeCount) {
             println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
             println("==== Map Matching Done")
@@ -100,7 +103,7 @@ object RunMapMatching extends App {
             pointString = pointString + "(" + i.lon + " " + i.lat + " : " + o + ")"
           }
           var candidateString = ""
-          for (i <- 0 to candidates.size - 1) {
+          for (i <- 0 until candidates.size) {
             val v = candidates.values.toArray
             val c = v(i)
             val r = c.map(x => x._1)
@@ -122,7 +125,7 @@ object RunMapMatching extends App {
               pointString = pointString + "(" + i.lon + " " + i.lat + " : " + o + ")"
             }
             var candidateString = ""
-            for (i <- 0 to candidates.size - 1) {
+            for (i <- 0 until candidates.size) {
               val v = candidates.values.toArray
               val c = v(i)
               val r = c.map(x => x._1)
@@ -134,7 +137,6 @@ object RunMapMatching extends App {
           }
         }
       })
-    //for (i <- mapmatchedRDD.collect) println(i)
     val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
 
     val spark = SparkSession.builder().getOrCreate()
@@ -143,7 +145,7 @@ object RunMapMatching extends App {
       case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
     }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
 
-    df.write.option("header", true).option("encoding", "UTF-8").csv(args(2) + "/tmp")
+    df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(2) + "/tmp")
 
     println("Total time: " + (nanoTime() - tStart) / 1e9d)
   }

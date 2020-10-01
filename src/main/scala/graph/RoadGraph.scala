@@ -6,7 +6,7 @@ import org.scalacheck.Prop.False
 class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
   // fields
   val g: RouteGraph[String] = buildGraph()
-  private val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
+  val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
 
   /**
     RouteGraph for calculating dijkstra and shortest path
