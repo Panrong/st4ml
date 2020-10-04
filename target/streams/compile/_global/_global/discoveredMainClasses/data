@@ -1,1 +1,1 @@
-["RStarTreeTest","RunMapMatching","STRPartition.STRTest","main.scala.graph.DijkstraPriorityMapTest","main.scala.graph.RoadGraphTest","preprocessing.preprocessingTest"]
+["RunMapMatching","STRPartition.STRTest","main.scala.geometry.DijkstraPriorityMapTest","main.scala.geometry.LineStringTest","main.scala.graph.RoadGridTest","main.scala.graph.RoadGridTestWithTraj","main.scala.mapmatching.preprocessingTest","runRangeQuery","testRangeQuery"]

@@ -85,8 +85,11 @@ object RunMapMatching extends App {
           val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(lx, ly), Point(hx, hy))
           val rg = RoadGraph(connRoadEdges)
           val finalRes = MapMatcher.connectRoads(ids, rg)
-          val a = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
-          println(a.deep)
+          val roadSpeed = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
+          //println(roadSpeed.deep)
+          //          catch{
+          //            case _: Throwable => println("speed fault")
+          //          }
           if (timeCount) {
             println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
             println("==== Map Matching Done")
@@ -111,7 +114,9 @@ object RunMapMatching extends App {
             for (rr <- r) candidateString = candidateString + rr + " "
             candidateString = candidateString + ");"
           }
-          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
+          val roadSpeedString = roadSpeed.map(x=>(x._1,(x._2*3.6)formatted("%.2f"),x._3)).mkString(" ")
+
+          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
         }
         catch {
           case _: Throwable => {
@@ -133,7 +138,7 @@ object RunMapMatching extends App {
               for (rr <- r) candidateString = candidateString + rr + " "
               candidateString = candidateString + ");"
             }
-            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
+            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
           }
         }
       })
@@ -142,8 +147,8 @@ object RunMapMatching extends App {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val df = persistMapMatchedRDD.map({
-      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
-    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
+      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadSpeed")
 
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(2) + "/tmp")
 

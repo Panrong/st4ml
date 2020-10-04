@@ -132,7 +132,7 @@ object MapMatcher {
     }
   }
 
-  def connectRoadsAndCalSpeed(idsWPoint: Array[(String, Point)], g: RoadGraph,rGrid: RoadGrid): Array[(String, Double, Int)] = {
+  def connectRoadsAndCalSpeed(idsWPoint: Array[(String, Point)], g: RoadGraph, rGrid: RoadGrid): Array[(String, Double, Int)] = {
     // return edgeID, speed and indicator(1 or 0 for matched or inferred)\
 
     // check consecutive points, if belong to the same road, use average value to replace
@@ -144,37 +144,50 @@ object MapMatcher {
         x.dropRight(1) ::: toAdd
       }
     }.map(x => (x._1, x._2)).toArray
-    if (compressedIdsWPoints(0)._1 == "-1") Array(("-1", -1, -1))
+    if (compressedIdsWPoints(0)._1 == "-1" || compressedIdsWPoints.length < 2) Array(("-1", -1, -1))
     else {
       val connectedSubEdgeArray = compressedIdsWPoints.sliding(2).toArray.flatMap(x => { // x: Array(e1,e2)
         val e1 = x(0)
         val e2 = x(1)
         if (e1._1.split("-")(1) == e2._1.split("-")(0)) Array((e1._1, e1._2, 1, -1: Double))
         else {
-          val (shortestPath, len) = g.getShortestPathAndLength(e1._1, e2._1)
+          val (shortestPathVertex, len) = g.getShortestPathAndLength(e1._1.split("-")(1), e2._1.split("-")(0))
+          //          println(e1._1, e2._1)
+          //          println(shortestPathVertex)
+          val shortestPath = shortestPathVertex.sliding(2).toArray.map(x => x(0) + "-" + x(1))
+          //          println(shortestPath.deep)
           val s = len / (e2._2.t - e1._2.t)
-          val res = (e1._1, e1._2, 1, -1:Double) +: shortestPath.drop(1).dropRight(1).toArray.map(x => {
-            val p = rGrid.id2vertex(x).point
+          val res = (e1._1, e1._2, 1, -1: Double) +: shortestPath.map(x => {
+            val p = rGrid.id2vertex(x.split("-")(0)).point
             val t = (e2._2.t - e1._2.t) * (e1._2.geoDistance(p) / len)
             (x, p.assignTimeStamp(t.toLong), 0, s)
           })
+          //          println(res.deep)
           res
         }
       }) :+ (compressedIdsWPoints.last._1, compressedIdsWPoints.last._2, 1, -1: Double) //(roadID, Point, indicator, speed) if indicator =1, speed = -1, else Point = 0
-      connectedSubEdgeArray.sliding(3).toArray.map(x => {
-        val e1 = x(0)
-        val e2 = x(1)
-        val e3 = x(2)
-        if (e2._4 != -1) (e2._1, e2._4, e2._3)
-        else {
-          val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
-          val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
-          val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
-            s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
-            g.id2edge(e2._1).length
-          (e2._1, s, e2._3)
-        }
-      })
+      if (connectedSubEdgeArray.length == 2) {
+        val e1 = connectedSubEdgeArray(0)
+        val e2 = connectedSubEdgeArray(1)
+        val s = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
+        Array((e1._1, s, e1._3), (e2._1, s, e2._3))
+      }
+      else {
+        connectedSubEdgeArray.sliding(3).toArray.map(x => {
+          val e1 = x(0)
+          val e2 = x(1)
+          val e3 = x(2)
+          if (e2._4 != -1) (e2._1, e2._4, e2._3)
+          else {
+            val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
+            val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
+            val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
+              s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
+              g.id2edge(e2._1).length
+            (e2._1, s, e2._3)
+          }
+        })
+      }
     }
   }
 
