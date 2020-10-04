@@ -58,7 +58,10 @@ object MapMatcher {
   def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): LinkedHashMap[Point, Array[(String, Double, Point)]] = {
     var candidates: LinkedHashMap[Point, Array[(String, Double, Point)]] = LinkedHashMap()
     trajectory.points.map(x => (x, rGird.getNearestEdge(x, num))).foreach(
-      x => candidates += (x._1 -> x._2)
+      x => candidates += (x._1 -> {
+        val t = x._1.t
+        x._2.map(x => (x._1, x._2, x._3.assignTimeStamp(t)))
+      })
     )
     candidates
   }
@@ -140,7 +143,12 @@ object MapMatcher {
       if (x.isEmpty || x.last._1 != y._1) x ::: List((y._1, y._2, 1))
       else {
         val l = x.last
-        val toAdd = List((l._1, (l._2 * l._3 + y._2) * (1 / l._3 + 1), l._3 + 1))
+        val toAdd = List((l._1, (l._2 * l._3 + y._2) * (1 / (l._3.toDouble + 1)), l._3 + 1))
+        //        println(x)
+        //        println(y)
+        //        println(toAdd)
+        //        println(l._2 * l._3 + y._2)
+        //        println(1 / (l._3.toDouble + 1))
         x.dropRight(1) ::: toAdd
       }
     }.map(x => (x._1, x._2)).toArray
@@ -158,7 +166,7 @@ object MapMatcher {
           //          println(shortestPath.deep)
           val s = len / (e2._2.t - e1._2.t)
           val res = (e1._1, e1._2, 1, -1: Double) +: shortestPath.map(x => {
-            val p = rGrid.id2vertex(x.split("-")(0)).point
+            val p = (rGrid.id2vertex(x.split("-")(0)).point + rGrid.id2vertex(x.split("-")(1)).point) * 0.5
             val t = (e2._2.t - e1._2.t) * (e1._2.geoDistance(p) / len)
             (x, p.assignTimeStamp(t.toLong), 0, s)
           })
@@ -173,20 +181,21 @@ object MapMatcher {
         Array((e1._1, s, e1._3), (e2._1, s, e2._3))
       }
       else {
-        connectedSubEdgeArray.sliding(3).toArray.map(x => {
-          val e1 = x(0)
-          val e2 = x(1)
-          val e3 = x(2)
-          if (e2._4 != -1) (e2._1, e2._4, e2._3)
-          else {
-            val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
-            val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
-            val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
-              s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
-              g.id2edge(e2._1).length
-            (e2._1, s, e2._3)
-          }
-        })
+        (connectedSubEdgeArray(0)._1, connectedSubEdgeArray(1)._2.geoDistance(connectedSubEdgeArray(0)._2) / (connectedSubEdgeArray(1)._2.t - connectedSubEdgeArray(0)._2.t), 1) +:
+          connectedSubEdgeArray.sliding(3).toArray.map(x => {
+            val e1 = x(0)
+            val e2 = x(1)
+            val e3 = x(2)
+            if (e2._4 != -1) (e2._1, e2._4, e2._3)
+            else {
+              val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
+              val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
+              val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
+                s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
+                g.id2edge(e2._1).length
+              (e2._1, s, e2._3)
+            }
+          })
       }
     }
   }
