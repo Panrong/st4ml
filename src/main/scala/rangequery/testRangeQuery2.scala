@@ -1,5 +1,3 @@
-package main.scala.rangequery
-
 import main.scala.graph.RoadGrid
 import main.scala.mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
