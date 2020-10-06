@@ -4,7 +4,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.mapmatching.preprocessing
 import main.scala.graph.{RoadGrid}
 import System.nanoTime
-import scala.io.Source
+import main.scala.mapmatching.preprocessing.readQueryFile
 
 object runRangeQuery extends App {
   override def main(args: Array[String]): Unit = {
@@ -18,7 +18,7 @@ object runRangeQuery extends App {
     val gridSize = args(6).toDouble
 
     val conf = new SparkConf()
-    conf.setAppName("RangeQuery_v1").setMaster(master)
+    conf.setAppName("RangeQueryRTree_v1").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     /** repartition */
@@ -70,7 +70,7 @@ object runRangeQuery extends App {
     catch {
       case ex: java.lang.NumberFormatException => {
         val queryFile = query
-        queries = realQueryFile(queryFile)
+        queries = readQueryFile(queryFile)
       }
     }
     for (queryRange <-queries) {
@@ -115,12 +115,5 @@ object runRangeQuery extends App {
     rectangles
   }
 
-  def realQueryFile(f: String): Array[Rectangle] = {
-    var queries = new Array[Rectangle](0)
-    for (line <- Source.fromFile(f).getLines) {
-      val r = line.split(" ")
-      queries = queries :+ Rectangle(Point(r(0).toDouble,r(1).toDouble), Point(r(2).toDouble, r(3).toDouble))
-    }
-    queries
-  }
+
 }

@@ -1,4 +1,4 @@
-import main.scala.graph.{RoadGrid, RoadVertex}
+import main.scala.graph.{RoadGrid}
 import main.scala.geometry._
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.rangequery._

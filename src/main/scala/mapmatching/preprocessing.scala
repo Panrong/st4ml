@@ -13,6 +13,7 @@ import main.scala.geometry.Distances.greatCircleDistance
 import org.apache.spark.sql.types._
 
 import Array.concat
+import scala.io.Source
 
 object preprocessing {
 
@@ -141,6 +142,39 @@ object preprocessing {
       mmTrajectory(tripID, taxiID, points = vertices)
     })
     resRDD
+  }
+  def readMMWithSpeed(filename: String): RDD[mmTrajectoryS] = {
+    val customSchema = StructType(Array(
+      StructField("taxiID", LongType, true),
+      StructField("tripID", LongType, true),
+      StructField("GPSPoints", StringType, true),
+      StructField("VertexID", StringType, true),
+      StructField("Candidates", StringType, true),
+      StructField("pointRoadPair", StringType, true),
+      StructField("RoadSpeed", StringType, true))
+    )
+    val spark = SparkSession.builder().getOrCreate()
+    val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
+    val trajRDD = df.rdd.filter(row => row(3)!="(-1:-1)" && row(3)!="-1") // remove invalid entries
+    val resRDD = trajRDD.map(row => {
+      val tripID = row(1).toString
+      val taxiID = row(0).toString
+      val vertexString = row(3).toString
+      var vertices = new Array[String](0)
+      val roadSpeed = row(6).toString.replaceAll("[()]", "").split(" ").map(x=>(x.split(",")(0), x.split(",")(1).toDouble)) // Array(roadID, speed)
+      val subTrajectories = roadSpeed.map(x=> subTrajectory(0,0,x._1, x._2))
+      mmTrajectoryS(tripID, taxiID, subTrajectories(0).startTime, subTrajectories)
+    })
+    resRDD
+  }
+
+  def readQueryFile(f: String): Array[Rectangle] = {
+    var queries = new Array[Rectangle](0)
+    for (line <- Source.fromFile(f).getLines) {
+      val r = line.split(" ")
+      queries = queries :+ Rectangle(Point(r(0).toDouble,r(1).toDouble), Point(r(2).toDouble, r(3).toDouble))
+    }
+    queries
   }
 }
 
