@@ -2,7 +2,7 @@ package main.scala.mapmatching
 
 import main.scala.graph.{RoadGraph, RoadGrid}
 import scala.math.{sqrt, pow, abs, Pi, E, max}
-import scala.collection.mutable.LinkedHashMap
+import scala.collection.mutable
 import main.scala.geometry.{Point, Trajectory}
 import main.scala.geometry.Distances.greatCircleDistance
 
@@ -55,8 +55,8 @@ object MapMatcher {
   }
 
 
-  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): LinkedHashMap[Point, Array[(String, Double, Point)]] = {
-    var candidates: LinkedHashMap[Point, Array[(String, Double, Point)]] = LinkedHashMap()
+  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = {
+    var candidates: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = mutable.LinkedHashMap()
     trajectory.points.map(x => (x, rGird.getNearestEdge(x, num))).foreach(
       x => candidates += (x._1 -> {
         val t = x._1.t
@@ -66,7 +66,7 @@ object MapMatcher {
     candidates
   }
 
-  def getRoadDistArray(candidates: LinkedHashMap[Point, Array[(String, Double, Point)]],
+  def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],
                        rGrid: RoadGrid): Array[Array[Array[Double]]] = {
     val roadArray = candidates.values.toArray
 
@@ -91,7 +91,7 @@ object MapMatcher {
   }
 
   def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
-    if (ids(0) == "-1") return Array(("-1", -1))
+    if (ids(0) == "-1") Array(("-1", -1))
     else {
 
       //      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
@@ -128,9 +128,7 @@ object MapMatcher {
         }.toArray
 
       } catch {
-        case ex: NoSuchElementException => {
-          return Array(("-1", -1))
-        }
+        case _: NoSuchElementException => Array(("-1", -1))
       }
     }
   }
@@ -162,7 +160,7 @@ object MapMatcher {
           val (shortestPathVertex, len) = g.getShortestPathAndLength(e1._1.split("-")(1), e2._1.split("-")(0))
           //          println(e1._1, e2._1)
           //          println(shortestPathVertex)
-          val shortestPath = shortestPathVertex.sliding(2).toArray.map(x => x(0) + "-" + x(1))
+          val shortestPath = shortestPathVertex.sliding(2).toArray.map(x => x.head + "-" + x(1))
           //          println(shortestPath.deep)
           val s = len / (e2._2.t - e1._2.t)
           val res = (e1._1, e1._2, 1, -1: Double) +: shortestPath.map(x => {
@@ -200,9 +198,9 @@ object MapMatcher {
     }
   }
 
-  def hmmBreak(pairs: LinkedHashMap[Point, Array[(String, Double, Point)]],
+  def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],
                roadDistArray: Array[Array[Array[Double]]],
-               g: RoadGrid, beta: Double): (Array[LinkedHashMap[Point,
+               g: RoadGrid, beta: Double): (Array[mutable.LinkedHashMap[Point,
     Array[(String, Double, main.scala.geometry.Point)]]], Array[Array[Array[Array[Double]]]]) = {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
@@ -245,7 +243,7 @@ object MapMatcher {
       var sum: Double = 0
       for (j <- tProb) sum += j.sum
       if (sum != 0) {
-        if (filteredPoints contains (point1)) {
+        if (filteredPoints contains point1) {
           filteredPoints = filteredPoints :+ point2
           filteredPointsID = filteredPointsID :+ i
         }
@@ -272,7 +270,7 @@ object MapMatcher {
         else {
           val startCandidates = points(subTraj(p))
           val endCandidates = points(subTraj(p + 1))
-          var newPair: LinkedHashMap[Point, Array[(String, Double, Point)]] = LinkedHashMap()
+          var newPair: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = mutable.LinkedHashMap()
           newPair += (startCandidates -> pairs(startCandidates))
           newPair += (endCandidates -> pairs(endCandidates))
           subTransProbArray = subTransProbArray :+ getRoadDistArray(newPair, g)(0)
@@ -281,9 +279,9 @@ object MapMatcher {
       newTransPorbArray = newTransPorbArray :+ subTransProbArray
     }
     if (breakPoints.length == 0) {
-      if (filteredPoints.length < 2) (new Array[LinkedHashMap[Point, Array[(String, Double, Point)]]](0), new Array[Array[Array[Array[Double]]]](0))
+      if (filteredPoints.length < 2) (new Array[mutable.LinkedHashMap[Point, Array[(String, Double, Point)]]](0), new Array[Array[Array[Array[Double]]]](0))
       else {
-        var newPairs: LinkedHashMap[Point, Array[(String, Double, Point)]] = LinkedHashMap()
+        var newPairs: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = mutable.LinkedHashMap()
         for (p <- filteredPoints) {
           newPairs += (p -> pairs(p))
         }
@@ -292,11 +290,11 @@ object MapMatcher {
     }
     else {
       breakPoints = -1 +: breakPoints
-      var newPairs = new Array[LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]]](0)
+      var newPairs = new Array[mutable.LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]]](0)
       for (b <- 0 to breakPoints.length - 2) {
         filteredPoints = filteredPoints.drop(breakPoints(b) + 1)
         val subPoints = filteredPoints.take(breakPoints(b + 1) + 1)
-        var newPair: LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]] = LinkedHashMap()
+        var newPair: mutable.LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
         for (p <- subPoints) {
           newPair += (p -> pairs(p))
         }
@@ -306,7 +304,7 @@ object MapMatcher {
     }
   }
 
-  def apply(p: LinkedHashMap[Point, Array[(String, Double, Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[(String, Point)]) = {
+  def apply(p: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[(String, Point)]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
