@@ -36,10 +36,11 @@ object runRangeSpeedQuery extends App {
       .map { case (x, y) => (y._1, (y._2, x)) }
       .repartition(numPartition) // (roadID, (speed, tripID))
 
-    val res = queriedRoadSegs.join(speedRDD).map { case (_, (queries, (speed, tripID))) => ((speed, tripID), queries) }
+    val res = queriedRoadSegs.join(speedRDD)
+      .map { case (_, (queries, (speed, tripID))) => ((speed, tripID), queries) }
       .flatMapValues(x => x)
       .map { case (k, v) => (v, k) }
-      .filter { case (k, v) => v._1 >= minSpeed && v._1 <= maxSpeed }
+      .filter { case (_, v) => v._1 >= minSpeed && v._1 <= maxSpeed }
       .groupByKey()
       .map { case (k, v) => (k, v.toArray) }
 
@@ -75,11 +76,12 @@ object runRoadIDSpeedQuery extends App {
       .flatMapValues(x => x)
       .mapValues(x => (x.roadEdgeID, x.speed))
       .map { case (x, y) => (y._1, (y._2, x)) }
-      .repartition(numPartition) // (roadID, (speed, tripID))
+      // .repartition(numPartition) // (roadID, (speed, tripID))
       .groupByKey()
 
     val res = queryRDD.join(speedRDD)
-      .map{case (k,v) => (k, v._2)}
+      .map { case (k, v) => (k, v._2.filter(x => x._1 > minSpeed && x._1 < maxSpeed)) }
+
 
     for (i <- res.collect) {
       val queryRange = i._1
