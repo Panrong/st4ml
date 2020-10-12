@@ -1,4 +1,3 @@
-import main.scala.geometry.{Point, Trajectory}
 import main.scala.graph.RoadGrid
 import main.scala.mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
@@ -57,7 +56,7 @@ object runRoadIDSpeedQuery extends App {
     val mmTrajFile = args(1)
     val numPartition = args(2).toInt
     val query = args(3)
-    val roadGraphFile = args(4)
+    // val roadGraphFile = args(4)
     val speedRange = args(5).split(",").map(x => x.toDouble)
     val minSpeed = speedRange(0)
     val maxSpeed = speedRange(1)
@@ -85,7 +84,7 @@ object runRoadIDSpeedQuery extends App {
 
     for (i <- res.collect) {
       val queryRange = i._1
-      println(s"Query road ID: $queryRange : ${(i._2).size} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
+      println(s"Query road ID: $queryRange : ${i._2.size} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
     }
   }
 }

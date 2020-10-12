@@ -14,7 +14,7 @@ case class Point(lon: Double, lat: Double, timestamp: Long = 0, ID: Long = 0) ex
 
   def dot(other: Point): Double = this.lon * other.lon + this.lat * other.lat
 
-  def *(scalar: Double): Point = Point(this.lon * scalar, this.lat * scalar, this.t * scalar.toLong)
+  def *(scalar: Double): Point = Point(this.lon * scalar, this.lat * scalar, (this.t * scalar).toLong)
 
   def normSquare: Double = this.lon * this.lon + this.lat * this.lat
 

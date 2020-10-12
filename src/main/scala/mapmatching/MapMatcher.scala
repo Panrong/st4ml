@@ -1,7 +1,7 @@
 package main.scala.mapmatching
 
 import main.scala.graph.{RoadGraph, RoadGrid}
-import scala.math.{sqrt, pow, abs, Pi, E, max}
+import scala.math.{sqrt, pow, abs, Pi, E, max, min}
 import scala.collection.mutable
 import main.scala.geometry.{Point, Trajectory}
 import main.scala.geometry.Distances.greatCircleDistance
@@ -162,13 +162,17 @@ object MapMatcher {
           //          println(shortestPathVertex)
           val shortestPath = shortestPathVertex.sliding(2).toArray.map(x => x.head + "-" + x(1))
           //          println(shortestPath.deep)
-          val s = len / (e2._2.t - e1._2.t)
+          val s = (len + e1._2.geoDistance(rGrid.id2vertex(e1._1.split("-")(1)).point)
+            + e2._2.geoDistance(rGrid.id2vertex(e2._1.split("-")(0)).point)) /
+            (e2._2.t - e1._2.t)
           val res = (e1._1, e1._2, 1, -1: Double) +: shortestPath.map(x => {
             val p = (rGrid.id2vertex(x.split("-")(0)).point + rGrid.id2vertex(x.split("-")(1)).point) * 0.5
-            val t = (e2._2.t - e1._2.t) * (e1._2.geoDistance(p) / len)
-            (x, p.assignTimeStamp(t.toLong), 0, s)
+            //println(p.geoDistance(e1._2)/s)
+            val t = p.geoDistance(e1._2) / s + e1._2.t
+            val pt = p.assignTimeStamp(t.toLong)
+            (x, pt, 0, s)
           })
-          //          println(res.deep)
+          //println(res.deep)
           res
         }
       }) :+ (compressedIdsWPoints.last._1, compressedIdsWPoints.last._2, 1, -1: Double) //(roadID, Point, indicator, speed) if indicator =1, speed = -1, else Point = 0
@@ -186,11 +190,13 @@ object MapMatcher {
             val e3 = x(2)
             if (e2._4 != -1) (e2._1, e2._4, e2._3)
             else {
-              val s1 = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
-              val s2 = e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t)
+              val s1 = min(e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t), 33)
+              val s2 = min(e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t), 33)
               val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
                 s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
                 g.id2edge(e2._1).length
+              //println(e2._2, e2._2.t)
+              //println(s, s1, s2)
               (e2._1, s, e2._3)
             }
           })
