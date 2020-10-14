@@ -1,0 +1,12 @@
+Data Format
+^^^^^^^^^^^^^^^
+Input files
+---------------
+Map file
+>>>>>>>>
+Trajectory file
+>>>>>>>>>>>>>>>
+Output files
+---------------
+Map Matching Result file
+>>>>>>>>>>>>>>>>>>>>>>>>>>
