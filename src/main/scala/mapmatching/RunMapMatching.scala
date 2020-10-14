@@ -30,7 +30,7 @@ object RunMapMatching extends App {
       t = nanoTime
     }
     val filename = args(0) //read file name from argument input
-    val rGrid = RoadGrid(args(1), 0.1)
+    val rGrid = RoadGrid(args(1))
     //    val rg = RoadGraph(rGrid.edges)
     if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
@@ -85,7 +85,9 @@ object RunMapMatching extends App {
           val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(lx, ly), Point(hx, hy))
           val rg = RoadGraph(connRoadEdges)
           val finalRes = MapMatcher.connectRoads(ids, rg)
-          val roadSpeed = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
+
+          /** cal road speed */
+          //val roadSpeed = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
           //println(roadSpeed.deep)
           //          catch{
           //            case _: Throwable => println("speed fault")
@@ -114,12 +116,14 @@ object RunMapMatching extends App {
             for (rr <- r) candidateString = candidateString + rr + " "
             candidateString = candidateString + ");"
           }
-          val roadSpeedString = roadSpeed.map(x=>(x._1,(x._2*3.6)formatted("%.2f"),x._3)).mkString(" ")
 
-          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
+          /** cal road speed */
+          //          val roadSpeedString = roadSpeed.map(x=>(x._1,(x._2*3.6)formatted("%.2f"),x._3)).mkString(" ")
+          //          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
+          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
         }
         catch {
-          case _: Throwable => {
+          case _: Throwable =>
             println("****")
             val candidates = MapMatcher.getCandidates(traj, rGrid)
             var pointString = ""
@@ -138,17 +142,25 @@ object RunMapMatching extends App {
               for (rr <- r) candidateString = candidateString + rr + " "
               candidateString = candidateString + ");"
             }
-            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
-          }
+
+            /** cal road speed */
+            //            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
+            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
         }
       })
     val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
 
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
+
     val df = persistMapMatchedRDD.map({
-      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
-    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadSpeed")
+      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
+
+    /** with speed info */
+    //    val df = persistMapMatchedRDD.map({
+    //      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
+    //    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadSpeed")
 
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(2) + "/tmp")
 

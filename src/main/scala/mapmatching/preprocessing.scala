@@ -24,7 +24,7 @@ object preprocessing {
     val spark = SparkSession.builder().getOrCreate()
     val df = spark.read.option("header", "true").csv(filename).limit(num)
     val samplingRate = 15
-    val trajRDD = df.rdd.filter((row => row(8).toString.split(',').length >= 4)) // each traj should have no less than 2 recorded points
+    val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4) // each traj should have no less than 2 recorded points
     var resRDD = trajRDD.map(row => {
       val tripID = row(0).toString.toLong
       val taxiID = row(4).toString.toLong
@@ -51,7 +51,7 @@ object preprocessing {
       var trajs = new Array[Trajectory](0)
       //println(splitPoints.deep)
       for (i <- 0 to splitPoints.length - 2) {
-        val points = trajectory.points.take(splitPoints(i + 1) + 1).drop(splitPoints(i))
+        val points = trajectory.points.slice(splitPoints(i), splitPoints(i + 1) + 1)
         trajs = trajs :+ Trajectory(trajectory.tripID, trajectory.taxiID, points(0).t, points)
       }
       trajs
@@ -81,7 +81,7 @@ object preprocessing {
     val t = nanoTime
     val resRDD = trajRDD.map(traj => {
       var newPoints = Array(traj.points(0))
-      for (p <- 1 to traj.points.length - 1) {
+      for (p <- 1 until traj.points.length) {
         if (greatCircleDistance(traj.points(p), newPoints.last) >= 2 * sigmaZ) newPoints = newPoints :+ traj.points(p)
       }
       Trajectory(traj.tripID, traj.taxiID, traj.startTime, newPoints)
@@ -96,10 +96,10 @@ object preprocessing {
     val t = nanoTime
     val resRDD = trajRDD.filter(traj => {
       var check = true
-      val loop = new Breaks;
+      val loop = new Breaks
       loop.breakable {
         for (point <- traj.points) {
-          if (point.lat < mapRange(0) || point.lat > mapRange(2) || point.lon < mapRange(1) || point.lon > mapRange(3)) {
+          if (point.lat < mapRange.head || point.lat > mapRange(2) || point.lon < mapRange(1) || point.lon > mapRange(3)) {
             check = false
             loop.break
           }
@@ -120,12 +120,12 @@ object preprocessing {
 
   def readMMTrajFile(filename: String): RDD[mmTrajectory] = {
     val customSchema = StructType(Array(
-      StructField("taxiID", LongType, true),
-      StructField("tripID", LongType, true),
-      StructField("GPSPoints", StringType, true),
-      StructField("VertexID", StringType, true),
-      StructField("Candidates", StringType, true),
-      StructField("pointRoadPair", StringType, true))
+      StructField("taxiID", LongType, nullable = true),
+      StructField("tripID", LongType, nullable = true),
+      StructField("GPSPoints", StringType, nullable = true),
+      StructField("VertexID", StringType, nullable = true),
+      StructField("Candidates", StringType, nullable = true),
+      StructField("pointRoadPair", StringType, nullable = true))
     )
     val spark = SparkSession.builder().getOrCreate()
     val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
@@ -145,13 +145,13 @@ object preprocessing {
   }
   def readMMWithSpeed(filename: String): RDD[mmTrajectoryS] = {
     val customSchema = StructType(Array(
-      StructField("taxiID", LongType, true),
-      StructField("tripID", LongType, true),
-      StructField("GPSPoints", StringType, true),
-      StructField("VertexID", StringType, true),
-      StructField("Candidates", StringType, true),
-      StructField("pointRoadPair", StringType, true),
-      StructField("RoadSpeed", StringType, true))
+      StructField("taxiID", LongType, nullable = true),
+      StructField("tripID", LongType, nullable = true),
+      StructField("GPSPoints", StringType, nullable = true),
+      StructField("VertexID", StringType, nullable = true),
+      StructField("Candidates", StringType, nullable = true),
+      StructField("pointRoadPair", StringType, nullable = true),
+      StructField("RoadSpeed", StringType, nullable = true))
     )
     val spark = SparkSession.builder().getOrCreate()
     val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
@@ -159,8 +159,8 @@ object preprocessing {
     val resRDD = trajRDD.map(row => {
       val tripID = row(1).toString
       val taxiID = row(0).toString
-      val vertexString = row(3).toString
-      var vertices = new Array[String](0)
+//      val vertexString = row(3).toString
+//      var vertices = new Array[String](0)
       val roadSpeed = row(6).toString.replaceAll("[()]", "").split(" ").map(x=>(x.split(",")(0), x.split(",")(1).toDouble)) // Array(roadID, speed)
       val subTrajectories = roadSpeed.map(x=> subTrajectory(0,0,x._1, x._2))
       mmTrajectoryS(tripID, taxiID, subTrajectories(0).startTime, subTrajectories)
@@ -220,13 +220,12 @@ object preprocessingTest extends App {
   def printRetrieved(retrieved: Array[Shape]) {
     println("-------------")
     for (i <- retrieved) {
-      if (i.isInstanceOf[Point]) {
-        val p = i.asInstanceOf[Point]
-        println(p.x, p.y)
-      }
-      else {
-        val r = i.asInstanceOf[Rectangle]
-        println(r.x_min, r.y_min, r.x_max, r.y_max)
+      i match {
+        case p: Point =>
+          println(p.x, p.y)
+        case _ =>
+          val r = i.asInstanceOf[Rectangle]
+          println(r.x_min, r.y_min, r.x_max, r.y_max)
       }
     }
     println("-------------")
