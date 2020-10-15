@@ -14,7 +14,7 @@ object runRangeSpeedQuery extends App {
     val maxSpeed = speedRange(1)
 
     val conf = new SparkConf()
-    conf.setAppName("SpeedQuery_v1").setMaster(master)
+    conf.setAppName("SpeedQuery_v2").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
@@ -28,12 +28,25 @@ object runRangeSpeedQuery extends App {
       .groupByKey()
       .map { case (k, v) => (k, v.toArray) } //(roadID, queryBoxes)
 
-    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
-      .map(x => (x.tripID, x.subTrajectories))
+    val rg = RoadGrid(roadGraphFile)
+    val speedRDD = preprocessing.readMMWithRoadTime(mmTrajFile)
+      .map(x => (x.tripID, x.subTrajectories.map(x => (x.roadEdgeID, x.startTime))))
+      .mapValues(x => {
+        (x.head +: x :+ x.last).sliding(3).toArray.map(x => {
+          val d = rg.id2edge(x(0)._1).length / 2 + rg.id2edge(x(1)._1).length + rg.id2edge(x(2)._1).length / 2
+          (x(1)._1, d / (x(2)._2 - x(0)._2))
+        }) // tripID, Array((roadID, speed))
+      })
       .flatMapValues(x => x)
-      .mapValues(x => (x.roadEdgeID, x.speed))
-      .map { case (x, y) => (y._1, (y._2, x)) }
-      .repartition(numPartition) // (roadID, (speed, tripID))
+      .map(x => (x._2._1, (x._2._2, x._1)))
+
+
+    //    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
+    //      .map(x => (x.tripID, x.subTrajectories))
+    //      .flatMapValues(x => x)
+    //      .mapValues(x => (x.roadEdgeID, x.speed))
+    //      .map { case (x, y) => (y._1, (y._2, x)) }
+    //      .repartition(numPartition) // (roadID, (speed, tripID))
 
     val res = queriedRoadSegs.join(speedRDD)
       .map { case (_, (queries, (speed, tripID))) => ((speed, tripID), queries) }
@@ -47,6 +60,8 @@ object runRangeSpeedQuery extends App {
       val queryRange = i._1
       println(s"Query Range: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
     }
+    sc.stop()
+
   }
 }
 

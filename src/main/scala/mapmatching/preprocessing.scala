@@ -167,6 +167,30 @@ object preprocessing {
     })
     resRDD
   }
+  def readMMWithRoadTime(filename: String): RDD[mmTrajectoryS] = {
+    val customSchema = StructType(Array(
+      StructField("taxiID", LongType, nullable = true),
+      StructField("tripID", LongType, nullable = true),
+      StructField("GPSPoints", StringType, nullable = true),
+      StructField("VertexID", StringType, nullable = true),
+      StructField("Candidates", StringType, nullable = true),
+      StructField("pointRoadPair", StringType, nullable = true),
+      StructField("RoadTime", StringType, nullable = true))
+    )
+    val spark = SparkSession.builder().getOrCreate()
+    val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
+    val trajRDD = df.rdd.filter(row => row(3)!="(-1:-1)" && row(3)!="-1") // remove invalid entries
+    val resRDD = trajRDD.map(row => {
+      val tripID = row(1).toString
+      val taxiID = row(0).toString
+      //      val vertexString = row(3).toString
+      //      var vertices = new Array[String](0)
+      val roadTime = row(6).toString.replaceAll("[() ]","").split(",").grouped(2).toArray // Array(Array(roadID, time))
+      val subTrajectories = roadTime.map(x=> subTrajectory(x(1).toLong, 0, x(0), 0))
+      mmTrajectoryS(tripID, taxiID, subTrajectories(0).startTime, subTrajectories)
+    })
+    resRDD
+  }
 
   def readQueryFile(f: String): Array[Rectangle] = {
     var queries = new Array[Rectangle](0)

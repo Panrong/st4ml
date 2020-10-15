@@ -13,13 +13,13 @@ object gpsSpeed extends App {
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     val rGrid = RoadGrid(args(1))
-    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon),true, 100).zipWithIndex()
+    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon), true, 100).zipWithIndex()
     val speedRDD = trajRDD.map(x => {
       val gpsPoints = x._1.points
       val tripID = x._1.tripID
-      val speeds = gpsPoints.sliding(2).toArray.map{
+      val speeds = gpsPoints.sliding(2).toArray.map {
         x => {
-          if(x.length > 1) {
+          if (x.length > 1) {
             val p1 = x(0)
             val p2 = x(1)
             p1.geoDistance(p2) / 15 * 3.6

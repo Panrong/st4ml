@@ -88,6 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#input-files">Input files</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#map-file">Map file</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#trajectory-file">Trajectory file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-range-query-file">Batch range query file</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#output-files">Output files</a><ul>
@@ -174,8 +175,7 @@
 <h3>Trajectory file<a class="headerlink" href="#trajectory-file" title="Permalink to this headline">¶</a></h3>
 <p>The trajectory file should be a <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file whose format follows the open-source <a class="reference external" href="http://www.geolink.pt/ecmlpkdd2015-challenge/dataset.html">Porto trajectory dataset</a>.
 However, not all attributed are read/used in the ST-Tool.</p>
-<ul>
-<li><p>Attribute Information:</p>
+<p>Attribute Information:</p>
 <blockquote>
 <div><p>Each data sample corresponds to one completed trip. It contains a total of 9 features, described as follows:</p>
 <p><strong>TRIP_ID</strong>: (String) It contains a unique identifier for each trip;</p>
@@ -188,8 +188,22 @@ However, not all attributed are read/used in the ST-Tool.</p>
 <p>MISSING_DATA: (Boolean)– <em>Not used by ST-Tool, can be filled by any value</em></p>
 <p><strong>POLYLINE</strong>: (String): It contains a list of GPS coordinates (i.e. WGS84 format) mapped as a string. The beginning and the end of the string are identified with brackets (i.e. [ and ], respectively). Each pair of coordinates is also identified by the same brackets as <strong>[LONGITUDE, LATITUDE]</strong>. This list contains one pair of coordinates for each 15 seconds of trip. The last list item corresponds to the trip’s destination while the first one represents its start.</p>
 </div></blockquote>
-</li>
-</ul>
+</div>
+<div class="section" id="batch-range-query-file">
+<h3>Batch range query file<a class="headerlink" href="#batch-range-query-file" title="Permalink to this headline">¶</a></h3>
+<p>Range query can be done per batch by reading a <code class="docutils literal notranslate"><span class="pre">.txt</span></code> file. The format is as below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bl</span><span class="o">.</span><span class="n">lon</span> <span class="n">bl</span><span class="o">.</span><span class="n">lat</span> <span class="n">tr</span><span class="o">.</span><span class="n">lon</span> <span class="n">tr</span><span class="o">.</span><span class="n">lat</span>
+</pre></div>
+</div>
+<p>where <strong>bl</strong> is the botton left corner of the query rectangle and <strong>tr</strong> is the top left corner of the query rectangle. <strong>lon</strong> stands for longitude and <strong>lat</strong> stands for latitude.</p>
+<p>The numbers are seperated with a single <code class="docutils literal notranslate"><span class="pre">space</span></code>.</p>
+<p>Example (of ranges in Porto city):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="mf">8.682329739182336</span> <span class="mf">41.16930767535641</span> <span class="o">-</span><span class="mf">8.553892156181982</span> <span class="mf">41.17336956864337</span>
+<span class="o">-</span><span class="mf">8.610269994657497</span> <span class="mf">41.141684995811005</span> <span class="o">-</span><span class="mf">8.560452908967754</span> <span class="mf">41.21404596573107</span>
+<span class="o">-</span><span class="mf">8.656135520314116</span> <span class="mf">41.1333164462172</span> <span class="o">-</span><span class="mf">8.51591767515082</span> <span class="mf">41.232968562456634</span>
+<span class="o">...</span> <span class="o">...</span>
+</pre></div>
+</div>
 </div>
 </div>
 <div class="section" id="output-files">

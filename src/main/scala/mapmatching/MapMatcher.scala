@@ -1,13 +1,16 @@
 package main.scala.mapmatching
 
 import main.scala.graph.{RoadGraph, RoadGrid}
-import scala.math.{sqrt, pow, abs, Pi, E, max, min}
+
+import scala.math.{E, Pi, abs, max, min, pow, sqrt}
 import scala.collection.mutable
 import main.scala.geometry.{Point, Trajectory}
 import main.scala.geometry.Distances.greatCircleDistance
 
 import Array.concat
 import System.nanoTime
+
+import scala.collection.mutable.ArrayBuffer
 
 object MapMatcher {
 
@@ -202,6 +205,20 @@ object MapMatcher {
           })
       }
     }
+  }
+
+  def genRoadSeg(allVertices: Array[String], mappedRoads: Array[(String, Point)]): Array[(String, Long)] = {
+    //mappedRoads: roadID, projection point (roadID may have conjugated duplication)
+    val allRoadSegs = allVertices.sliding(2).map(x => s"${x(0)}-${x(1)}").toArray
+    val roadSegTime = mutable.LinkedHashMap[String, ArrayBuffer[Long]]()
+    mappedRoads.foreach(x => {
+
+      if (roadSegTime.contains(x._1)) roadSegTime(x._1) = roadSegTime(x._1) :+ x._2.t
+      else roadSegTime(x._1) = ArrayBuffer(x._2.t)
+    })
+    var res = new ArrayBuffer[(String, Long)](0)
+    roadSegTime.foreach(x => res = res :+ (x._1, x._2.sum / x._2.length))
+    res.toArray
   }
 
   def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],

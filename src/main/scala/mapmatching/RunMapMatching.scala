@@ -119,8 +119,10 @@ object RunMapMatching extends App {
 
           /** cal road speed */
           //          val roadSpeedString = roadSpeed.map(x=>(x._1,(x._2*3.6)formatted("%.2f"),x._3)).mkString(" ")
-          //          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
-          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair)
+          val roadSpeedString = MapMatcher.genRoadSeg(finalRes.map(x => x._1), ids zip cleanedPoints)
+            .deep
+            .toString.drop(6).dropRight(1)
+          Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
         }
         catch {
           case _: Throwable =>
@@ -144,8 +146,8 @@ object RunMapMatching extends App {
             }
 
             /** cal road speed */
-            //            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
-            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
+            Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
+          //Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
         }
       })
     val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
@@ -153,14 +155,14 @@ object RunMapMatching extends App {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
-    val df = persistMapMatchedRDD.map({
-      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
-    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
+    //    val df = persistMapMatchedRDD.map({
+    //      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
+    //    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
 
     /** with speed info */
-    //    val df = persistMapMatchedRDD.map({
-    //      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
-    //    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadSpeed")
+    val df = persistMapMatchedRDD.map({
+      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime")
 
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(2) + "/tmp")
 
