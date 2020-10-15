@@ -189,6 +189,8 @@
 <p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">trajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
 Otherwise, the workers should have the same file with the same directory name.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on each worker node with the same directory name since the graph reading function cannot access HDFS currently.</p>
+<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
+the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
 <div class="section" id="range-query">
 <h2>Range Query<a class="headerlink" href="#range-query" title="Permalink to this headline">¶</a></h2>

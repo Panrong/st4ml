@@ -34,7 +34,8 @@ Otherwise, the workers should have the same file with the same directory name.
 
 The ``mapfile`` is currently stored *locally* on each worker node with the same directory name since the graph reading function cannot access HDFS currently.
 
-
+After map matching is done, a folder is created at the specific location, which consists multiple ``.csv`` files named ``part-000...``. Each of the files is 
+the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
 
 
 
