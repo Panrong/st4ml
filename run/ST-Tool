@@ -1,5 +1,15 @@
 #!/bin/bash
-if [ $0 == "mapmatching" ]
+echo "=========================================="
+echo "===== Welcome to ST-Tool Version 0.1 ====="
+echo "=========================================="
+
+if [ $1 == "mapmatching" ]
 then
-echo "Start map matching"
+  echo "===== Start map matching"
+  echo " ---- Read config file from $2"
+  command python parse_mmconfig.py $2
+  command bash submit_mm_job.tmp
+  command rm submit_mm_job.tmp
+else
+  echo "===== Function not supported. Please select from {mapmatching, rangequery, odquery, speedquery}"
 fi
