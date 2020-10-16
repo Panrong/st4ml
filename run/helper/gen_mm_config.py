@@ -11,7 +11,6 @@ config["sparkmaster"] = "spark://Master:7077"
 config["executor-memory"] = "3500M"
 config["total-executor-cores"] = "8"
 config["executor-cores"] = "2"
-config["numtraj"] = "10000"
+config["numtraj"] = "100000"
 config["useHDFS"] = True
 json.dump(config, open("mmconfig-example.json", "w"))
-

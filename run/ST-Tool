@@ -1,15 +1,34 @@
 #!/bin/bash
-echo "=========================================="
-echo "===== Welcome to ST-Tool Version 0.1 ====="
-echo "=========================================="
+echo ""
+echo "  ==========================================="
+echo "  ||                                       ||"
+echo "  ||    Welcome to ST-Tool Version 0.1     ||"
+echo "  ||                                       ||"
+echo "  +++++++++++++++++++++++++++++++++++++++++++"
+echo ""
 
 if [ $1 == "mapmatching" ]
 then
   echo "===== Start map matching"
   echo " ---- Read config file from $2"
-  command python parse_mmconfig.py $2
+  command python helper/parse_mmconfig.py $2
   command bash submit_mm_job.tmp
   command rm submit_mm_job.tmp
+
+elif [ $1 == "rangequery" ]
+then
+  if [[ $2 == "freespace" ]]
+  then
+    echo "===== Start rangequery in free space"
+  elif [[ $2 == "roadnet" ]]
+  then
+    echo "===== Start rangequery on road network"
+  else
+    echo "===== Wrong command. The second argument should be <freespace> or <roadnet>."
+    exit 1
+  fi
+
 else
-  echo "===== Function not supported. Please select from {mapmatching, rangequery, odquery, speedquery}"
+  echo "===== Function not supported. Please select from { mapmatching, rangequery, odquery, speedquery }"
+  exit 1
 fi
