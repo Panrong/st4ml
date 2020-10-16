@@ -4,6 +4,8 @@ Input files
 ---------------
 Map file
 >>>>>>>>
+to be edited
+
 Trajectory file
 >>>>>>>>>>>>>>>
 The trajectory file should be a ``.csv`` file whose format follows the open-source `Porto trajectory dataset <http://www.geolink.pt/ecmlpkdd2015-challenge/dataset.html>`_.
@@ -11,7 +13,7 @@ However, not all attributed are read/used in the ST-Tool.
 
 Attribute Information:
 
-    Each data sample corresponds to one completed trip. It contains a total of 9 features, described as follows:
+Each data sample corresponds to one completed trip. It contains a total of 9 features, described as follows:
 
     **TRIP_ID**: (String) It contains a unique identifier for each trip;
 
@@ -39,7 +41,7 @@ Range query can be done per batch by reading a ``.txt`` file. The format is as b
 
 where **bl** is the botton left corner of the query rectangle and **tr** is the top left corner of the query rectangle. **lon** stands for longitude and **lat** stands for latitude.
 
-The numbers are seperated with a single ``space``.
+The numbers are seperated with a single *space*.
 
 Example (of ranges in Porto city)::
 
@@ -52,3 +54,24 @@ Output files
 ---------------
 Map Matching Result file
 >>>>>>>>>>>>>>>>>>>>>>>>>>
+
+The ``.csv`` file generated from map matching has the following header:
+
++-------+-------+------------+----------+-----------+--------------+-----------+
+|taxiID |tripID | GPSPoints  |VertexID  | Candidates|PointRoadPair |   RoadTime|
++=======+=======+============+==========+===========+==============+===========+
++-------+-------+------------+----------+-----------+--------------+-----------+
+
+Explanations: 
+
+     **taxiID** and **tripID**: for identidfication
+
+     **GPSPoints**: recorded GPS info in free space of format: *(lon lat:flag)* where flag indicates whether a point is map matched (1) or removed (0)
+
+     **VertexID**: the vertex ID of the map matched trajectory, each two consecutive IDs form an edge on the road graph. The format is *(ID:flag)* where flag indicates whether a vertex is directly matched from GPS points (1) or interpolated from shortest path connection (0)
+
+     **Candidates**: possible road edges to be mapped to each feasible GPSPoints (with flag 1). The format is *idx:(edge1 edge2 ...)* seperated by ;
+
+     **PointRoadPair**: information aggregated from GPSPoints and VetexID. The format is *(lon,lat,edge)*
+
+     **RoadTime**: the estimated time of the taxi passing the center of each road segment. The format is *(roadID,timeStamp)*

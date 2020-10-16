@@ -162,8 +162,35 @@
 <h1>Getting Started with ST-Tool<a class="headerlink" href="#getting-started-with-st-tool" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="map-matching">
 <h2>Map Matching<a class="headerlink" href="#map-matching" title="Permalink to this headline">¶</a></h2>
-<p>The map matching module in the ST-Tool implements the widely used <a class="reference external" href="https://www.microsoft.com/en-us/research/publication/hidden-markov-map-matching-noise-sparseness/">HMM</a> algorithm and supports data parallel execution.</p>
-<p>To run map matching, use</p>
+<p>The map matching module in the ST-Tool implements the widely used <a class="reference external" href="https://www.microsoft.com/en-us/research/publication/hidden-markov-map-matching-noise-sparseness/">Hidden Markov Model (HMM)</a> algorithm and supports data parallel execution.</p>
+<p>To run map matching, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
+<code class="docutils literal notranslate"><span class="pre">./ST-Tool</span> <span class="pre">mapmatching</span> <span class="pre">mmconfig.json</span></code></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">mmconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">mmconfig-example.json</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="s2">&quot;useHDFS&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span> <span class="c1"># use HDFS or not</span>
+<span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
+<span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
+<span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
+<span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
+<span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
+<span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
+<span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../target/scala-2.12/map-matching_2.12-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
+<span class="s2">&quot;trajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/porto_traj.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting trajectory data</span>
+<span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
+<span class="s2">&quot;numtraj&quot;</span><span class="p">:</span> <span class="s2">&quot;10000&quot;</span><span class="p">,</span> <span class="c1"># number of trajectories to apply map matching</span>
+<span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpmmres&quot;</span><span class="p">,</span> <span class="c1"># directory to save the map matching results</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_mm_config.py</span></code>.</p>
+<ul class="simple">
+<li><p>Notes on file storage location:</p></li>
+</ul>
+<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">trajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
+Otherwise, the workers should have the same file with the same directory name.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on each worker node with the same directory name since the graph reading function cannot access HDFS currently.</p>
+<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
+the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
 <div class="section" id="range-query">
 <h2>Range Query<a class="headerlink" href="#range-query" title="Permalink to this headline">¶</a></h2>
