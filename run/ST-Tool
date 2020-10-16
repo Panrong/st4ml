@@ -1,12 +1,17 @@
 #!/bin/bash
 echo ""
-echo "  ==========================================="
-echo "  ||                                       ||"
-echo "  ||    Welcome to ST-Tool Version 0.1     ||"
-echo "  ||                                       ||"
-echo "  +++++++++++++++++++++++++++++++++++++++++++"
+echo "  +—————————————————————————————————————————+"
+echo "  |                                         |"
+echo "  |     Welcome to ST-Tool Version 0.1      |"
+echo "  |                                         |"
+echo "  +—————————————————————————————————————————+"
 echo ""
 
+if [[ -z $2 ]] 
+then
+  echo -e "===== Usage: \n   >> ST-Tool [function] [config file]."
+  exit 1
+fi
 if [ $1 == "mapmatching" ]
 then
   echo "===== Start map matching"
@@ -17,16 +22,19 @@ then
 
 elif [ $1 == "rangequery" ]
 then
-  if [[ $2 == "freespace" ]]
-  then
-    echo "===== Start rangequery in free space"
-  elif [[ $2 == "roadnet" ]]
-  then
     echo "===== Start rangequery on road network"
-  else
-    echo "===== Wrong command. The second argument should be <freespace> or <roadnet>."
-    exit 1
-  fi
+    command python helprt/parse_rqconfig.py $2
+    command bash submit_rq_job.tmp
+    command rm submit_rq_job.tmp
+    
+elif [ $1 == "odquery" ]
+then 
+  echo "===== Start OD query on road network"
+
+elif [ $1 == "speedquery" ]
+then 
+  echo "===== Start speed query on road network"
+
 
 else
   echo "===== Function not supported. Please select from { mapmatching, rangequery, odquery, speedquery }"
