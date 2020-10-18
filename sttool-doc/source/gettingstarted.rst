@@ -6,7 +6,7 @@ Map Matching
 The map matching module in the ST-Tool implements the widely used `Hidden Markov Model (HMM) <https://www.microsoft.com/en-us/research/publication/hidden-markov-map-matching-noise-sparseness/>`_ algorithm and supports data parallel execution. 
 
 To run map matching, go to ``ST-TOOLHOME/run`` and run 
-``./ST-Tool mapmatching mmconfig.json``
+``stt mapmatching mmconfig.json``
 
 The ``mmconfig.json`` file should have the following fields (example: ``mmconfig-example.json``)::
 
@@ -41,6 +41,40 @@ the production of an executor. To combine the files into a single file, a helper
 
 Range Query
 ---------------
+ST-Tool supports range query on the road network. The user inputs a map-matched trajectory dataset and a list of query ranges, ST-Tool will output the trajectories 
+inside the query ranges. 
+
+To run map matching, go to ``ST-TOOLHOME/run`` and run 
+``stt rangequery rqconfig.json``
+
+The ``rqconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
+
+    {
+    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+    "master": "spark", # "local" for single machine
+    "total-executor-cores": "8", # the total cores used
+    "executor-cores": "2", # number of CPU cores per executor
+    "executor-memory": "3500M", # the memory assigned to each executor
+    "sparkmaster": "spark://Master:7077", # address of Spark master
+    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+    "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
+    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+    "query": "datasets/queries.txt", # path to the file consisting query ranges OR a number k for k random ranges
+    "gridsize": "2", # to partition the map into grids with length gridsize (in km)
+    "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
+    "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
+    }
+
+One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_rq_config.py``. 
+
+* Notes on file storage location:
+
+When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
+Otherwise, the workers should have the same file with the same directory name. 
+
+The ``mapfile`` and ``queryfile`` are currently stored *locally* on each worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+
+
 OD Query
 ---------------
 Speed Query
