@@ -52,7 +52,7 @@ Example (of ranges in Porto city)::
 
 Output files
 ---------------
-Map Matching Result file
+Map matching result file
 >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 The ``.csv`` file generated from map matching has the following header:
@@ -75,3 +75,20 @@ Explanations:
      **PointRoadPair**: information aggregated from GPSPoints and VetexID. The format is *(lon,lat,edge)*
 
      **RoadTime**: the estimated time of the taxi passing the center of each road segment. The format is *(roadID,timeStamp)*
+
+
+Range query result file
+>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+The ``.csv`` file generated from range query has the following header:
+
++-----------+-------+----------+
+|queryRange |tripID | taxiID   |
++===========+=======+==========+
++-----------+-------+----------+
+
+Explanations: 
+
+     **queryRange**: with the format(bl.lon,bl.lat,tr.lon,tr.lat)
+     
+     **taxiID** and **tripID**: for identidfication

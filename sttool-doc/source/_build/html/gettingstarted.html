@@ -209,10 +209,12 @@ inside the query ranges.</p>
 <span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../target/scala-2.12/map-matching_2.12-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
 <span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
 <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
-<span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges OR a number k for k random ranges</span>
+<span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges</span>
 <span class="s2">&quot;gridsize&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># to partition the map into grids with length gridsize (in km)</span>
 <span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster.</span>
 <span class="s2">&quot;rtreecapacity&quot;</span><span class="p">:</span> <span class="mi">1000</span> <span class="c1"># RTree capacity, should not be less than square root of total number of trajectories</span>
+<span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmprqres&quot;</span><span class="p">,</span> <span class="c1"># directory to save the range query results</span>
+
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -223,6 +225,8 @@ inside the query ranges.</p>
 <p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">mmtrajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
 Otherwise, the workers should have the same file with the same directory name.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> and <code class="docutils literal notranslate"><span class="pre">queryfile</span></code> are currently stored <em>locally</em> on each worker node with the same directory name since the graph and text reading function cannot access HDFS currently.</p>
+<p>After map matching is done, a folder is created at the specific location, which consists multiple folders that one for each query. Each folder consists of multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
+the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
 <div class="section" id="od-query">
 <h2>OD Query<a class="headerlink" href="#od-query" title="Permalink to this headline">¶</a></h2>

@@ -59,10 +59,12 @@ The ``rqconfig.json`` file should have the following fields (example: ``rqconfig
     "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
     "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
     "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-    "query": "datasets/queries.txt", # path to the file consisting query ranges OR a number k for k random ranges
+    "query": "datasets/queries.txt", # path to the file consisting query ranges
     "gridsize": "2", # to partition the map into grids with length gridsize (in km)
     "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
     "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
+    "resultsdir": "/datasets/tmprqres", # directory to save the range query results
+
     }
 
 One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_rq_config.py``. 
@@ -73,6 +75,10 @@ When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be 
 Otherwise, the workers should have the same file with the same directory name. 
 
 The ``mapfile`` and ``queryfile`` are currently stored *locally* on each worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+
+
+After map matching is done, a folder is created at the specific location, which consists multiple folders that one for each query. Each folder consists of multiple ``.csv`` files named ``part-000...``. Each of the files is 
+the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
 
 
 OD Query

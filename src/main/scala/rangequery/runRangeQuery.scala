@@ -94,11 +94,11 @@ object runRangeQuery extends App {
       import spark.implicits._
       val df = trajIDs.map({
         case Row(val1: String, val2: String, val3: String) => (val1, val2,val3)
-      }).toDF("query range", "tripID", "taxiID")
+      }).toDF("queryRange", "tripID", "taxiID")
 
-      
 
-      df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(7) + s"/tmp/$i")
+
+      df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(7) + s"/$i")
       println("=== " + trajIDs.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
 
       //val avgSpeed = queriedTrajRDD.map(x => x.asInstanceOf[Rectangle].trajectory.calAvgSpeed(queryRange)).mean
