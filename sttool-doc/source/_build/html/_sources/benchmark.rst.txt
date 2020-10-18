@@ -36,6 +36,27 @@ Execution output::
 
 Range Query
 ---------------
+
+Testing environment: 
+    4 executors on 2 workers with ``4 CPU cores and 7 GB memory`` each.
+
+Data infomation:
+    100 (random) queries on 100000 map matched trajectories.
+
+    RTree capacity: 1000
+
+    grid size: 2
+
+    number of partitions: 8
+
+Execution output::
+
+    ... Repartition time: 20.42047792s
+    ... RTree generation time: 48.624654005s
+    ... RTree query time: 49.973619858s
+
+`[spark log] <http://18.141.153.85:18080/history/app-20201018134949-0004/jobs/>`_
+
 OD Query
 ---------------
 Speed Query
