@@ -1,3 +1,5 @@
+hdfs dfs -rm -r /datasets/tmprqres
 export HADOOP_HOME=/usr/lib/hadoop-3.2.1
-spark-submit --class RunMapMatching --master spark --executor-memory 3500M --total-executor-cores 8 --executor-cores 2\
-  ../target/scala-2.12/map-matching_2.12-1.0.jar /datasets/mm100000.csv 8 1000 datasets/queries.txt ../preprocessing/porto.csv 2
+spark-submit --class runRangeQuery --master spark --executor-memory 3500M --total-executor-cores 8 --executor-cores 2\
+  ../target/scala-2.12/map-matching_2.12-1.0.jar spark://Master:7077 /datasets/mm100000.csv 8 1000 ../datasets/queries.txt ../preprocessing/porto.csv 2 /datasets/tmprqres
+hdfs dfs -copyToLocal -f /datasets/tmprqres ./rqres_202010181349

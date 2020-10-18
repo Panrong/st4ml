@@ -264,6 +264,8 @@
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/STRPartition/STRPartitioner$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	STRPartition/STRTest$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/STRPartition/STRTest$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runRangeQuery$$typecreator5$1.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRangeQuery$$typecreator5$1.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	runRangeQuery$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRangeQuery$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	RunMapMatching$.class[0m

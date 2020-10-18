@@ -12,6 +12,7 @@ config["total-executor-cores"] = "8"
 config["executor-cores"] = "2"
 config["numpartition"] = config["total-executor-cores"]
 config["rtreecapacity"] = "1000"
-config["query"] = "datasets/queries.txt"
+config["query"] = "../datasets/queries.txt"
 config["gridsize"] = 2
-json.dump(config, open("rq-config-example.json", "w"))
+config["resultsdir"] = "/datasets/tmprqres"
+json.dump(config, open("rqconfig-example.json", "w"))
