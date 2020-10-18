@@ -2,9 +2,11 @@ import main.scala.rangequery.rangeQuery
 import main.scala.geometry.{Point, Rectangle, Trajectory}
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.mapmatching.preprocessing
-import main.scala.graph.{RoadGrid}
+import main.scala.graph.RoadGrid
 import System.nanoTime
+
 import main.scala.mapmatching.preprocessing.readQueryFile
+import org.apache.spark.sql.{Row, SparkSession}
 
 object runRangeQuery extends App {
   override def main(args: Array[String]): Unit = {
@@ -16,6 +18,7 @@ object runRangeQuery extends App {
     val query = args(4)
     val roadGraphFile = args(5)
     val gridSize = args(6).toDouble
+    val resultdir = args(7)
 
     val conf = new SparkConf()
     conf.setAppName("RangeQueryRTree_v1").setMaster(master)
@@ -62,9 +65,10 @@ object runRangeQuery extends App {
     println("... RTree generation time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
     var queries = new Array[Rectangle](0)
+
     /** query with rtree */
-    try{
-      val numRandomQueries= query.toInt
+    try {
+      val numRandomQueries = query.toInt
       queries = genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), numRandomQueries)
     }
     catch {
@@ -73,7 +77,8 @@ object runRangeQuery extends App {
         queries = readQueryFile(queryFile)
       }
     }
-    for (queryRange <-queries) {
+
+    for ((queryRange, i) <- queries.zipWithIndex) {
       val queriedTrajRDD = RTreeRDD.flatMap(x => {
         rangeQuery.query(x._2._1, x._2._2, queryRange)
       })
@@ -82,8 +87,19 @@ object runRangeQuery extends App {
     })
 
        */
+      val trajIDs = queriedTrajRDD.map(x => Row("(" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")",
+      x.id.toString.dropRight(8), x.id.toString.takeRight(8))) // (query, tripID, taxiID)
 
-      println("=== " + queriedTrajRDD.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
+      val spark = SparkSession.builder().getOrCreate()
+      import spark.implicits._
+      val df = trajIDs.map({
+        case Row(val1: String, val2: String, val3: String) => (val1, val2,val3)
+      }).toDF("query range", "tripID", "taxiID")
+
+      
+
+      df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(7) + s"/tmp/$i")
+      println("=== " + trajIDs.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
 
       //val avgSpeed = queriedTrajRDD.map(x => x.asInstanceOf[Rectangle].trajectory.calAvgSpeed(queryRange)).mean
       //println("--- Average Speed: " + avgSpeed)
@@ -91,12 +107,12 @@ object runRangeQuery extends App {
     println("... RTree query time: " + (nanoTime - t) / 1e9d + "s")
 
     /** query with filter */
-//    t = nanoTime
-//    for (queryRange <- genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), args(4).toInt)) {
-//      val queriedTrajRDD2 = trajRDD.filter(x => x.intersect(queryRange))
-//      println("=== " + queriedTrajRDD2.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
-//    }
-//    println("... Filter query time: " + (nanoTime - t) / 1e9d + "s")
+    //    t = nanoTime
+    //    for (queryRange <- genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), args(4).toInt)) {
+    //      val queriedTrajRDD2 = trajRDD.filter(x => x.intersect(queryRange))
+    //      println("=== " + queriedTrajRDD2.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
+    //    }
+    //    println("... Filter query time: " + (nanoTime - t) / 1e9d + "s")
     sc.stop()
   }
 
