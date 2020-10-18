@@ -34,7 +34,7 @@ Each data sample corresponds to one completed trip. It contains a total of 9 fea
     **POLYLINE**: (String): It contains a list of GPS coordinates (i.e. WGS84 format) mapped as a string. The beginning and the end of the string are identified with brackets (i.e. [ and ], respectively). Each pair of coordinates is also identified by the same brackets as **[LONGITUDE, LATITUDE]**. This list contains one pair of coordinates for each 15 seconds of trip. The last list item corresponds to the trip's destination while the first one represents its start.
 
 Batch range query file
->>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>>>>>>>>
 Range query can be done per batch by reading a ``.txt`` file. The format is as below::
 
     bl.lon bl.lat tr.lon tr.lat
@@ -90,5 +90,5 @@ The ``.csv`` file generated from range query has the following header:
 Explanations: 
 
      **queryRange**: with the format(bl.lon,bl.lat,tr.lon,tr.lat)
-     
+
      **taxiID** and **tripID**: for identidfication

@@ -92,7 +92,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#output-files">Output files</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#map-matching-result-file">Map Matching Result file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#map-matching-result-file">Map matching result file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#range-query-result-file">Range query result file</a></li>
 </ul>
 </li>
 </ul>
@@ -210,7 +211,7 @@ However, not all attributed are read/used in the ST-Tool.</p>
 <div class="section" id="output-files">
 <h2>Output files<a class="headerlink" href="#output-files" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="map-matching-result-file">
-<h3>Map Matching Result file<a class="headerlink" href="#map-matching-result-file" title="Permalink to this headline">¶</a></h3>
+<h3>Map matching result file<a class="headerlink" href="#map-matching-result-file" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file generated from map matching has the following header:</p>
 <table class="docutils align-default">
 <colgroup>
@@ -251,6 +252,34 @@ However, not all attributed are read/used in the ST-Tool.</p>
 <p><strong>Candidates</strong>: possible road edges to be mapped to each feasible GPSPoints (with flag 1). The format is <em>idx:(edge1 edge2 …)</em> seperated by ;</p>
 <p><strong>PointRoadPair</strong>: information aggregated from GPSPoints and VetexID. The format is <em>(lon,lat,edge)</em></p>
 <p><strong>RoadTime</strong>: the estimated time of the taxi passing the center of each road segment. The format is <em>(roadID,timeStamp)</em></p>
+</div></blockquote>
+</div>
+<div class="section" id="range-query-result-file">
+<h3>Range query result file<a class="headerlink" href="#range-query-result-file" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">.csv</span></code> file generated from range query has the following header:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 39%" />
+<col style="width: 25%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>queryRange</p></th>
+<th class="head"><p>tripID</p></th>
+<th class="head"><p>taxiID</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Explanations:</p>
+<blockquote>
+<div><p><strong>queryRange</strong>: with the format(bl.lon,bl.lat,tr.lon,tr.lat)</p>
+<p><strong>taxiID</strong> and <strong>tripID</strong>: for identidfication</p>
 </div></blockquote>
 </div>
 </div>
