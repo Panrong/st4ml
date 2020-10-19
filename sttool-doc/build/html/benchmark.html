@@ -212,6 +212,19 @@
 </div>
 <div class="section" id="od-query">
 <h2>OD Query<a class="headerlink" href="#od-query" title="Permalink to this headline">¶</a></h2>
+<dl>
+<dt>Testing environment:</dt><dd><p>4 executors on 2 workers with <code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">CPU</span> <span class="pre">cores</span> <span class="pre">and</span> <span class="pre">7</span> <span class="pre">GB</span> <span class="pre">memory</span></code> each.</p>
+</dd>
+<dt>Data infomation:</dt><dd><p>100 (random) queries on 100000 map matched trajectories.</p>
+<p>number of partitions: 8</p>
+</dd>
+</dl>
+<p>Execution output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span> <span class="n">odRDD</span> <span class="n">generation</span> <span class="n">time</span><span class="p">:</span> <span class="mf">5.655062451</span><span class="n">s</span>
+<span class="o">...</span> <span class="n">OD</span> <span class="n">query</span> <span class="n">time</span> <span class="k">for</span> <span class="mi">538008025</span> <span class="n">pairs</span><span class="p">:</span> <span class="mf">861.586406464</span><span class="n">s</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="http://18.141.153.85:18080/history/app-20201019151041-0009/jobs/">[spark log]</a></p>
 </div>
 <div class="section" id="speed-query">
 <h2>Speed Query<a class="headerlink" href="#speed-query" title="Permalink to this headline">¶</a></h2>
