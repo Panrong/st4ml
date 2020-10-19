@@ -1,9 +1,9 @@
 import main.scala.graph.RoadGrid
 import main.scala.mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
-import main.scala.od.odQuery.{genODRDD, strictQuery, thresholdQuery}
-import org.apache.spark.rdd.RDD
+import main.scala.od.odQuery.{genODRDD, strictQuery}
 import org.apache.spark.sql.{Row, SparkSession}
+import System.nanoTime
 
 object runODQuery extends App {
   override def main(args: Array[String]): Unit = {
@@ -20,11 +20,13 @@ object runODQuery extends App {
     conf.setAppName("RangeQuery_v2").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
-
+    var t = nanoTime()
     /** generate odRDD */
     val mmTrajectoryRDD = preprocessing.readMMTrajFile(trajectoryFile)
     val groupedODRDD = genODRDD(mmTrajectoryRDD)
     val rg = RoadGrid(roadGraphFile)
+    println("... odRDD generation time: " + (nanoTime - t) / 1e9d + "s")
+    t = nanoTime()
 
     /** simple testing */
     //    println(groupedODRDD.count)
@@ -39,12 +41,13 @@ object runODQuery extends App {
     /** test on all vertex pairs */
     var pairVertexRDD = sc.emptyRDD[String]
     if (queries == "all") {
-      val vertices = rg.vertexes.map(x => x.id).take(5)
+      val vertices = rg.vertexes.map(x => x.id)
       val vertexRDD = sc.parallelize(vertices, numPartitions)
       pairVertexRDD = vertexRDD.cartesian(vertexRDD).map(x => s"${x._1}->${x._2}")
     }
     else pairVertexRDD = sc.parallelize(preprocessing.readODQueryFile(queries))
     //println(pairVertexRDD.take(5).deep)
+    val l = pairVertexRDD.count
     val resRDD = strictQuery(pairVertexRDD, groupedODRDD)
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -53,5 +56,7 @@ object runODQuery extends App {
         case Row(val1: String, val2: String) => (val1, val2)
       }).toDF("queryOD", "trajs")
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(resDir)
+    println(s"... OD query time for $l pairs: " + (nanoTime - t) / 1e9d + "s")
+    sc.stop()
   }
 }
