@@ -17,7 +17,7 @@ object runODQuery extends App {
 
     /** set up Spark */
     val conf = new SparkConf()
-    conf.setAppName("RangeQuery_v2").setMaster(master)
+    conf.setAppName("ODQuery_v1").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
     var t = nanoTime()
