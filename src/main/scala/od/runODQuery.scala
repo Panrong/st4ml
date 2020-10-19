@@ -2,6 +2,8 @@ import main.scala.graph.RoadGrid
 import main.scala.mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 import main.scala.od.odQuery.{genODRDD, strictQuery, thresholdQuery}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{Row, SparkSession}
 
 object runODQuery extends App {
   override def main(args: Array[String]): Unit = {
@@ -9,8 +11,9 @@ object runODQuery extends App {
     val master = args(0)
     val roadGraphFile = args(1)
     val numPartitions = args(2).toInt
-    val queryTestNum = args(3)
+    val queries = args(3)
     val trajectoryFile = args(4) //map-matched
+    val resDir = args(5)
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -34,10 +37,21 @@ object runODQuery extends App {
     //    println(strictQuery(queryRDD, groupedODRDD).deep)
     //    println(thresholdQuery(queryRDD, groupedODRDD, 200, rg).deep)
     /** test on all vertex pairs */
-    val vertices = rg.vertexes.map(x => x.id).take(queryTestNum.toInt)
-    val vertexRDD = sc.parallelize(vertices, numPartitions)
-    val pairVertexRDD = vertexRDD.cartesian(vertexRDD).map(x => s"${x._1}->${x._2}")
-    println(pairVertexRDD.take(5).deep)
-    strictQuery(pairVertexRDD, groupedODRDD).foreach(x => println(x._1, x._2.length))
+    var pairVertexRDD = sc.emptyRDD[String]
+    if (queries == "all") {
+      val vertices = rg.vertexes.map(x => x.id).take(100)
+      val vertexRDD = sc.parallelize(vertices, numPartitions)
+      pairVertexRDD = vertexRDD.cartesian(vertexRDD).map(x => s"${x._1}->${x._2}")
+    }
+    else pairVertexRDD = sc.parallelize(preprocessing.readODQueryFile(queries))
+    //println(pairVertexRDD.take(5).deep)
+    val resRDD = strictQuery(pairVertexRDD, groupedODRDD)
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val df = resRDD.map(x => Row(x._1, x._2.deep.toString.drop(6).dropRight(1)))
+      .map({
+        case Row(val1: String, val2: String) => (val1, val2)
+      }).toDF("queryOD", "trajs")
+    df.write.option("header", value = true).option("encoding", "UTF-8").csv(resDir)
   }
 }

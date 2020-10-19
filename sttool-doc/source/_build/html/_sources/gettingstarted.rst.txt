@@ -83,5 +83,12 @@ the production of an executor. To combine the files into a single file, a helper
 
 OD Query
 ---------------
+
+The OD query returns all the trajectories that traverse from the given origin (*O*) to the given destination (*D*).
+
+To run OD query, go to ``ST-TOOLHOME/run`` and run 
+``stt odquery odconfig.json``
+
+
 Speed Query
 ---------------

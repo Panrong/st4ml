@@ -33,8 +33,8 @@ object odQuery {
     odRDD.filter(x => x._1 == queryString).flatMap(x => x._2).collect
   }
 
-  def strictQuery(queryRDD: RDD[String], odRDD: RDD[(String, Array[String])]): Array[(String,Array[String])] = { // multiple queries
-    queryRDD.map(x => (x, 1)).join(odRDD).map(x => (x._1,x._2._2)).collect
+  def strictQuery(queryRDD: RDD[String], odRDD: RDD[(String, Array[String])]): RDD[(String,Array[String])] = { // multiple queries
+    queryRDD.map(x => (x, 1)).join(odRDD).map(x => (x._1,x._2._2))
   }
 
   def thresholdQuery(oVertex: String, dVertex: String, odRDD: RDD[(String, Array[String])], th: Double, rg: RoadGrid): Array[String] = { // single query
