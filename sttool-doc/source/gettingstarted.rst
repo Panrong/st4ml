@@ -74,8 +74,9 @@ One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_rq_co
 When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
 Otherwise, the workers should have the same file with the same directory name. 
 
-The ``mapfile`` and ``queryfile`` are currently stored *locally* on each worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+The ``mapfile`` is currently stored *locally* on **each** worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
 
+The ``queryfile`` should *locally* stored on the master node.
 
 After map matching is done, a folder is created at the specific location, which consists multiple folders that one for each query. Each folder consists of multiple ``.csv`` files named ``part-000...``. Each of the files is 
 the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
