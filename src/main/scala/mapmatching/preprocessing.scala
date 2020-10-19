@@ -204,6 +204,10 @@ object preprocessing {
   def readRoadIDQueryFile(f:String): Array[String] = {
     Source.fromFile(f).getLines.toArray
   }
+
+  def readODQueryFile(f:String):Array[String] = {
+    Source.fromFile(f).getLines.toArray
+  }
 }
 
 object preprocessingTest extends App {
