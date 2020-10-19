@@ -70,5 +70,10 @@ Data infomation:
 
 Execution output::
 
+    ... odRDD generation time: 5.655062451s
+    ... OD query time for 538008025 pairs: 861.586406464s
+
+`[spark log] <http://18.141.153.85:18080/history/app-20201019151041-0009/jobs/>`_
+
 Speed Query
 ---------------
