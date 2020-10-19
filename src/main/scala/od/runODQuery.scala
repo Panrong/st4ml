@@ -25,6 +25,7 @@ object runODQuery extends App {
     val mmTrajectoryRDD = preprocessing.readMMTrajFile(trajectoryFile)
     val groupedODRDD = genODRDD(mmTrajectoryRDD)
     val rg = RoadGrid(roadGraphFile)
+    groupedODRDD.cache()
     println("... odRDD generation time: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime()
 
