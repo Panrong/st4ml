@@ -45,9 +45,7 @@ object runRangeQuery extends App {
       try {
         taxiID = x.taxiID.toLong
       } catch {
-        case ex: java.lang.NumberFormatException => {
-          taxiID = 1
-        }
+        case ex: java.lang.NumberFormatException => taxiID = 1
       }
       Trajectory(tripID, taxiID, x.startTime, points)
     }).repartition(numPartition)
@@ -98,7 +96,7 @@ object runRangeQuery extends App {
 
 
 
-      df.write.option("header", value = true).option("encoding", "UTF-8").csv(args(7) + s"/$i")
+      df.write.option("header", value = true).option("encoding", "UTF-8").csv(resultdir + s"/$i")
       println("=== " + trajIDs.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
 
       //val avgSpeed = queriedTrajRDD.map(x => x.asInstanceOf[Rectangle].trajectory.calAvgSpeed(queryRange)).mean
