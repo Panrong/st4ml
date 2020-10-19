@@ -39,7 +39,7 @@ object runODQuery extends App {
     /** test on all vertex pairs */
     var pairVertexRDD = sc.emptyRDD[String]
     if (queries == "all") {
-      val vertices = rg.vertexes.map(x => x.id).take(100)
+      val vertices = rg.vertexes.map(x => x.id)
       val vertexRDD = sc.parallelize(vertices, numPartitions)
       pairVertexRDD = vertexRDD.cartesian(vertexRDD).map(x => s"${x._1}->${x._2}")
     }
