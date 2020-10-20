@@ -1,9 +1,15 @@
 import main.scala.graph.RoadGrid
 import main.scala.mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
+import System.nanoTime
+
+import org.apache.spark.sql.{Row, SparkSession}
+
+import scala.collection.mutable.ArrayBuffer
 
 object runRangeSpeedQuery extends App {
   override def main(args: Array[String]): Unit = {
+    val t = nanoTime()
     val master = args(0)
     val mmTrajFile = args(1)
     val numPartition = args(2).toInt
@@ -12,6 +18,7 @@ object runRangeSpeedQuery extends App {
     val speedRange = args(5).split(",").map(x => x.toDouble)
     val minSpeed = speedRange(0)
     val maxSpeed = speedRange(1)
+    val resDir = args(6)
 
     val conf = new SparkConf()
     conf.setAppName("SpeedQuery_v2").setMaster(master)
@@ -40,7 +47,6 @@ object runRangeSpeedQuery extends App {
       .flatMapValues(x => x)
       .map(x => (x._2._1, (x._2._2, x._1)))
 
-
     //    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
     //      .map(x => (x.tripID, x.subTrajectories))
     //      .flatMapValues(x => x)
@@ -56,10 +62,26 @@ object runRangeSpeedQuery extends App {
       .groupByKey()
       .map { case (k, v) => (k, v.toArray) }
 
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val df = res.map(x => {
+      val queryRange = x._1
+      var info = ""
+      x._2.foreach(x => info += s"${x._2}:${x._1.formatted("%.2f")},")
+      Row("(" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")",
+        x._2.length.toString, info.dropRight(1))
+    })
+      .map({
+        case Row(val1: String, val2: String, val3: String) => (val1, val2, val3)
+      }).toDF("queryRange", "Num", "Speed:TrajID")
+    df.write.option("header", value = true).option("encoding", "UTF-8").csv(resDir)
+
     for (i <- res.collect) {
       val queryRange = i._1
-      println(s"Query Range: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
+      val q = "(" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")"
+      println(s"Query Range: $q : ${i._2.length} sub-trajectories has speed in the range ($minSpeed, $maxSpeed)")
     }
+    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d} s.")
     sc.stop()
 
   }
