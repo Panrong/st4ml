@@ -211,7 +211,7 @@ inside the query ranges.</p>
 <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
 <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges</span>
 <span class="s2">&quot;gridsize&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># to partition the map into grids with length gridsize (in km)</span>
-<span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster.</span>
+<span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions. It can be set to be the same as number of CPU cores in the cluster.</span>
 <span class="s2">&quot;rtreecapacity&quot;</span><span class="p">:</span> <span class="mi">1000</span> <span class="c1"># RTree capacity, should not be less than square root of total number of trajectories</span>
 <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmprqres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
 
@@ -251,7 +251,7 @@ the production of an executor. To combine the files into a single file, a helper
 <span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
 <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
 <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/odqueries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ODs OR &quot;all&quot; for generating the thorough OD matrix</span>
-<span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster.</span>
+<span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions. It can be set to be the same as number of CPU cores in the cluster.</span>
 <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpodres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
 
 <span class="p">}</span>
@@ -270,6 +270,46 @@ the production of an executor. To combine the files into a single file, a helper
 </div>
 <div class="section" id="speed-query">
 <h2>Speed Query<a class="headerlink" href="#speed-query" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt>The ST-Tool supports two kinds of speed queries:</dt><dd><ol class="arabic simple">
+<li><p>to find all trajectories within a <strong>range</strong> and within a speed limit</p></li>
+<li><p>to find all trajectories with a specified <strong>OD</strong> and within a speed limit</p></li>
+</ol>
+</dd>
+</dl>
+<p>The map-matched trajectories are seperated into sub-trajectories implicitly where each subtrajectory corresponds to a road segment
+and the average speed of that subtrajectory is estimated.</p>
+<p>To run speed query, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
+<code class="docutils literal notranslate"><span class="pre">stt</span> <span class="pre">speedquery</span> <span class="pre">speedconfig.json</span></code></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">speedconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">rqconfig-example.json</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
+<span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
+<span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
+<span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
+<span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
+<span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
+<span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../target/scala-2.12/map-matching_2.12-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
+<span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
+<span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
+<span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges OR road IDs for mode &quot;range&quot; OR &quot;id&quot; respectively</span>
+<span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;range&quot;</span> <span class="c1"># either &quot;range&quot; or &quot;id&quot;, has to correspond to the query file</span>
+<span class="s2">&quot;speedrange&quot;</span><span class="p">:</span> <span class="s2">&quot;120,200&quot;</span> <span class="c1"># lower and higher limit of the query speed, seperated with a &quot;,&quot;</span>
+<span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster.</span>
+<span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpspeedres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_speed_config.py</span></code>.</p>
+<ul class="simple">
+<li><p>Notes on file storage location:</p></li>
+</ul>
+<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">mmtrajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
+Otherwise, the workers should have the same file with the same directory name.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on <strong>each</strong> worker node with the same directory name since the graph and text reading function cannot access HDFS currently.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">queryfile</span></code> should <em>locally</em> stored on the master node.</p>
+<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
+the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
 </div>
 

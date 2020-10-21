@@ -61,7 +61,7 @@ The ``rqconfig.json`` file should have the following fields (example: ``rqconfig
     "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
     "query": "../datasets/queries.txt", # path to the file consisting query ranges
     "gridsize": "2", # to partition the map into grids with length gridsize (in km)
-    "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
+    "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
     "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
     "resultsdir": "/datasets/tmprqres", # temporory directory to save the range query results in HDFS
 
@@ -108,7 +108,7 @@ The ``odconfig.json`` file should have the following fields (example: ``rqconfig
     "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
     "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
     "query": "../datasets/odqueries.txt", # path to the file consisting query ODs OR "all" for generating the thorough OD matrix 
-    "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
+    "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
     "resultsdir": "/datasets/tmpodres", # temporory directory to save the range query results in HDFS
 
     }
@@ -129,3 +129,46 @@ the production of an executor. To combine the files into a single file, a helper
 
 Speed Query
 ---------------
+
+The ST-Tool supports two kinds of speed queries:
+    1) to find all trajectories within a **range** and within a speed limit
+    2) to find all trajectories with a specified **OD** and within a speed limit
+
+The map-matched trajectories are seperated into sub-trajectories implicitly where each subtrajectory corresponds to a road segment
+and the average speed of that subtrajectory is estimated. 
+
+To run speed query, go to ``ST-TOOLHOME/run`` and run 
+``stt speedquery speedconfig.json``
+
+The ``speedconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
+
+    {
+    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+    "master": "spark", # "local" for single machine
+    "total-executor-cores": "8", # the total cores used
+    "executor-cores": "2", # number of CPU cores per executor
+    "executor-memory": "3500M", # the memory assigned to each executor
+    "sparkmaster": "spark://Master:7077", # address of Spark master
+    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+    "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
+    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+    "query": "../datasets/queries.txt", # path to the file consisting query ranges OR road IDs for mode "range" OR "id" respectively 
+    "mode": "range" # either "range" or "id", has to correspond to the query file
+    "speedrange": "120,200" # lower and higher limit of the query speed, seperated with a ","
+    "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
+    "resultsdir": "/datasets/tmpspeedres", # temporory directory to save the range query results in HDFS
+    }
+
+One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_speed_config.py``. 
+
+* Notes on file storage location:
+
+When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
+Otherwise, the workers should have the same file with the same directory name. 
+
+The ``mapfile`` is currently stored *locally* on **each** worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+
+The ``queryfile`` should *locally* stored on the master node.
+
+After map matching is done, a folder is created at the specific location, which consists multiple ``.csv`` files named ``part-000...``. Each of the files is 
+the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.

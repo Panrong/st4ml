@@ -1,5 +1,8 @@
 Data Format
 ^^^^^^^^^^^^^^^
+
+The following explains the format of input and output files of the ST-Tool.
+
 Input files
 ---------------
 Map file
@@ -35,6 +38,7 @@ Each data sample corresponds to one completed trip. It contains a total of 9 fea
 
 Batch range query file
 >>>>>>>>>>>>>>>>>>>>>>
+Used for ``rangequery`` or ``speedquery`` with ``id`` mode.
 Range query can be done per batch by reading a ``.txt`` file. The format is as below::
 
     bl.lon bl.lat tr.lon tr.lat
@@ -48,6 +52,40 @@ Example (of ranges in Porto city)::
     -8.682329739182336 41.16930767535641 -8.553892156181982 41.17336956864337
     -8.610269994657497 41.141684995811005 -8.560452908967754 41.21404596573107
     -8.656135520314116 41.1333164462172 -8.51591767515082 41.232968562456634
+    ... ...
+
+Batch OD query file
+>>>>>>>>>>>>>>>>>>>>>>
+Used for ``odquery``.
+OD query can be done per batch by reading a ``.txt`` file. The format is as below::
+
+    Origin->Destination
+
+The IDs are seperated with a single ``->``.
+
+Example (of road IDs in Porto city)::
+
+    297369744->475341668
+    3446699979->25632278
+    128674452->5264784641
+    ... ...
+
+
+Batch roadID query file
+>>>>>>>>>>>>>>>>>>>>>>>>
+Used for ``speedquery`` with ``id`` mode.
+RoadID query can be done per batch by reading a ``.txt`` file. The format is as below::
+
+    ID1-ID2
+
+The IDs are seperated with a single ``-``. Make sure that ID1 and ID2 are connected for valid queries.
+
+Example (of road IDs in Porto city)::
+
+    1687535732-688007835
+    5284452790-5284452787
+    420776894-431925048
+    1323015484-1323015492
     ... ...
 
 Output files
@@ -83,7 +121,7 @@ Range query result file
 The ``.csv`` file generated from range query has the following header:
 
 +-----------+-------+----------+
-|queryRange |tripID | taxiID   |
+|queryOD    |trajs  | taxiID   |
 +===========+=======+==========+
 +-----------+-------+----------+
 
@@ -92,3 +130,53 @@ Explanations:
      **queryRange**: with the format(bl.lon,bl.lat,tr.lon,tr.lat)
 
      **taxiID** and **tripID**: for identidfication
+ 
+
+OD query result file
+>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+The ``.csv`` file generated from range query has the following header:
+
++-----------+-------+
+|queryRange |tripID | 
++===========+=======+
++-----------+-------+
+
+Explanations: 
+
+     **queryRange**: with the format(bl.lon,bl.lat,tr.lon,tr.lat)
+    
+     **trajID**: for identidfication
+
+
+Speed query result file
+>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+The ``.csv`` file generated from range query has the following header:
+
++-----------+-------+-------------+
+|queryRange |Num    | TrajID:Speed|
++===========+=======+=============+
++-----------+-------+-------------+
+
+or
+
++-----------+-------+-------------+
+|queryID    | Num   | TrajID:Speed|
++===========+=======+=============+
++-----------+-------+-------------+
+
+depending on the query mode ("range" and "id" respectively).
+
+Explanations: 
+
+     **queryRange**: with the format(bl.lon,bl.lat,tr.lon,tr.lat)
+     
+     **queryRange**: with the format(Origin-Desitation)
+
+     **Num**: total number of sum trajectories queried
+
+     **TrajID**: for identidfication
+
+     **Speed**: km/h
+
