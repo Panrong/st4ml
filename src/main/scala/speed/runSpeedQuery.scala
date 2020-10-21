@@ -73,7 +73,7 @@ object runRangeSpeedQuery extends App {
     })
       .map({
         case Row(val1: String, val2: String, val3: String) => (val1, val2, val3)
-      }).toDF("queryRange", "Num", "Speed:TrajID")
+      }).toDF("queryRange", "Num", "TrajID:Speed")
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(resDir)
 
     for (i <- res.collect) {
@@ -144,7 +144,7 @@ object runRoadIDSpeedQuery extends App {
     })
       .map({
         case Row(val1: String, val2: String, val3: String) => (val1, val2, val3)
-      }).toDF("queryRange", "Num", "Speed:TrajID")
+      }).toDF("queryID", "Num", "TrajID:Speed")
     df.write.option("header", value = true).option("encoding", "UTF-8").csv(resDir)
 
 
