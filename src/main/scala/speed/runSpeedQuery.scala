@@ -89,6 +89,7 @@ object runRangeSpeedQuery extends App {
 
 object runRoadIDSpeedQuery extends App {
   override def main(args: Array[String]): Unit = {
+    val t = nanoTime()
     val master = args(0)
     val mmTrajFile = args(1)
     val numPartition = args(2).toInt
@@ -100,7 +101,7 @@ object runRoadIDSpeedQuery extends App {
     val resDir = args(6)
 
     val conf = new SparkConf()
-    conf.setAppName("SpeedQuery_v1").setMaster(master)
+    conf.setAppName("SpeedQuery_v2").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
@@ -109,14 +110,14 @@ object runRoadIDSpeedQuery extends App {
     val queries = preprocessing.readRoadIDQueryFile(query)
     val queryRDD = sc.parallelize(queries, numPartition)
       .map((_, 1))
-//
-//    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
-//      .map(x => (x.tripID, x.subTrajectories))
-//      .flatMapValues(x => x)
-//      .mapValues(x => (x.roadEdgeID, x.speed))
-//      .map { case (x, y) => (y._1, (y._2, x)) }
-//      // .repartition(numPartition) // (roadID, (speed, tripID))
-//      .groupByKey()
+    //
+    //    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
+    //      .map(x => (x.tripID, x.subTrajectories))
+    //      .flatMapValues(x => x)
+    //      .mapValues(x => (x.roadEdgeID, x.speed))
+    //      .map { case (x, y) => (y._1, (y._2, x)) }
+    //      // .repartition(numPartition) // (roadID, (speed, tripID))
+    //      .groupByKey()
 
     val speedRDD = preprocessing.readMMWithRoadTime(mmTrajFile)
       .map(x => (x.tripID, x.subTrajectories.map(x => (x.roadEdgeID, x.startTime))))
@@ -129,10 +130,10 @@ object runRoadIDSpeedQuery extends App {
       .flatMapValues(x => x)
       .map(x => (x._2._1, (x._2._2, x._1)))
       .groupByKey()
-      .map{case(k,v) => (k, v.toArray)}
+      .map { case (k, v) => (k, v.toArray) }
 
     val res = queryRDD.join(speedRDD)
-      .map { case (k, v) => (k, v._2.filter(x => x._1 >= minSpeed && x._1 <= maxSpeed))} // roadID, Array(speed, trajID)
+      .map { case (k, v) => (k, v._2.filter(x => x._1 >= minSpeed && x._1 <= maxSpeed)) } // roadID, Array(speed, trajID)
 
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -151,6 +152,7 @@ object runRoadIDSpeedQuery extends App {
       val queryRange = i._1
       println(s"Query road ID: $queryRange : ${i._2.size} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
     }
+    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d} s.")
     sc.stop()
   }
 }
