@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object runRangeSpeedQuery extends App {
   override def main(args: Array[String]): Unit = {
-    val t = nanoTime()
+    var t = nanoTime()
     val master = args(0)
     val mmTrajFile = args(1)
     val numPartition = args(2).toInt
@@ -24,7 +24,8 @@ object runRangeSpeedQuery extends App {
     conf.setAppName("SpeedQuery_v2").setMaster(master)
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
-
+    println("... Setting up Spark time: " + (nanoTime - t) / 1e9d + "s")
+    t = nanoTime()
     val queries = preprocessing.readQueryFile(query)
     val queryRDD = sc.parallelize(queries, numPartition)
     val roadMapRDD = sc.parallelize(
