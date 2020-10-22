@@ -8,21 +8,21 @@ The map matching module in the ST-Tool implements the widely used `Hidden Markov
 To run map matching, go to ``ST-TOOLHOME/run`` and run 
 ``stt mapmatching mmconfig.json``
 
-The ``mmconfig.json`` file should have the following fields (example: ``mmconfig-example.json``)::
+The ``mmconfig.json`` file should have the following fields (example: ``mmconfig-example.json``) ::
 
     {
-    "useHDFS": true, # use HDFS or not
-    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-    "master": "spark", # "local" for single machine
-    "total-executor-cores": "8", # the total cores used
-    "executor-cores": "2", # number of CPU cores per executor
-    "executor-memory": "3500M", # the memory assigned to each executor
-    "sparkmaster": "spark://Master:7077", # address of Spark master
-    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
-    "trajfile": "/datasets/porto_traj.csv", # path to the file consisting trajectory data
-    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-    "numtraj": "10000", # number of trajectories to apply map matching
-    "resultsdir": "/datasets/tmpmmres", # directory to save the map matching results
+        "useHDFS": true, # use HDFS or not
+        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+        "master": "spark", # "local" for single machine
+        "total-executor-cores": "8", # the total cores used
+        "executor-cores": "2", # number of CPU cores per executor
+        "executor-memory": "3500M", # the memory assigned to each executor
+        "sparkmaster": "spark://Master:7077", # address of Spark master
+        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "trajfile": "/datasets/porto_traj.csv", # path to the file consisting trajectory data
+        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+        "numtraj": "10000", # number of trajectories to apply map matching
+        "resultsdir": "/datasets/tmpmmres", # directory to save the map matching results
     }
 
 One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_mm_config.py``. 
@@ -47,24 +47,23 @@ inside the query ranges.
 To run map matching, go to ``ST-TOOLHOME/run`` and run 
 ``stt rangequery rqconfig.json``
 
-The ``rqconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
+The ``rqconfig.json`` file should have the following fields (example: ``rqconfig-example.json``) ::
 
     {
-    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-    "master": "spark", # "local" for single machine
-    "total-executor-cores": "8", # the total cores used
-    "executor-cores": "2", # number of CPU cores per executor
-    "executor-memory": "3500M", # the memory assigned to each executor
-    "sparkmaster": "spark://Master:7077", # address of Spark master
-    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
-    "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-    "query": "../datasets/queries.txt", # path to the file consisting query ranges
-    "gridsize": "2", # to partition the map into grids with length gridsize (in km)
-    "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
-    "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
-    "resultsdir": "/datasets/tmprqres", # temporory directory to save the range query results in HDFS
-
+        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+        "master": "spark", # "local" for single machine
+        "total-executor-cores": "8", # the total cores used
+        "executor-cores": "2", # number of CPU cores per executor
+        "executor-memory": "3500M", # the memory assigned to each executor
+        "sparkmaster": "spark://Master:7077", # address of Spark master
+        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
+        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+        "query": "../datasets/queries.txt", # path to the file consisting query ranges
+        "gridsize": "2", # to partition the map into grids with length gridsize (in km)
+        "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
+        "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
+        "resultsdir": "/datasets/tmprqres", # temporory directory to save the range query results in HDFS
     }
 
 One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_rq_config.py``. 
@@ -98,19 +97,18 @@ To run OD query, go to ``ST-TOOLHOME/run`` and run
 The ``odconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
 
     {
-    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-    "master": "spark", # "local" for single machine
-    "total-executor-cores": "8", # the total cores used
-    "executor-cores": "2", # number of CPU cores per executor
-    "executor-memory": "3500M", # the memory assigned to each executor
-    "sparkmaster": "spark://Master:7077", # address of Spark master
-    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
-    "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-    "query": "../datasets/odqueries.txt", # path to the file consisting query ODs OR "all" for generating the thorough OD matrix 
-    "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
-    "resultsdir": "/datasets/tmpodres", # temporory directory to save the range query results in HDFS
-
+        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+        "master": "spark", # "local" for single machine
+        "total-executor-cores": "8", # the total cores used
+        "executor-cores": "2", # number of CPU cores per executor
+        "executor-memory": "3500M", # the memory assigned to each executor
+        "sparkmaster": "spark://Master:7077", # address of Spark master
+        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
+        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+        "query": "../datasets/odqueries.txt", # path to the file consisting query ODs OR "all" for generating the thorough OD matrix 
+        "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
+        "resultsdir": "/datasets/tmpodres", # temporory directory to save the range query results in HDFS
     }
 
 One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_od_config.py``. 
@@ -143,20 +141,20 @@ To run speed query, go to ``ST-TOOLHOME/run`` and run
 The ``speedconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
 
     {
-    "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-    "master": "spark", # "local" for single machine
-    "total-executor-cores": "8", # the total cores used
-    "executor-cores": "2", # number of CPU cores per executor
-    "executor-memory": "3500M", # the memory assigned to each executor
-    "sparkmaster": "spark://Master:7077", # address of Spark master
-    "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
-    "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-    "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-    "query": "../datasets/queries.txt", # path to the file consisting query ranges OR road IDs for mode "range" OR "id" respectively 
-    "mode": "range" # either "range" or "id", has to correspond to the query file
-    "speedrange": "120,200" # lower and higher limit of the query speed, seperated with a ","
-    "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
-    "resultsdir": "/datasets/tmpspeedres", # temporory directory to save the range query results in HDFS
+        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
+        "master": "spark", # "local" for single machine
+        "total-executor-cores": "8", # the total cores used
+        "executor-cores": "2", # number of CPU cores per executor
+        "executor-memory": "3500M", # the memory assigned to each executor
+        "sparkmaster": "spark://Master:7077", # address of Spark master
+        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
+        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
+        "query": "../datasets/queries.txt", # path to the file consisting query ranges OR road IDs for mode "range" OR "id" respectively 
+        "mode": "range" # either "range" or "id", has to correspond to the query file
+        "speedrange": "120,200" # lower and higher limit of the query speed, seperated with a ","
+        "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
+        "resultsdir": "/datasets/tmpspeedres", # temporory directory to save the range query results in HDFS
     }
 
 One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_speed_config.py``. 

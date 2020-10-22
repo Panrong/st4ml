@@ -10,7 +10,9 @@ Testing environment:
 Data infomation:
     10000 trajectories from Porto dataset to match.
 
-Execution output::
+Execution output
+
+.. code-block :: json
 
     ... Setting Spark up took: 2.755052387s
     ... Generating road graph took: 2.069630188s
@@ -68,7 +70,9 @@ Data infomation:
 
     number of partitions: 8
 
-Execution output::
+Execution output
+
+.. code-block :: json
 
     ... odRDD generation time: 5.655062451s
     ... OD query time for 538008025 pairs: 861.586406464s
@@ -88,9 +92,12 @@ Data infomation:
 
     number of partitions: 8
 
-Execution output::
+Execution output
+
+.. code-block :: json
 
     ... Setting up Spark time: 2.828224706s
+    ... ...
     ... ...
     Query Range: (-8.61209634634375, 41.158958991217865, -8.52322392897172, 41.24927719370218) : 2 sub-trajectories has speed in the range (120.0, 200.0)
     Query Range: (-8.57073187257375, 41.125775000429606, -8.503937753998816, 41.21334054187588) : 4 sub-trajectories has speed in the range (120.0, 200.0)
@@ -107,9 +114,12 @@ Data infomation:
 
     number of partitions: 8
 
-Execution output::
+Execution output
+
+.. code-block :: json
 
     ... Setting up Spark time: 2.715207938s
+    ... ...
     ... ...
     Query road ID: 1097394662-1548072578 : 2 sub-trajectories with speed  in the range (0.0, 200.0)
     Query road ID: 112613598-3139458278 : 9 sub-trajectories with speed  in the range (0.0, 200.0)
