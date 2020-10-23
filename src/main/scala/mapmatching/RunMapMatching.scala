@@ -162,12 +162,12 @@ object RunMapMatching extends App {
     /** with speed info */
     val df = persistMapMatchedRDD.map({
       case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
-    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime").persist(StorageLevel.MEMORY_AND_DISK)
+    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime")
 
     df.write
       .option("header", value = true)
       .option("encoding", "UTF-8")
-      .mode("append")
+      .partitionBy("taxiID")
       .csv(args(2))
 
     println("Total time: " + (nanoTime() - tStart) / 1e9d)
