@@ -36,6 +36,8 @@ Execution output
 
 `[spark log] <http://18.141.153.85:18080/history/app-20201015171021-0014/jobs/>`_
 
+*After data preprocessing, the average map matching time is about 0.1s/trajectory.*
+
 Range Query
 ---------------
 
@@ -59,6 +61,9 @@ Execution output::
 
 `[spark log] <http://18.141.153.85:18080/history/app-20201018134949-0004/jobs/>`_
 
+*After RTree generation, the average range query time is about 0.37s/range.*
+
+
 OD Query
 ---------------
 
@@ -78,6 +83,9 @@ Execution output
     ... OD query time for 538008025 pairs: 861.586406464s
 
 `[spark log] <http://18.141.153.85:18080/history/app-20201019151041-0009/jobs/>`_
+
+*The average OD query time is about 1.6e-6 s/range.*
+
 
 Speed Query
 ---------------
