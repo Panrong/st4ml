@@ -37,7 +37,7 @@ object RunMapMatching extends App {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
-    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon)).zipWithIndex()
+    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon)).zipWithIndex().persist(StorageLevel.MEMORY_AND_DISK)
     if (timeCount) {
       println("... Generating trajRDD took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
@@ -156,7 +156,7 @@ object RunMapMatching extends App {
             //Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
           }
         })
-      val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
+      // val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
 
       val spark = SparkSession.builder().getOrCreate()
       import spark.implicits._
@@ -166,7 +166,7 @@ object RunMapMatching extends App {
       //    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
 
       /** with speed info */
-      val df = persistMapMatchedRDD.map({
+      val df = mapmatchedRDD.map({
         case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
       }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime")
 
