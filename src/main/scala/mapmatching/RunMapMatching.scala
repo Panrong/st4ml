@@ -37,7 +37,7 @@ object RunMapMatching extends App {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
-    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon)).zipWithIndex()
+    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon)).zipWithIndex().persist(StorageLevel.MEMORY_AND_DISK)
     if (timeCount) {
       println("... Generating trajRDD took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
