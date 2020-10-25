@@ -8,8 +8,12 @@
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/testRangeQuery$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	runRangeQuery.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRangeQuery.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runRangeSpeedQuery$$typecreator5$1.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRangeSpeedQuery$$typecreator5$1.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	RunMapMatching.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/RunMapMatching.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runRoadIDSpeedQuery$$typecreator5$2.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRoadIDSpeedQuery$$typecreator5$2.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	gpsSpeed.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/gpsSpeed.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	runODQuery.class[0m
@@ -20,6 +24,8 @@
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/testRangeQuery.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	runRangeSpeedQuery$.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runRangeSpeedQuery$.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	runODQuery$$typecreator5$1.class[0m
+[0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/runODQuery$$typecreator5$1.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	testRangeQuery2.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	  /home/spark/spark-map-matching/target/scala-2.12/classes/testRangeQuery2.class[0m
 [0m[[0m[0mdebug[0m] [0m[0m	mapmatching[0m

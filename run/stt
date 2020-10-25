@@ -9,7 +9,7 @@ echo ""
 
 if [[ -z $2 ]] 
 then
-  echo -e "===== Usage: \n   >> ST-Tool [function] [config file]."
+  echo -e "===== Usage: \n   >> stt [function] [config file]."
   exit 1
 fi
 if [ $1 == "mapmatching" ]
