@@ -49,7 +49,7 @@ object RunMapMatching extends App {
     val totalTraj = args(4).toInt
     val totalBatch = totalTraj / batchSize
 
-    for (batch <- 0 until totalBatch) {
+    for (batch <- 0 to totalBatch) {
       val batchTrajRDD = trajRDD.filter(x => x._2 >= batch * batchSize && x._2 < min((batch + 1) * batchSize, totalTraj))
       val mapmatchedRDD = batchTrajRDD.map(x => x._1)
         .map(f = traj => {
@@ -173,7 +173,7 @@ object RunMapMatching extends App {
       df.write
         .option("header", value = true)
         .option("encoding", "UTF-8")
-        .csv(args(2) + s"/$batch")
+        .csv(args(2)+s"/$batch")
     }
     println("Total time: " + (nanoTime() - tStart) / 1e9d)
   }
