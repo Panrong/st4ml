@@ -9,7 +9,7 @@ echo ""
 
 if [[ -z $2 ]] 
 then
-  echo -e "===== Usage: \n   >> ST-Tool [function] [config file]."
+  echo -e "===== Usage: \n   >> stt [function] [config file]."
   exit 1
 fi
 if [ $1 == "mapmatching" ]
@@ -30,11 +30,16 @@ then
 elif [ $1 == "odquery" ]
 then 
   echo "===== Start OD query on road network"
+  command python helper/parse_odconfig.py $2
+  command bash submit_od_job.tmp
+  command rm submit_od_job.tmp
 
 elif [ $1 == "speedquery" ]
 then 
   echo "===== Start speed query on road network"
-
+  command python helper/parse_speedconfig,py $2
+  command bash submit_speed_job.tmp
+  command rm submit_speed_job.tmp
 
 else
   echo "===== Function not supported. Please select from { mapmatching, rangequery, odquery, speedquery }"
