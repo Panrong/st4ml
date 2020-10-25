@@ -37,7 +37,7 @@ then
 elif [ $1 == "speedquery" ]
 then 
   echo "===== Start speed query on road network"
-  command python helper/parse_speedconfig,py $2
+  command python helper/parse_speedconfig.py $2
   command bash submit_speed_job.tmp
   command rm submit_speed_job.tmp
 
