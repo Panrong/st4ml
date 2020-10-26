@@ -36,7 +36,9 @@ Execution output
 
 `[spark log] <http://18.141.153.85:18080/history/app-20201015171021-0014/jobs/>`_
 
-*After data preprocessing, the average map matching time is about 0.1s/trajectory.*
+The average map matching time is :
+    *0.1s/trajectory.* (incl. preprocessing) 
+    *0.1s/trajectory.* (incl. preprocessing) 
 
 Range Query
 ---------------
