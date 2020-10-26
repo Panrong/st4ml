@@ -28,9 +28,9 @@ object runRangeSpeedQuery extends App {
     t = nanoTime()
     val queries = preprocessing.readQueryFile(query)
     val queryRDD = sc.parallelize(queries, numPartition)
-    queryRDD.collect
-    println("... query RDD generation time: " + (nanoTime - t) / 1e9d + "s")
-    t = nanoTime()
+    //    queryRDD.collect
+    //    println("... query RDD generation time: " + (nanoTime - t) / 1e9d + "s")
+    //    t = nanoTime()
     val roadMapRDD = sc.parallelize(
       RoadGrid(roadGraphFile).edges.map(x => (x.ls.mbr, x.id)), numPartition) // (mbr, roadID)
     val queriedRoadSegs = queryRDD.cartesian(roadMapRDD)
@@ -50,9 +50,9 @@ object runRangeSpeedQuery extends App {
       })
       .flatMapValues(x => x)
       .map(x => (x._2._1, (x._2._2, x._1)))
-    speedRDD.collect
-    println("... speed RDD generation time: " + (nanoTime - t) / 1e9d + "s")
-    t = nanoTime()
+    //    speedRDD.collect
+    //    println("... speed RDD generation time: " + (nanoTime - t) / 1e9d + "s")
+    //    t = nanoTime()
     //    val speedRDD = preprocessing.readMMWithSpeed(mmTrajFile)
     //      .map(x => (x.tripID, x.subTrajectories))
     //      .flatMapValues(x => x)
@@ -87,7 +87,7 @@ object runRangeSpeedQuery extends App {
       val q = "(" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")"
       println(s"Query Range: $q : ${i._2.length} sub-trajectories has speed in the range ($minSpeed, $maxSpeed)")
     }
-    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d} s.")
+    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d}s.")
     sc.stop()
 
   }
@@ -125,9 +125,9 @@ object runRoadIDSpeedQuery extends App {
     //      .map { case (x, y) => (y._1, (y._2, x)) }
     //      // .repartition(numPartition) // (roadID, (speed, tripID))
     //      .groupByKey()
-    queryRDD.collect
-    println("... query RDD generation time: " + (nanoTime - t) / 1e9d + "s")
-    t = nanoTime()
+    //    queryRDD.collect
+    //    println("... query RDD generation time: " + (nanoTime - t) / 1e9d + "s")
+    //    t = nanoTime()
     val speedRDD = preprocessing.readMMWithRoadTime(mmTrajFile)
       .map(x => (x.tripID, x.subTrajectories.map(x => (x.roadEdgeID, x.startTime))))
       .mapValues(x => {
@@ -140,9 +140,9 @@ object runRoadIDSpeedQuery extends App {
       .map(x => (x._2._1, (x._2._2, x._1)))
       .groupByKey()
       .map { case (k, v) => (k, v.toArray) }
-    speedRDD.collect
-    println("... speed RDD generation time: " + (nanoTime - t) / 1e9d + "s")
-    t = nanoTime()
+    //    speedRDD.collect
+    //    println("... speed RDD generation time: " + (nanoTime - t) / 1e9d + "s")
+    //    t = nanoTime()
     val res = queryRDD.join(speedRDD)
       .map { case (k, v) => (k, v._2.filter(x => x._1 >= minSpeed && x._1 <= maxSpeed)) } // roadID, Array(speed, trajID)
 
@@ -163,7 +163,7 @@ object runRoadIDSpeedQuery extends App {
       val queryRange = i._1
       println(s"Query road ID: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
     }
-    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d} s.")
+    println(s"==== Speed query for ${queries.length} road IDs takes ${(nanoTime() - t) / 1e9d}s.")
     sc.stop()
   }
 }
