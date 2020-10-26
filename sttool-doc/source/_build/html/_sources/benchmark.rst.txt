@@ -38,7 +38,6 @@ Execution output
 
 The average map matching time is :
     *0.1s/trajectory.* (incl. preprocessing) 
-    *0.1s/trajectory.* (incl. preprocessing) 
 
 Range Query
 ---------------
@@ -134,7 +133,7 @@ Execution output
     Query road ID: 1097394662-1548072578 : 2 sub-trajectories with speed  in the range (0.0, 200.0)
     Query road ID: 112613598-3139458278 : 9 sub-trajectories with speed  in the range (0.0, 200.0)
     Query road ID: 126597343-475339285 : 133 sub-trajectories with speed  in the range (0.0, 200.0)
-    ==== Speed query for 200 ranges takes 22.85007118 s.
+    ==== Speed query for 200 road IDs takes 22.85007118 s.
 
 *Note:* The query road IDs without any trajectories traversing will NOT be shown in the result file.
 

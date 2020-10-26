@@ -7,7 +7,28 @@ Input files
 ---------------
 Map file
 >>>>>>>>
-to be edited
+The map file is a ``.csv`` file that specifies the underlying road networks. A correct map file should contain two types of lines, where node lines denote key locations (e.g., intersections) and edge lines represent the physical connections among those locations. The format is as below::
+
+    node, [node_id], [node_longitude], [node_latitude]
+    edge, [from_node_id], [to_node_id], [is_one_way], [length], [linestring]
+
+where is_one_way="0" means that the edge is bi-directional and linestring is the gps coordinates of the edge. Bi-directional edges should be recorded as two rows, and linestring is a String consisits of a set of coordinates, where coordinates are separated by "%" while longitude and latitude are separated by " ". Note that the first coordinate is the coordinate of from_node_id, and the last coordinate is the coordinate of to_node_id.
+
+A possible example is as follows::
+
+    node,415754682,-8.577353,41.1569772
+    node,415754656,-8.5786276,41.1579203
+    edge,415754682,415754656,0,152.19400000000002,-8.577353 41.1569772%-8.577353 41.1569772%-8.5778803 41.1572505%-8.5781347 41.157393%-8.578215699999999 41.157453%-8.5782624 41.1574953%-8.578314499999999 41.1575442%-8.578361900000001 41.1575972%-8.578402199999999 41.1576487%-8.5784229 41.1576806%-8.578504000000001 41.1577925%-8.578627600000001 41.1579203%-8.5786276 41.1579203
+
+To obtain the road networks of a target area, we recommand to use `OSMnx <https://osmnx.readthedocs.io/en/stable/>`_.  A possible example is as follows :
+
+.. code-block:: python
+
+   import osmnx as ox
+   ox.config(log_console=True, use_cache=True)
+   ox.config(all_oneway=False)
+   ox.graph_from_bbox(41.25, 41.10, -8.50, -8.70, network_type='drive', simplify=True, retain_all=True)
+
 
 Trajectory file
 >>>>>>>>>>>>>>>
