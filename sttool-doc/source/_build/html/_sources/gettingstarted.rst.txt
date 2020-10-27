@@ -18,7 +18,7 @@ The ``mmconfig.json`` file should have the following fields (example: ``mmconfig
         "executor-cores": "2", # number of CPU cores per executor
         "executor-memory": "3500M", # the memory assigned to each executor
         "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
         "trajfile": "/datasets/porto_traj.csv", # path to the file consisting trajectory data
         "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
         "numtraj": "10000", # number of trajectories to apply map matching
@@ -56,7 +56,7 @@ The ``rqconfig.json`` file should have the following fields (example: ``rqconfig
         "executor-cores": "2", # number of CPU cores per executor
         "executor-memory": "3500M", # the memory assigned to each executor
         "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
         "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
         "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
         "query": "../datasets/queries.txt", # path to the file consisting query ranges
@@ -103,7 +103,7 @@ The ``odconfig.json`` file should have the following fields (example: ``rqconfig
         "executor-cores": "2", # number of CPU cores per executor
         "executor-memory": "3500M", # the memory assigned to each executor
         "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
         "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
         "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
         "query": "../datasets/odqueries.txt", # path to the file consisting query ODs OR "all" for generating the thorough OD matrix 
@@ -147,7 +147,7 @@ The ``speedconfig.json`` file should have the following fields (example: ``rqcon
         "executor-cores": "2", # number of CPU cores per executor
         "executor-memory": "3500M", # the memory assigned to each executor
         "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../target/scala-2.12/map-matching_2.12-1.0.jar", # path to the .jar
+        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
         "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
         "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
         "query": "../datasets/queries.txt", # path to the file consisting query ranges OR road IDs for mode "range" OR "id" respectively 
