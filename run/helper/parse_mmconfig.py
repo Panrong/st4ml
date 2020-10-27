@@ -13,7 +13,11 @@ s += "export HADOOP_HOME=%s\n" % config["hadoopHome"]
 s += "spark-submit --class RunMapMatching --master %s --executor-memory %s --total-executor-cores %s --executor-cores %s\\\n" %(config["master"], config["executor-memory"], config["total-executor-cores"], config["executor-cores"])
 s += "  %s %s %s %s %s %s\n" %(config["jarpackage"], config["trajfile"], config["mapfile"], config["resultsdir"], config["sparkmaster"], config["numtraj"])
 
-if(config["useHDFS"]): s += "hdfs dfs -copyToLocal -f %s ./mmres_%s" %(config["resultsdir"], time.strftime("%Y%m%d%H%M", time.localtime()))
-
+timestamp = time.strftime("%Y%m%d%H%M", time.localtime())
+if(config["useHDFS"]): 
+  s += "hdfs dfs -copyToLocal -f %s ./mmres_%s_tmp\n" %(config["resultsdir"], timestamp)
+  s += "mkdir ./mmres_%s\n"%timestamp
+  s += "mv ./mmres_%s_tmp/*/*.csv ./mmres_%s\n"%(timestamp, timestamp)
+  s += "rm -r ./mmres_%s_tmp\n"%timestamp
 with open("submit_mm_job.tmp", "w") as f:
   f.write(s)
