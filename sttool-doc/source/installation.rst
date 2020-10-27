@@ -10,3 +10,11 @@ The ST-Tool is tested with the following dependencies and versions:
 * ``Java 1.8.0``
 * ``Python 3``
 
+Add ``PATH/TO/STTOOL`` to environment variables:
+
+E.g. for linux, add 
+
+.. code-block :: json
+
+    export PATH=$PATH: PATH/TO/STTOOL
+to ``~/.bashrc``

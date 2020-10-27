@@ -164,6 +164,9 @@
 <dl class="simple">
 <dt>Testing environment:</dt><dd><p>4 executors on 2 workers with <code class="docutils literal notranslate"><span class="pre">4</span> <span class="pre">CPU</span> <span class="pre">cores</span> <span class="pre">and</span> <span class="pre">7</span> <span class="pre">GB</span> <span class="pre">memory</span></code> each.</p>
 </dd>
+</dl>
+<p><strong>Experiment 1</strong>:</p>
+<dl class="simple">
 <dt>Data infomation:</dt><dd><p>10000 trajectories from Porto dataset to match.</p>
 </dd>
 </dl>
@@ -192,6 +195,39 @@ Total time: 969.98793277
 <p><a class="reference external" href="http://18.141.153.85:18080/history/app-20201015171021-0014/jobs/">[spark log]</a></p>
 <dl class="simple">
 <dt>The average map matching time is :</dt><dd><p><em>0.1s/trajectory.</em> (incl. preprocessing)</p>
+</dd>
+</dl>
+<p><a href="#id1"><span class="problematic" id="id2">**</span></a>Experiment 2*:</p>
+<dl class="simple">
+<dt>Data infomation:</dt><dd><p>100000 trajectories from Porto dataset to match.</p>
+</dd>
+</dl>
+<p>Execution output</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>… Setting Spark up took: 2.765148374s
+… Generating road graph took: 2.071082862s
+==== Read CSV Done
+— Total number of lines: 1710670
+— Total number of valid entries: 1674160
+… Time used: 181.675887136s
+==== Split trajectories with speed limit 50.0 m/s and time interval limit 180.0 s
+==== Split Trajectories Done
+— Now total number of entries: 1676953
+… Time used: 198.094431484s
+==== Remove Redundancy Done
+— Now total number of entries: 1676953
+… Time used: 272.79264668s
+==== Check Map Coverage Range Done
+— Now total number of entries: 1642652 in the map range of List(41.0998131, -8.6999794, 41.2511297, -8.4999935)
+… Time used: 274.196054036s
+… Generating trajRDD took: 926.770839657s
+==== Start Map Matching
+Total time: 72319.577134184</p>
+<p><a class="reference external" href="http://18.141.153.85:18080/history/app-20201026170040-0061/jobs/">[spark log]</a></p>
+<dl class="simple">
+<dt>The average map matching time is :</dt><dd><p><em>0.72s/trajectory.</em> (incl. preprocessing)</p>
 </dd>
 </dl>
 </div>
