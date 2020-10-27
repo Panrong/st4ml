@@ -1,5 +1,7 @@
 # ST-Tool
 
+## Update: the version for delivery locates at /home/spark/ST-TOOL-V1/ ( only jars and no source codes)
+
 ## Update: the documentation has been linked to http://18.141.153.85:8000/
 
 ## Mapmatched result file format for visualization use:
