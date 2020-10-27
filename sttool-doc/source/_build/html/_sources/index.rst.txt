@@ -6,7 +6,7 @@
 
 Welcome to ST-Tool's documentation!
 =======================================
-Write some introduction here
+Version 1
 
 .. toctree::
    :maxdepth: 2
