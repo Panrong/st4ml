@@ -1,4 +1,4 @@
-name := "Map Matching"
+name := "st-tool"
 
 version := "1.0"
 
