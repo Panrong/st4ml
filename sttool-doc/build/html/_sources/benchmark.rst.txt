@@ -50,25 +50,25 @@ Execution output
 
 .. code-block :: json
 
-... Setting Spark up took: 2.765148374s
-... Generating road graph took: 2.071082862s
-==== Read CSV Done
---- Total number of lines: 1710670
---- Total number of valid entries: 1674160
-... Time used: 181.675887136s
-==== Split trajectories with speed limit 50.0 m/s and time interval limit 180.0 s
-==== Split Trajectories Done
---- Now total number of entries: 1676953
-... Time used: 198.094431484s
-==== Remove Redundancy Done
---- Now total number of entries: 1676953
-... Time used: 272.79264668s
-==== Check Map Coverage Range Done
---- Now total number of entries: 1642652 in the map range of List(41.0998131, -8.6999794, 41.2511297, -8.4999935)
-... Time used: 274.196054036s
-... Generating trajRDD took: 926.770839657s
-==== Start Map Matching
-Total time: 72319.577134184
+    ... Setting Spark up took: 2.765148374s
+    ... Generating road graph took: 2.071082862s
+    ==== Read CSV Done
+    --- Total number of lines: 1710670
+    --- Total number of valid entries: 1674160
+    ... Time used: 181.675887136s
+    ==== Split trajectories with speed limit 50.0 m/s and time interval limit 180.0 s
+    ==== Split Trajectories Done
+    --- Now total number of entries: 1676953
+    ... Time used: 198.094431484s
+    ==== Remove Redundancy Done
+    --- Now total number of entries: 1676953
+    ... Time used: 272.79264668s
+    ==== Check Map Coverage Range Done
+    --- Now total number of entries: 1642652 in the map range of List(41.0998131, -8.6999794, 41.2511297, -8.4999935)
+    ... Time used: 274.196054036s
+    ... Generating trajRDD took: 926.770839657s
+    ==== Start Map Matching
+    Total time: 72319.577134184
 
 `[spark log] <http://18.141.153.85:18080/history/app-20201026170040-0061/jobs/>`_
 
