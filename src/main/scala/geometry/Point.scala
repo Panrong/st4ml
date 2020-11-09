@@ -49,4 +49,6 @@ case class Point(lon: Double, lat: Double, timestamp: Long = 0, ID: Long = 0) ex
   override def dist(point: Point): Double = math.sqrt(math.pow(x - point.x, 2) + math.pow(y - point.y, 2))
 
   override def center(): Point = this
+
+  override def toString = s"(${this.x},${this.y})"
 }

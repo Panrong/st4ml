@@ -95,4 +95,6 @@ case class Rectangle(bottomLeft: Point, topRight: Point, ID: Long = 0) extends S
   val vertices = Array(Point(x_min, y_min), Point(x_min, y_max), Point(x_max, y_max), Point(x_max, y_min))
   val edges = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
   val diagonals = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
+
+  override def toString = s"${this.x_min},${this.y_min},${this.x_max},${this.y_max}"
 }
