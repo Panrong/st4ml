@@ -30,7 +30,11 @@ object STRTest extends App {
         partitionsMap.iterator
       }
     }
-    pointsWithIndex.collect.foreach(x => println(x))
+    pointsWithIndex.collect.foreach(x => {
+      print(x._1 + " ")
+      x._2.foreach(x => print(x + " "))
+      println()
+    })
     println(idBoundaryMap)
 
     sc.stop()

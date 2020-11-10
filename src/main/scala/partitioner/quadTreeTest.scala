@@ -37,7 +37,11 @@ object quadTreeTest extends App {
         partitionsMap(index) = partitionList
         partitionsMap.iterator
       }
-    }.collect.foreach(x => println(x))
+    }.collect.foreach(x => {
+      print(x._1 + " ")
+      x._2.foreach(x => print(x + " "))
+      println()
+    })
     println(nodeIdPartitionMap)
   }
 
