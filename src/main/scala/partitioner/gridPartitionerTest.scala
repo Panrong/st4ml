@@ -20,7 +20,7 @@ object gridPartitionerTest extends App {
 
     /** generate RDD and partition it */
     val rdd = sc.parallelize(data)
-    val (pRDD, gridBound) = gridPartitioner(rdd, 10, 0.2)
+    val (pRDD, gridBound) = gridPartitioner(rdd, 10, 1)
     pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()
@@ -31,7 +31,11 @@ object gridPartitionerTest extends App {
         partitionsMap(index) = partitionList
         partitionsMap.iterator
       }
-    }.collect.foreach(x => println(x))
+    }.collect.foreach(x => {
+      print(x._1 + " ")
+      x._2.foreach(x => print(x + " "))
+      println()
+    })
     println(gridBound)
   }
 }
