@@ -1,8 +1,10 @@
 package main.scala.partitioner
 
 import main.scala.geometry.{Point, Shape}
+import org.apache.spark.ml.clustering.KMeans
 import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
+import org.apache.spark.sql.SparkSession
 
 import scala.reflect.ClassTag
 
@@ -15,8 +17,9 @@ object voronoiPartitioner {
    * @tparam T : type extends Shape
    * @return partitioned RDD
    */
-  def apply[T <: Shape : ClassTag](r: RDD[T], pivotPoints: Array[Point]): RDD[T] = {
+  def apply[T <: Shape : ClassTag](r: RDD[T], sampleRate: Double, num: Int): (RDD[T], Array[Point]) = {
     implicit val sc: SparkContext = SparkContext.getOrCreate()
+    val pivotPoints = findPivot(r, sampleRate, num)
     val pivotMap = pivotPoints.zipWithIndex.toMap
     val pivotRDD = sc.parallelize(pivotPoints)
     val numPartitions = pivotPoints.length
@@ -26,7 +29,16 @@ object voronoiPartitioner {
       .map { case (k, v) => (k, v.minBy(_._2)) }
       .map { case (k, v) => (v._1, k) }
     implicit val partitioner: voronoiPartitioner[T] = new voronoiPartitioner(numPartitions)
-    new ShuffledRDD[Int, T, T](partitionedRDD, partitioner).map(x => x._2)
+    (new ShuffledRDD[Int, T, T](partitionedRDD, partitioner).map(x => x._2), pivotPoints)
+  }
+
+  def findPivot[T <: Shape : ClassTag](rdd: RDD[T], sampleRate: Double, num: Int): Array[Point] = {
+    val sampledRDD = rdd.sample(withReplacement = false, sampleRate).map(x => Seq(x.center().lat, x.center().lon))
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val kmeans = new KMeans().setK(num).setSeed(1L)
+    val model = kmeans.fit(sampledRDD.toDF("features"))
+    model.clusterCenters.map(x => Point(x(0), x(1)))
   }
 }
 
@@ -34,4 +46,5 @@ class voronoiPartitioner[T <: Shape : ClassTag](num: Int) extends Partitioner {
   override def numPartitions: Int = num
 
   override def getPartition(key: Any): Int = key.asInstanceOf[Int]
+
 }

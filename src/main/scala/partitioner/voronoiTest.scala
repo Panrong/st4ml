@@ -2,6 +2,8 @@ package main.scala.partitioner
 
 import main.scala.geometry.Point
 import main.scala.partitioner.voronoiPartitioner
+import org.apache.spark.ml.clustering.KMeans
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.Random
@@ -20,9 +22,9 @@ object voronoiTest extends App {
 
     /** generate RDD and partition it */
     val numPartitions = 10
-    val pivot = data.take(numPartitions)
     val rdd = sc.parallelize(data)
-    val pRDD = voronoiPartitioner(rdd, pivot)
+
+    val (pRDD, pivotPoints) = voronoiPartitioner(rdd, 0.1, numPartitions)
     pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()
@@ -38,5 +40,6 @@ object voronoiTest extends App {
       x._2.foreach(x => print(x + " "))
       println()
     })
+    println(pivotPoints.deep)
   }
 }
