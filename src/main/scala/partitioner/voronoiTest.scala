@@ -16,7 +16,7 @@ object voronoiTest extends App {
 
     /** set up Spark */
     val conf = new SparkConf()
-    conf.setAppName("Grid-Partitioner-Test").setMaster("local")
+    conf.setAppName("Voronoi-Partitioner-Test").setMaster("local")
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
