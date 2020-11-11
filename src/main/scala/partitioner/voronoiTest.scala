@@ -1,11 +1,7 @@
 package main.scala.partitioner
 
 import main.scala.geometry.Point
-import main.scala.partitioner.voronoiPartitioner
-import org.apache.spark.ml.clustering.KMeans
-import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
-
 import scala.util.Random
 
 object voronoiTest extends App {
