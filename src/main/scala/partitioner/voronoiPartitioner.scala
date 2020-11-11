@@ -13,7 +13,8 @@ object voronoiPartitioner {
    * QuadTree partitioner
    *
    * @param r           : input RDD
-   * @param pivotPoints : Array of pivot points, the voronoi partitioner assign each object to its nearest pivot point
+   * @param sampleRate : sampling rate to generate pivot points
+   * @param num : number of pivot points
    * @tparam T : type extends Shape
    * @return partitioned RDD
    */
