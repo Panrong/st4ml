@@ -15,7 +15,7 @@ object STRTest extends App {
     val r = new Random()
     for (_ <- 0 until 1000) data = data :+ Point(r.nextDouble * 100, r.nextDouble * 100)
     val numPartition = 10
-    val (indexedRDD, idBoundaryMap) = STRPartitioner(sc.parallelize(data), numPartition, spark)
+    val (indexedRDD, idBoundaryMap) = STRPartitioner(sc.parallelize(data), numPartition, 0.1)
 
     //print content of each partition
     val p = indexedRDD
