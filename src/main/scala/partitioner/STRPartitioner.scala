@@ -14,13 +14,15 @@ object STRPartitioner {
    * STR partitioner
    * @param r : input RDD
    * @param numPartition : number of partitions
-   * @param spark : spark session
    * @tparam T : type extending Shape
+   * @param samplingRate : sampling rate
    * @return : repartitioned RDD and map(partitionNum -> boundary)
    */
-  def apply[T <: Shape : ClassTag](r: RDD[T], numPartition: Int, spark: SparkSession): (RDD[T], Map[Int, Rectangle]) = {
+  def apply[T <: Shape : ClassTag](r: RDD[T], numPartition: Int, samplingRate: Double): (RDD[T], Map[Int, Rectangle]) = {
+    val spark = SparkSession.builder().getOrCreate()
     // gen dataframeRDD on MBR
-    val rectangleRDD = r.map(x => (x.center().lat, x.center().lon))
+    val rectangleRDD = r.sample(withReplacement = false, samplingRate)
+    .map(x => (x.center().lat, x.center().lon))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, numPartition, List("x", "y"), coverWholeRange = true)
     val boxes = res._1
