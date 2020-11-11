@@ -24,7 +24,7 @@ object voronoiTest extends App {
     val numPartitions = 10
     val rdd = sc.parallelize(data)
 
-    val (pRDD, pivotPoints) = voronoiPartitioner(rdd, 0.1, numPartitions)
+    val (pRDD, pivotPoints) = voronoiPartitioner(rdd, numPartitions, 0.1)
     pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()
