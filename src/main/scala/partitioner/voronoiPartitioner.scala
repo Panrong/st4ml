@@ -13,12 +13,12 @@ object voronoiPartitioner {
    * QuadTree partitioner
    *
    * @param r           : input RDD
-   * @param sampleRate : sampling rate to generate pivot points
    * @param num : number of pivot points
+   * @param sampleRate : sampling rate to generate pivot points
    * @tparam T : type extends Shape
    * @return partitioned RDD
    */
-  def apply[T <: Shape : ClassTag](r: RDD[T], sampleRate: Double, num: Int): (RDD[T], Array[Point]) = {
+  def apply[T <: Shape : ClassTag](r: RDD[T], num: Int, sampleRate: Double): (RDD[T], Array[Point]) = {
     implicit val sc: SparkContext = SparkContext.getOrCreate()
     val pivotPoints = findPivot(r, sampleRate, num)
     val pivotMap = pivotPoints.zipWithIndex.toMap
