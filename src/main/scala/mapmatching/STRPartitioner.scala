@@ -1,9 +1,9 @@
-package STRPartition
+package mapmatching
 
 import org.apache.spark.Partitioner
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import main.scala.geometry.{Line, Point, Rectangle}
+import geometry.{Line, Point, Rectangle}
 
 import scala.math.{ceil, sqrt}
 

@@ -1,6 +1,6 @@
-package main.scala.partitioner
+package partitioner
 
-import main.scala.geometry.{Point, Rectangle, Shape}
+import geometry.{Point, Rectangle, Shape}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
 

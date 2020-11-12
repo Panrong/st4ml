@@ -1,6 +1,6 @@
-package main.scala.partitioner
+package partitioner
 
-import main.scala.geometry.{Point, Shape}
+import geometry.{Point, Shape}
 import org.apache.spark.ml.clustering.KMeans
 import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}

@@ -1,6 +1,6 @@
-package main.scala.graph
+package graph
 
-import main.scala.geometry.Point
+import geometry.Point
 
 
 object RoadGridTestWithTraj extends App {

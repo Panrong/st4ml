@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 import math.{sin, cos, acos, abs}
 

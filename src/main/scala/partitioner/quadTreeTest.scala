@@ -1,7 +1,6 @@
-package main.scala.partitioner
+package partitioner
 
-import main.scala.geometry.{Point, Shape}
-import main.scala.partitioner.{Node, QuadTree, quadTreePartitioner}
+import geometry.{Point, Shape}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.reflect.ClassTag

@@ -1,6 +1,6 @@
-package main.scala.partitioner
+package partitioner
 
-import main.scala.geometry.Point
+import geometry.Point
 import org.apache.spark.sql.SparkSession
 
 import scala.util.Random

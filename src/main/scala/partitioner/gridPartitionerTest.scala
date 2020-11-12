@@ -1,7 +1,6 @@
 package partitioner
 
-import main.scala.geometry.Point
-import main.scala.partitioner.gridPartitioner
+import geometry.Point
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.util.Random

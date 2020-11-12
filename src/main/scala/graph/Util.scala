@@ -1,4 +1,4 @@
-package main.scala.graph
+package graph
 
 import scala.annotation.tailrec
 

@@ -1,6 +1,6 @@
-package main.scala.graph
+package graph
 
-import main.scala.geometry.Graph
+import geometry.Graph
 
 /** Simple implementation of graphs using a map. */
 case class SimpleGraph[N](succs: Map[N, Map[N, Int]]) extends Graph[N] {

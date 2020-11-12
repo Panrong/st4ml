@@ -1,15 +1,15 @@
-package main.scala.mapmatching
+package mapmatching
 
 import main.scala.RTree.{Node, RTree}
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import main.scala.geometry._
+import geometry._
 
 import scala.util.control._
 import System.nanoTime
 
-import main.scala.geometry.Distances.greatCircleDistance
+import geometry.Distances.greatCircleDistance
 import org.apache.spark.sql.types._
 
 import Array.concat

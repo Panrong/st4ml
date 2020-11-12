@@ -1,6 +1,6 @@
-package main.scala.graph
+package graph
 
-import main.scala.geometry.{Grid, LineString, Point}
+import geometry.{Grid, LineString, Point}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source

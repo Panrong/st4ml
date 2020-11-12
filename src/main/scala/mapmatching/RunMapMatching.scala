@@ -1,7 +1,9 @@
-import main.scala.mapmatching.{MapMatcher, preprocessing}
+package mapmatching
+
+import mapmatching.{MapMatcher, preprocessing}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
-import main.scala.graph.{RoadGraph, RoadGrid}
+import graph.{RoadGraph, RoadGrid}
 import System.nanoTime
 
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -9,7 +11,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import scala.reflect.io.Directory
 import java.io.File
 
-import main.scala.geometry.Point
+import geometry.Point
 import org.apache.spark.storage.StorageLevel
 import scala.math.min
 

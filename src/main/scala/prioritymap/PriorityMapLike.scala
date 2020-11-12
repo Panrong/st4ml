@@ -1,4 +1,4 @@
-package main.scala.prioritymap
+package prioritymap
 
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable.{MapLike, SortedSet}

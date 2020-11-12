@@ -1,11 +1,12 @@
-package main.scala.mapmatching
+package mapmatching
 
-import main.scala.graph.{RoadGraph, RoadGrid}
+import graph.{RoadGraph, RoadGrid}
+import geometry.{Point, Trajectory}
+import geometry.Distances.greatCircleDistance
 
 import scala.math.{E, Pi, abs, max, min, pow, sqrt}
 import scala.collection.mutable
-import main.scala.geometry.{Point, Trajectory}
-import main.scala.geometry.Distances.greatCircleDistance
+
 
 import Array.concat
 import System.nanoTime

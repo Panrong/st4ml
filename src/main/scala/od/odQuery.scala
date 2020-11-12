@@ -1,9 +1,9 @@
-package main.scala.od
+package od
 
 import org.apache.spark.rdd.RDD
-import main.scala.geometry.mmTrajectory
-import main.scala.geometry.Distances.greatCircleDistance
-import main.scala.graph.RoadGrid
+import geometry.mmTrajectory
+import geometry.Distances.greatCircleDistance
+import graph.RoadGrid
 
 object odQuery {
   /** helper functions */

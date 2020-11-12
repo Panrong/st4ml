@@ -1,5 +1,5 @@
-import main.scala.graph.RoadGrid
-import main.scala.mapmatching.preprocessing
+import graph.RoadGrid
+import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 import System.nanoTime
 

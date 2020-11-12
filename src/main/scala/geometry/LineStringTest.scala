@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 object LineStringTest extends App {
   // a point near the following ls

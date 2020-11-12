@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 abstract class Shape() {
   def inside(rectangle: Rectangle): Boolean

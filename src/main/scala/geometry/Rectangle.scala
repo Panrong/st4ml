@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 import scala.math.{cos, abs, max, min}
 

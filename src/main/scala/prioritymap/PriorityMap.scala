@@ -1,4 +1,4 @@
-package main.scala.prioritymap
+package prioritymap
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable._

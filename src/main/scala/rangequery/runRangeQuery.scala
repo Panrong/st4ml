@@ -1,11 +1,13 @@
-import main.scala.rangequery.rangeQuery
-import main.scala.geometry.{Point, Rectangle, Trajectory}
+package rangequery
+
+
+import geometry.{Point, Rectangle, Trajectory}
 import org.apache.spark.{SparkConf, SparkContext}
-import main.scala.mapmatching.preprocessing
-import main.scala.graph.RoadGrid
+import mapmatching.preprocessing
+import mapmatching.preprocessing.readQueryFile
+import graph.RoadGrid
 import System.nanoTime
 
-import main.scala.mapmatching.preprocessing.readQueryFile
 import org.apache.spark.sql.{Row, SparkSession}
 
 object runRangeQuery extends App {

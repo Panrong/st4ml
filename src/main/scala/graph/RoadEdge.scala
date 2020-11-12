@@ -1,6 +1,6 @@
-package main.scala.graph
+package graph
 
-import main.scala.geometry.{Point, Line, LineString}
+import geometry.{Point, Line, LineString}
 
 final case class RoadEdge(id: String, from: String, to: String, length: Double, ls: LineString) {
   def midPoint: Point = Line(ls.points(0), ls.points.last).midPoint

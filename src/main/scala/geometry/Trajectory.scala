@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 import Distances.greatCircleDistance
 import main.scala.graph.RoadEdge

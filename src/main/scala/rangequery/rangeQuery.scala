@@ -1,9 +1,9 @@
-package main.scala.rangequery
+package rangequery
 
 import org.apache.spark.Partitioner
 
 import main.scala.RTree.{RTree, Node}
-import main.scala.geometry.{Shape, Point, Rectangle}
+import geometry.{Shape, Point, Rectangle}
 import System.nanoTime
 
 object rangeQuery {

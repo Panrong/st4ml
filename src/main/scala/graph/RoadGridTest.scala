@@ -1,8 +1,8 @@
-package main.scala.graph
+package graph
 
 import System.nanoTime
 
-import main.scala.geometry.Point
+import geometry.Point
 
 object RoadGridTest extends App {
 //  val rGrid = RoadGrid("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")

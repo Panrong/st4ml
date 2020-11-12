@@ -1,8 +1,8 @@
-package main.scala.partitioner
+package partitioner
 
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import main.scala.geometry.{Point, Rectangle, Shape}
+import geometry.{Point, Rectangle, Shape}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

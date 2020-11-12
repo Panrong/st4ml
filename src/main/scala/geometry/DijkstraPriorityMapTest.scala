@@ -1,6 +1,6 @@
-package main.scala.geometry
+package geometry
 
-import main.scala.graph.SimpleGraph
+import graph.SimpleGraph
 import org.scalacheck.Gen
 
 object DijkstraPriorityMapTest extends App {

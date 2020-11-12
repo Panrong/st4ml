@@ -1,7 +1,6 @@
-package main.scala.graph
+package graph
 
-import main.scala.geometry.{DijkstraPriorityMap, Graph}
-import org.scalacheck.Prop.False
+import geometry.{DijkstraPriorityMap, Graph}
 
 class RoadGraph(edges: Array[RoadEdge]) extends Serializable {
   // fields

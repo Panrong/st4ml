@@ -1,4 +1,4 @@
-package main.scala.geometry
+package geometry
 
 
 case class LineString(points: Array[Point]) extends Serializable {

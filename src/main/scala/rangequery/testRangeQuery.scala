@@ -1,8 +1,9 @@
-import main.scala.graph.{RoadGrid}
-import main.scala.geometry._
+package rangequery
+
+import graph.{RoadGrid}
+import geometry._
 import org.apache.spark.{SparkConf, SparkContext}
-import main.scala.rangequery._
-import main.scala.mapmatching.preprocessing
+import mapmatching.preprocessing
 
 object testRangeQuery extends App {
   override def main(args: Array[String]): Unit = {
