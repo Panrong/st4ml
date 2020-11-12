@@ -15,7 +15,7 @@ object quadTreePartitioner {
    * @param numPartition : number of partitions, has to be to 3k+1 (otherwise is rounded)
    * @param samplingRate : sample some data to determine the boundary, less than 1
    * @tparam T : type extends Shape
-   * @return partitioned RDD and a map of QuadTreeID -> PartitionNum (to record the boundary of each partition)
+   * @return partitioned RDD, quadTree and a map of QuadTreeID -> PartitionNum (to record the boundary of each partition)
    */
   def apply[T <: Shape : ClassTag](r: RDD[T], numPartition: Int,
                                    samplingRate: Double): (RDD[T], QuadTree[T], Map[Int, Int]) = {
