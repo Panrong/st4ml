@@ -6,16 +6,12 @@ import org.apache.spark.{SparkConf, SparkContext}
 import scala.reflect.ClassTag
 import scala.util.Random
 
+
 object quadTreeTest extends App {
   override def main(args: Array[String]): Unit = {
     var data = new Array[Point](0)
-    val r = new Random()
+    val r = new Random(10)
     for (i <- 0 until 1000) data = data :+ Point(r.nextDouble * 100, r.nextDouble * 100)
-
-    /** quadtree test */
-    //    val tree = new QuadTree(data, 10)
-    //    val nodeList = tree.partition
-    //    printTree[Point](tree, nodeList)
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -42,6 +38,11 @@ object quadTreeTest extends App {
       println()
     })
     println(nodeIdPartitionMap)
+
+
+    /** single quadtree test */
+    val queryRes = quadTree.query(Rectangle(Point(10, 10), Point(60, 60)))
+      .map(x => nodeIdPartitionMap(x)).filter(_ != -1)
   }
 
   def printTree[T <: Shape : ClassTag](tree: QuadTree[T],
@@ -58,7 +59,7 @@ object quadTreeTest extends App {
           nodeList(parentNode.childNE) :+
           nodeList(parentNode.childSW) :+
           nodeList(parentNode.childSE)
-        childNodes.foreach(node => println(s"${node.r}, ${node.capacity}, ${node.isLeaf}"))
+        childNodes.foreach(node => println(s"${node.id}, ${node.r}, ${node.capacity}, ${node.isLeaf}")) // have duplication problem
       }
       levelNodes = childNodes
       level += 1
