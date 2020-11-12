@@ -1,8 +1,7 @@
-package main.scala.partitioner
-
 import java.lang.System.nanoTime
 
 import main.scala.geometry.{Point, Rectangle}
+import main.scala.partitioner._
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.math.{max, min}
