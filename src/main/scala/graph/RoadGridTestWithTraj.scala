@@ -15,7 +15,6 @@ object RoadGridTestWithTraj extends App {
   val rGrid = RoadGrid("preprocessing/porto.csv", gridSize = 0.1)
   print(rGrid)
   println("--------------------")
-  1
   val k = 5
   val candidates = points.map(rGrid.getNearestEdge(_, k))
   candidates.indices.foreach(i =>

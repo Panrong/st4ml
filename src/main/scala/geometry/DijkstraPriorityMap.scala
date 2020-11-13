@@ -1,6 +1,6 @@
 package geometry
 
-import main.scala.prioritymap.PriorityMap
+import prioritymap.PriorityMap
 
 import scala.annotation.tailrec
 

@@ -37,7 +37,7 @@ object quadTreePartitioner {
   }
 }
 
-class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHashMap[Rectangle, Int]) extends Partitioner {
+class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHashMap[Rectangle, Int]) extends Partitioner with Serializable {
   override def numPartitions: Int = num
 
   val minLon: Double = p.keys.map(_.x_min).toArray.min
@@ -53,7 +53,7 @@ class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHash
   }
 }
 
-class Node[T <: Shape : ClassTag](range: Rectangle) {
+class Node[T <: Shape : ClassTag](range: Rectangle) extends Serializable {
   val r: Rectangle = range
   var childNW: Int = 0
   var childNE: Int = 0
@@ -65,7 +65,7 @@ class Node[T <: Shape : ClassTag](range: Rectangle) {
   var entries = new Array[T](0)
 }
 
-class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) {
+class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) extends Serializable {
 
   val root: Node[T] = {
     val lons = data.map(x => x.center().lon).sorted

@@ -1,6 +1,6 @@
 package partitioner
 
-import geometry.{Point, Shape}
+import geometry.{Point, Shape, Rectangle}
 import org.apache.spark.{SparkConf, SparkContext}
 
 import scala.reflect.ClassTag
