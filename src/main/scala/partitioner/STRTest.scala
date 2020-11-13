@@ -12,7 +12,7 @@ object STRTest extends App {
     sc.setLogLevel("ERROR")
 
     var data = new Array[Point](0)
-    val r = new Random()
+    val r = new Random(5)
     for (_ <- 0 until 1000) data = data :+ Point(r.nextDouble * 100, r.nextDouble * 100)
     val numPartition = 10
     val (indexedRDD, idBoundaryMap) = STRPartitioner(sc.parallelize(data), numPartition, 0.1)

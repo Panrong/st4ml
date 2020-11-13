@@ -7,7 +7,7 @@ import scala.util.Random
 object voronoiTest extends App {
   override def main(args: Array[String]): Unit = {
     var data = new Array[Point](0)
-    val r = new Random()
+    val r = new Random(5)
     for (_ <- 0 until 1000) data = data :+ Point(r.nextDouble * 100, r.nextDouble * 100)
 
     /** set up Spark */
