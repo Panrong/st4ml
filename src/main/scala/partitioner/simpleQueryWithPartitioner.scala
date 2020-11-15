@@ -58,7 +58,6 @@ object simpleQueryWithPartitioner extends App {
 
     val (pRDD, gridBound) = gridPartitioner(rdd, numPartitions, samplingRate)
 
-    // (pRDD, gridBound) = STRPartitioner(rdd, numPartitions, samplingRate)
 
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
