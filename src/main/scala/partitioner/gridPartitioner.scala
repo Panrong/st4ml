@@ -42,6 +42,7 @@ object gridPartitioner {
     (pRDD.map(x => x._1), partitionBounds.map { case (k, v) => (v, k) })
   }
 
+  /** decompose an integer x to two y and z such that x = yz */
   def decompose(n: Int): Array[(Int, Int)] = {
     var r = Array((1, n))
     for (i <- 2 to n + 1) {
@@ -58,10 +59,9 @@ object gridPartitioner {
     val lons = Range.BigDecimal(wholeRange.y_min, wholeRange.y_max, lonLength)
       .map(_.toDouble).toArray
     val a = lats.flatMap(lat => lons.map(lon => (lat, lon)))
-      a.map(x =>
+    a.map(x =>
       Rectangle(Point(x._1, x._2), Point(x._1 + latLength, x._2 + lonLength)))
       .zipWithIndex.toMap
-
   }
 
   def isPrime(num: Int): Boolean =

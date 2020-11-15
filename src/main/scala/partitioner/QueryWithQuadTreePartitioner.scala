@@ -86,14 +86,14 @@ object queryWithQuadTreePartitioner extends App {
     /** query with grid partitioning */
     val res = queryRDD.map(query => (query, quadTree.query(query)
       .map(x => idPartitionMap(x)).filter(_ != -1)))
-      .flatMapValues(x=>x)
+      .flatMapValues(x => x)
       .cartesian(pRDDWithIndex)
       .filter(x => x._1._2 == x._2._1)
       .map(x => (x._1._1, x._2._2))
       .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
       .groupByKey()
       .map(x => (x._1, x._2.flatten.toArray))
-    res.foreach(x=> println(x._1, x._2.length))
+    res.foreach(x => println(x._1, x._2.length))
     println(s"Range query with grid Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
 
     sc.stop()
