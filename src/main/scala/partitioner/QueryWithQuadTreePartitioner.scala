@@ -9,7 +9,7 @@ import scala.math.{max, min}
 import scala.util.Random
 
 
-object QueryWithQuadTreePartitioner extends App {
+object queryWithQuadTreePartitioner extends App {
   override def main(args: Array[String]): Unit = {
 
     val master = args(0)
@@ -84,7 +84,7 @@ object QueryWithQuadTreePartitioner extends App {
     t = nanoTime()
 
     /** query with grid partitioning */
-    val res = queryRDD.map(query => (query, quadTree.query(Rectangle(Point(10, 10), Point(60, 60)))
+    val res = queryRDD.map(query => (query, quadTree.query(query)
       .map(x => idPartitionMap(x)).filter(_ != -1)))
       .flatMapValues(x=>x)
       .cartesian(pRDDWithIndex)
