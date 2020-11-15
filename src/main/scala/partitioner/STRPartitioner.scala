@@ -113,7 +113,7 @@ object STRPartitioner {
     val s = floor(sqrt(numPartitions)).toInt
     val n = floor(numPartitions / s.toDouble).toInt
     var x_boundaries = getBoundary(df, s, columns.head)
-    assert(s * n < numPartitions)
+    assert(s * n <= numPartitions)
     var y_boundaries = new Array[Array[Double]](0)
     for (i <- 0 to x_boundaries.length - 2) {
       val range = List(x_boundaries(i), x_boundaries(i + 1))
