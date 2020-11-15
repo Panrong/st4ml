@@ -12,16 +12,12 @@ import scala.util.Random
 object simpleQueryWithPartitioner extends App {
   override def main(args: Array[String]): Unit = {
 
-//    val master = args(0)
-//    val DataNum = args(1).toInt
-//    val queryNum = args(2).toInt
-//    val numPartitions = args(3).toInt
-//    val samplingRate = args(4).toDouble
-    val master = "local"
-    val DataNum = 10000
-    val queryNum = 10
-    val numPartitions =4
-    val samplingRate = 0.1
+    val master = args(0)
+    val DataNum = args(1).toInt
+    val queryNum = args(2).toInt
+    val numPartitions = args(3).toInt
+    val samplingRate = args(4).toDouble
+
     /** set up Spark */
     val conf = new SparkConf()
     conf.setAppName("Partitioner-Query-Test").setMaster(master)
@@ -99,7 +95,7 @@ object simpleQueryWithPartitioner extends App {
       .groupByKey()
       .map(x => (x._1, x._2.flatten.toArray))
     res.collect
-    //    res.foreach(x=> println(x._1, x._2.length))
+    res.foreach(x => println(x._1, x._2.length))
     println(s"Range query with grid Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
 
 
