@@ -96,6 +96,8 @@ object queryWithVoronoiPartitioner extends App {
     val res = relevantPartitions.cartesian(pRDDWithIndex)
       .filter(x => x._1._2 == x._2._1)
       .map(x => (x._1._1, x._2._2.filter(y => y.inside(x._1._1))))
+      .groupByKey
+      .map(x => (x._1, x._2.toArray.flatten))
 
     res.foreach(x => println(x._1, x._2.length))
     println(s"Range query with voronoi Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
