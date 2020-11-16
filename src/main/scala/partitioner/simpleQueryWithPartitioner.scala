@@ -6,9 +6,9 @@ import geometry.{Point, Rectangle, Trajectory}
 import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.math.{max, min}
-import scala.reflect.ClassTag
-import scala.util.Random
+//import scala.math.{max, min}
+//import scala.reflect.ClassTag
+//import scala.util.Random
 
 
 object simpleQueryWithPartitioner extends App {
