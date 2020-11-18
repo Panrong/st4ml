@@ -4,6 +4,7 @@ import java.lang.System.nanoTime
 
 import geometry.Shape
 import mapmatching.preprocessing
+import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER
 import org.apache.spark.{SparkConf, SparkContext}
 
 //import scala.math.{max, min}
@@ -21,12 +22,12 @@ object queryWithQuadTreePartitioner extends App {
     val samplingRate = args(4).toDouble
     val dataSize = args(5).toInt
 
-    //    val master = "local"
-    //    val trajectoryFile = "preprocessing/traj_short.csv"
-    //    val queryFile = "datasets/queries.txt"
-    //    val numPartitions = 4
-    //    val samplingRate = 0.1
-    //    val dataSize = 1000
+    //        val master = "local"
+    //        val trajectoryFile = "preprocessing/traj_short.csv"
+    //        val queryFile = "datasets/queries.txt"
+    //        val numPartitions = 4
+    //        val samplingRate = 0.1
+    //        val dataSize = 1000
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -63,6 +64,7 @@ object queryWithQuadTreePartitioner extends App {
     /** normal query */
     val res1 = queryRDD.cartesian(rdd)
       .filter { case (query, point) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -74,7 +76,7 @@ object queryWithQuadTreePartitioner extends App {
     t = nanoTime()
 
     val (pRDD, quadTree, idPartitionMap) = quadTreePartitioner(rdd, numPartitions, samplingRate)
-
+    pRDD.persist(MEMORY_AND_DISK_SER)
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
@@ -87,12 +89,12 @@ object queryWithQuadTreePartitioner extends App {
       }
     }
     println(s"Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
-    pRDD.cache()
     t = nanoTime()
 
     /** normal query on partitioned rdd */
-    val res2 = queryRDD.cartesian(pRDD)
-      .filter { case (query, point) => point.inside(query) }
+    val res2 = pRDD.cartesian(queryRDD)
+      .filter { case (point, query) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -101,18 +103,19 @@ object queryWithQuadTreePartitioner extends App {
     t = nanoTime()
     res2.unpersist()
 
-    /** query with grid partitioning */
-    val res = queryRDD.map(query => (query, quadTree.query(query)
-      .map(x => idPartitionMap(x)).filter(_ != -1)))
-      .flatMapValues(x => x)
-      .cartesian(pRDDWithIndex)
-      .filter(x => x._1._2 == x._2._1)
-      .map(x => (x._1._1, x._2._2))
+    /** query with QuadTree partitioning */
+    val res = pRDDWithIndex.cartesian(
+      queryRDD.map(query => (query, quadTree.query(query)
+        .map(x => idPartitionMap(x)).filter(_ != -1)))
+        .flatMapValues(x => x))
+      .filter(x => x._2._2 == x._1._1)
+      .coalesce(numPartitions)
+      .map(x => (x._2._1, x._1._2))
       .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
       .groupByKey()
       .map(x => (x._1, x._2.flatten.toArray))
     res.foreach(x => println(x._1, x._2.length))
-    println(s"Range query with grid Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
+    println(s"Range query with QuadTree Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
 
     sc.stop()
   }
