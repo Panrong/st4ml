@@ -2,7 +2,7 @@ package partitioner
 
 import java.lang.System.nanoTime
 
-import geometry.{Point, Rectangle}
+import geometry.Shape
 import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -11,6 +11,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 
 object queryWithQuadTreePartitioner extends App {
+
   override def main(args: Array[String]): Unit = {
 
     val master = args(0)
@@ -19,6 +20,13 @@ object queryWithQuadTreePartitioner extends App {
     val numPartitions = args(3).toInt
     val samplingRate = args(4).toDouble
     val dataSize = args(5).toInt
+
+    //    val master = "local"
+    //    val trajectoryFile = "preprocessing/traj_short.csv"
+    //    val queryFile = "datasets/queries.txt"
+    //    val numPartitions = 4
+    //    val samplingRate = 0.1
+    //    val dataSize = 1000
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -61,6 +69,7 @@ object queryWithQuadTreePartitioner extends App {
     res1.collect
     println(s"Normal range query takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
     res1.unpersist()
+
     /** repartition */
     t = nanoTime()
 
@@ -68,8 +77,8 @@ object queryWithQuadTreePartitioner extends App {
 
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
-        val partitionsMap = scala.collection.mutable.Map[Int, List[Rectangle]]()//TODO
-        var partitionList = List[Rectangle]() //TODO
+        val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
+        var partitionList = List[Shape]()
         while (partitionIterator.hasNext) {
           partitionList = partitionIterator.next() :: partitionList
         }

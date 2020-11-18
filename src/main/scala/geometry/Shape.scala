@@ -14,4 +14,9 @@ abstract class Shape() {
   var id: Long
 
   var attr: Map[String, Array[String]] = Map()
+
+  implicit def point2Shape(x: Point): Shape = x.asInstanceOf[Shape]
+
+  implicit def rectangle2Shape(x: Rectangle): Shape = x.asInstanceOf[Shape]
+
 }
