@@ -91,8 +91,8 @@ object queryWithVoronoiPartitioner extends App {
     t = nanoTime()
 
     /** normal query on partitioned rdd */
-    val res2 = pRDD.cartesian(queryRDD)
-      .filter { case (point, query) => point.inside(query) }
+    val res2 = queryRDD.cartesian(pRDD)
+      .filter { case (query, point) => point.inside(query) }
       .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
@@ -111,10 +111,10 @@ object queryWithVoronoiPartitioner extends App {
       }
       .flatMapValues(x => x) // (query, Int)
 
-    val res = pRDDWithIndex.cartesian(relevantPartitions)
-      .filter(x => x._2._2 == x._1._1)
+    val res = relevantPartitions.cartesian(pRDDWithIndex)
+      .filter(x => x._1._2 == x._2._1)
       .coalesce(numPartitions)
-      .map(x => (x._2._1, x._1._2.filter(y => y.inside(x._2._1))))
+      .map(x => (x._1._1, x._2._2.filter(y => y.inside(x._1._1))))
       .groupByKey
       .map(x => (x._1, x._2.toArray.flatten))
 

@@ -22,12 +22,12 @@ object queryWithQuadTreePartitioner extends App {
     val samplingRate = args(4).toDouble
     val dataSize = args(5).toInt
 
-    //        val master = "local"
-    //        val trajectoryFile = "preprocessing/traj_short.csv"
-    //        val queryFile = "datasets/queries.txt"
-    //        val numPartitions = 4
-    //        val samplingRate = 0.1
-    //        val dataSize = 1000
+    //    val master = "local"
+    //    val trajectoryFile = "preprocessing/traj_short.csv"
+    //    val queryFile = "datasets/queries.txt"
+    //    val numPartitions = 4
+    //    val samplingRate = 0.1
+    //    val dataSize = 1000
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -92,8 +92,8 @@ object queryWithQuadTreePartitioner extends App {
     t = nanoTime()
 
     /** normal query on partitioned rdd */
-    val res2 = pRDD.cartesian(queryRDD)
-      .filter { case (point, query) => point.inside(query) }
+    val res2 = queryRDD.cartesian(pRDD)
+      .filter { case (query, point) => point.inside(query) }
       .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
@@ -104,13 +104,13 @@ object queryWithQuadTreePartitioner extends App {
     res2.unpersist()
 
     /** query with QuadTree partitioning */
-    val res = pRDDWithIndex.cartesian(
-      queryRDD.map(query => (query, quadTree.query(query)
-        .map(x => idPartitionMap(x)).filter(_ != -1)))
-        .flatMapValues(x => x))
-      .filter(x => x._2._2 == x._1._1)
+    val res = queryRDD.map(query => (query, quadTree.query(query)
+      .map(x => idPartitionMap(x)).filter(_ != -1)))
+      .flatMapValues(x => x)
+      .cartesian(pRDDWithIndex)
+      .filter(x => x._1._2 == x._2._1)
       .coalesce(numPartitions)
-      .map(x => (x._2._1, x._1._2))
+      .map(x => (x._1._1, x._2._2))
       .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
       .groupByKey()
       .map(x => (x._1, x._2.flatten.toArray))

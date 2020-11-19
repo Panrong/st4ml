@@ -61,8 +61,9 @@ object simpleQueryWithPartitioner extends App {
     var t = nanoTime()
 
     /** normal query */
-    val res1 = queryRDD.cartesian(rdd)
-      .filter { case (query, point) => point.inside(query) }
+    val res1 = rdd.cartesian(queryRDD)
+      .filter { case (point, query) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -91,6 +92,7 @@ object simpleQueryWithPartitioner extends App {
     /** normal query on partitioned rdd */
     val res2 = queryRDD.cartesian(pRDD)
       .filter { case (query, point) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -103,6 +105,7 @@ object simpleQueryWithPartitioner extends App {
       .flatMapValues(x => x)
       .cartesian(pRDDWithIndex)
       .filter(x => x._1._2 == x._2._1)
+      .coalesce(numPartitions)
       .map(x => (x._1._1, x._2._2))
       .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
       .groupByKey()
