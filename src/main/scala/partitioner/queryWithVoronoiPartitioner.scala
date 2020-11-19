@@ -87,7 +87,6 @@ object queryWithVoronoiPartitioner extends App {
       }
     }
     println(s"Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
-    pRDD.cache()
     t = nanoTime()
 
     /** normal query on partitioned rdd */
@@ -102,6 +101,8 @@ object queryWithVoronoiPartitioner extends App {
     t = nanoTime()
 
     /** query with voronoi partitioning */
+    pRDD.unpersist()
+    res2.unpersist()
 
     val relevantPartitions = queryRDD.map(query => (query, query.center(), query.diagonals(0).length / 2))
       .map {
