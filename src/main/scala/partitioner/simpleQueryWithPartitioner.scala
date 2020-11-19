@@ -90,8 +90,8 @@ object simpleQueryWithPartitioner extends App {
     t = nanoTime()
 
     /** normal query on partitioned rdd */
-    val res2 = queryRDD.cartesian(pRDD)
-      .filter { case (query, point) => point.inside(query) }
+    val res2 = pRDD.cartesian(queryRDD)
+      .filter { case (point, query) => point.inside(query) }
       .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
@@ -101,12 +101,15 @@ object simpleQueryWithPartitioner extends App {
     t = nanoTime()
 
     /** query with grid partitioning */
-    val res = queryRDD.map(query => (query, gridBound.filter { case (_, bound) => bound.intersect(query) }.keys.toArray))
-      .flatMapValues(x => x)
-      .cartesian(pRDDWithIndex)
-      .filter(x => x._1._2 == x._2._1)
+    pRDD.unpersist()
+    res2.unpersist()
+    res1.unpersist()
+    val res = pRDDWithIndex
+      .cartesian(queryRDD.map(query => (query, gridBound.filter { case (_, bound) => bound.intersect(query) }.keys.toArray))
+      .flatMapValues(x => x))
+      .filter(x => x._2._2 == x._1._1)
       .coalesce(numPartitions)
-      .map(x => (x._1._1, x._2._2))
+      .map(x => (x._2._1, x._1._2))
       .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
       .groupByKey()
       .map(x => (x._1, x._2.flatten.toArray))
