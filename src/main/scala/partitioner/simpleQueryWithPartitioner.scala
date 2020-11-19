@@ -101,9 +101,6 @@ object simpleQueryWithPartitioner extends App {
     t = nanoTime()
 
     /** query with grid partitioning */
-    pRDD.unpersist()
-    res2.unpersist()
-    res1.unpersist()
     val res = pRDDWithIndex
       .cartesian(queryRDD.map(query => (query, gridBound.filter { case (_, bound) => bound.intersect(query) }.keys.toArray))
       .flatMapValues(x => x))

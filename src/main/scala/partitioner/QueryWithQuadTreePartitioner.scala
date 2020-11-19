@@ -101,8 +101,6 @@ object queryWithQuadTreePartitioner extends App {
     res2.collect
     println(s"Normal range query on partitioned RDD takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
     t = nanoTime()
-    res2.unpersist()
-
     /** query with QuadTree partitioning */
     val res = queryRDD.map(query => (query, quadTree.query(query)
       .map(x => idPartitionMap(x)).filter(_ != -1)))

@@ -102,9 +102,6 @@ object queryWithVoronoiPartitioner extends App {
     t = nanoTime()
 
     /** query with voronoi partitioning */
-    pRDD.unpersist()
-    res2.unpersist()
-    res1.unpersist()
     val relevantPartitions = queryRDD.map(query => (query, query.center(), query.diagonals(0).length / 2))
       .map {
         case (query, center, diagonal) => (query,
