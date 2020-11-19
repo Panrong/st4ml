@@ -1,6 +1,6 @@
 package index
 
-import geometry.Shape
+import geometry.{Shape, Point, MBR}
 
 abstract class RTreeEntry {
   def minDist(x: Shape): Double

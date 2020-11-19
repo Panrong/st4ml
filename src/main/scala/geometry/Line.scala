@@ -1,7 +1,6 @@
 package geometry
 
 import math.{max, min}
-import Distances.greatCircleDistance
 
 
 case class Line(o: Point, d: Point, ID: Long = 0) extends Serializable {
@@ -17,7 +16,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Serializable {
     (projectionDistance, projectionPoint)
   }
 
-  val length = greatCircleDistance(o, d)
+  val length = Distances.greatCircleDistance(o, d)
 
   def mbr(): Rectangle = {
     val lat_min = min(o.lat, d.lat)

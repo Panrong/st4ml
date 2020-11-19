@@ -2,23 +2,54 @@ package geometry
 
 import Distances.greatCircleDistance
 
-case class Point(lon: Double, lat: Double, timestamp: Long = 0, ID: Long = 0) extends Shape with Serializable {
-  val x: Double = lon
-  val y: Double = lat
-  var t: Long = timestamp
-  override var id: Long = ID
 
-  def +(other: Point): Point = Point(this.lon + other.lon, this.lat + other.lat, this.t + other.t)
+case class Point(x: Double, y: Double, t: Long = 0) extends Shape {
 
-  def -(other: Point): Point = Point(this.lon - other.lon, this.lat - other.lat, this.t - other.t)
+  def hasTimestamp: Boolean = t != 0
 
-  def dot(other: Point): Double = this.lon * other.lon + this.lat * other.lat
+  def dimensions: Int = {
+    if (hasTimestamp) 3
+    else 2
+  }
 
-  def *(scalar: Double): Point = Point(this.lon * scalar, this.lat * scalar, (this.t * scalar).toLong)
+  def +(other: Point): Point = {
+    if (hasTimestamp && other.hasTimestamp) Point(x + other.x, y + other.y, t + other.t)
+    else Point(x + other.x, y + other.y)
+  }
 
-  def normSquare: Double = this.lon * this.lon + this.lat * this.lat
+  def -(other: Point): Point = {
+    if (hasTimestamp && other.hasTimestamp) Point(x - other.x, y - other.y, t - other.t)
+    else Point(x - other.x, y - other.y)
+  }
 
-  def geoDistance(other: Point): Double = greatCircleDistance(this, other)
+  def dot(other: Point): Double = {
+    if (hasTimestamp && other.hasTimestamp) x * other.x + y * other.y + t * other.t
+    else x * other.x + y * other.y
+  }
+
+  def *(scalar: Double): Point = {
+    if (hasTimestamp) Point(x * scalar, y * scalar, (t * scalar).toLong)
+    else Point(x * scalar, y * scalar)
+  }
+
+  def normSquare: Double = x * x + y * y
+
+  def geoDistance(other: Shape): Double = other match {
+    case p:Point => greatCircleDistance(this, p)
+    case r: Rectangle => greatCircleDistance(this, r.center())
+  }
+
+  def ==(other: Point): Boolean = {
+    if (other.x != x || other.y != y) false
+    else true
+  }
+
+  def <=(other: Point): Boolean = {
+    if (other.x > x || other.y > y) false
+    else true
+  }
+
+
 
   def calSpeed(other: Point): Double = {
     if (other.t == this.t) 0
@@ -50,5 +81,5 @@ case class Point(lon: Double, lat: Double, timestamp: Long = 0, ID: Long = 0) ex
 
   override def center(): Point = this
 
-  override def toString = s"(${this.x},${this.y})"
+  override def toString = s"Point(${x},${y},${t})"
 }
