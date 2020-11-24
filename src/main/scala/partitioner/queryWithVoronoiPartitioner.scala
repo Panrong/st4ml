@@ -6,8 +6,8 @@ import geometry.{Point, Rectangle, Shape}
 import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.math.{max, min}
-import scala.util.Random
+//import scala.math.{max, min}
+//import scala.util.Random
 
 
 object queryWithVoronoiPartitioner extends App {
@@ -33,31 +33,31 @@ object queryWithVoronoiPartitioner extends App {
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
 
-        /** generate mock points */
-        var data = new Array[Point](0)
-        val r = new Random(10)
-        for (_ <- 0 until dataSize) data = data :+
-          Point(r.nextDouble * 100, r.nextDouble * 100)
-        val rdd = sc.parallelize(data, numPartitions)
+    //        /** generate mock points */
+    //        var data = new Array[Point](0)
+    //        val r = new Random(10)
+    //        for (_ <- 0 until dataSize) data = data :+
+    //          Point(r.nextDouble * 100, r.nextDouble * 100)
+    //        val rdd = sc.parallelize(data, numPartitions)
+    //
+    //        /** generate mock queries */
+    //        var queries = new Array[Rectangle](0)
+    //        for (_ <- 0 until 100000) {
+    //          val v1 = r.nextDouble * 100
+    //          val v2 = r.nextDouble * 100
+    //          val v3 = r.nextDouble * 100
+    //          val v4 = r.nextDouble * 100
+    //          queries = queries :+
+    //            Rectangle(Point(min(v1, v2), min(v3, v4)), Point(max(v1, v2), max(v3, v4)))
+    //        }
+    //    val queryRDD = sc.parallelize(queries)
 
-        /** generate mock queries */
-        var queries = new Array[Rectangle](0)
-        for (_ <- 0 until 100000) {
-          val v1 = r.nextDouble * 100
-          val v2 = r.nextDouble * 100
-          val v3 = r.nextDouble * 100
-          val v4 = r.nextDouble * 100
-          queries = queries :+
-            Rectangle(Point(min(v1, v2), min(v3, v4)), Point(max(v1, v2), max(v3, v4)))
-        }
+    /** generate trajectory MBR RDD */
+    val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
+
+    /** generate query RDD */
+    val queries = preprocessing.readQueryFile(queryFile)
     val queryRDD = sc.parallelize(queries)
-
-//    /** generate trajectory MBR RDD */
-//    val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
-//
-//    /** generate query RDD */
-//    val queries = preprocessing.readQueryFile(queryFile)
-//    val queryRDD = sc.parallelize(queries)
 
     var t = nanoTime()
     /** normal query */
