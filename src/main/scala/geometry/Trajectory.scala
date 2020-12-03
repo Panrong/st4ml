@@ -2,6 +2,7 @@ package geometry
 
 import Distances.greatCircleDistance
 
+
 case class Trajectory(tripID: Long, taxiID: Long, startTime: Long, points: Array[Point]) extends Serializable {
   def mbr:Rectangle = {
     var lat = new Array[Double](0)

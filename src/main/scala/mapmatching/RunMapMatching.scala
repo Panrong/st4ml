@@ -1,12 +1,9 @@
 package mapmatching
 
-import mapmatching.{MapMatcher, preprocessing}
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 import graph.{RoadGraph, RoadGrid}
 import System.nanoTime
-
-import org.apache.hadoop.fs.{FileSystem, Path}
 
 import scala.reflect.io.Directory
 import java.io.File

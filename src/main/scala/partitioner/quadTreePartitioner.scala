@@ -7,11 +7,13 @@ import geometry.{Point, Rectangle, Shape}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.math.{max, min}
+import Array.concat
 
 object quadTreePartitioner {
   /**
    * QuadTree partitioner
-   * @param r : input RDD
+   *
+   * @param r            : input RDD
    * @param numPartition : number of partitions, has to be to 3k+1 (otherwise is rounded)
    * @param samplingRate : sample some data to determine the boundary, less than 1
    * @tparam T : type extends Shape
@@ -25,7 +27,8 @@ object quadTreePartitioner {
     val nodeList = quadTree.partition.filter { case (_, v) => v.isLeaf }
       .map { case (k, v) => (v.r, k) }
     val nodeIdPartitionMap = nodeList.zipWithIndex
-      .map(x => (x._1._2, x._2)).toMap // nodeID -> partitionID
+      .map(x => (x._1._2, x._2)).toMap
+      .withDefaultValue(-1) // nodeID -> partitionID
     val reIdNodeList = nodeList.zipWithIndex
       .map(x => (x._1._1, x._2)) // make all leaves have ids 0 to numPartition-1
     val partitioner = new quadTreePartitioner[T](n, reIdNodeList)
@@ -34,7 +37,7 @@ object quadTreePartitioner {
   }
 }
 
-class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHashMap[Rectangle, Int]) extends Partitioner {
+class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHashMap[Rectangle, Int]) extends Partitioner with Serializable {
   override def numPartitions: Int = num
 
   val minLon: Double = p.keys.map(_.x_min).toArray.min
@@ -50,19 +53,19 @@ class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHash
   }
 }
 
-class Node[T <: Shape : ClassTag](range: Rectangle) {
+class Node[T <: Shape : ClassTag](range: Rectangle) extends Serializable {
   val r: Rectangle = range
   var childNW: Int = 0
   var childNE: Int = 0
   var childSW: Int = 0
   var childSE: Int = 0
   var isLeaf: Boolean = true
-  var id: Int = 0
+  var id: Int = -1
   var capacity: Int = 0
   var entries = new Array[T](0)
 }
 
-class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) {
+class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) extends Serializable {
 
   val root: Node[T] = {
     val lons = data.map(x => x.center().lon).sorted
@@ -74,6 +77,7 @@ class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) {
     val r = new Node[T](Rectangle(
       Point(lonMin, latMin), Point(lonMax, latMax)))
     r.entries = data
+    r.id = 0
     r
   }
 
@@ -123,6 +127,30 @@ class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) {
       nodeToSplit.entries = new Array[T](0)
     }
     nodeList
+  }
+
+  def query(rectangle: Rectangle, node: Node[T] = root, r: Array[Int] = new Array[Int](0)): Array[Int] = {
+    var res = r
+    queryNode(rectangle, node) match {
+      case Left(children) => children.foreach(child => res = concat(res, query(rectangle, nodeList(child))))
+      case Right(node) => res = res :+ node
+    }
+    res
+  }
+
+  def queryNode(rectangle: Rectangle, node: Node[T]): Either[Array[Int], Int] = {
+    if (node.isLeaf) Right(node.id)
+    else {
+      var res = new Array[Int](0)
+      if (node.r.center().inside(rectangle))
+        Left(Array(node.childNW, node.childNE, node.childSE, node.childSW))
+      else {
+        for (i <- Array(node.childNW, node.childNE, node.childSE, node.childSW)) {
+          if (nodeList(i).r.intersect(rectangle)) res = res :+ i
+        }
+        Left(res)
+      }
+    }
   }
 }
 

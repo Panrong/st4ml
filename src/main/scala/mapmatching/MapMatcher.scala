@@ -225,7 +225,7 @@ object MapMatcher {
   def hmmBreak(pairs: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],
                roadDistArray: Array[Array[Array[Double]]],
                g: RoadGrid, beta: Double): (Array[mutable.LinkedHashMap[Point,
-    Array[(String, Double, main.scala.geometry.Point)]]], Array[Array[Array[Array[Double]]]]) = {
+    Array[(String, Double, geometry.Point)]]], Array[Array[Array[Array[Double]]]]) = {
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
@@ -314,11 +314,11 @@ object MapMatcher {
     }
     else {
       breakPoints = -1 +: breakPoints
-      var newPairs = new Array[mutable.LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]]](0)
+      var newPairs = new Array[mutable.LinkedHashMap[Point, Array[(String, Double, geometry.Point)]]](0)
       for (b <- 0 to breakPoints.length - 2) {
         filteredPoints = filteredPoints.drop(breakPoints(b) + 1)
         val subPoints = filteredPoints.take(breakPoints(b + 1) + 1)
-        var newPair: mutable.LinkedHashMap[Point, Array[(String, Double, main.scala.geometry.Point)]] = mutable.LinkedHashMap()
+        var newPair: mutable.LinkedHashMap[Point, Array[(String, Double, geometry.Point)]] = mutable.LinkedHashMap()
         for (p <- subPoints) {
           newPair += (p -> pairs(p))
         }

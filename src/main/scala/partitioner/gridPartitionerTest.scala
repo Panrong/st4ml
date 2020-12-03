@@ -8,7 +8,7 @@ import scala.util.Random
 object gridPartitionerTest extends App {
   override def main(args: Array[String]): Unit = {
     var data = new Array[Point](0)
-    val r = new Random()
+    val r = new Random(5)
     for (_ <- 0 until 1000) data = data :+ Point(r.nextDouble * 100, r.nextDouble * 100)
 
     /** set up Spark */
@@ -19,7 +19,7 @@ object gridPartitionerTest extends App {
 
     /** generate RDD and partition it */
     val rdd = sc.parallelize(data)
-    val (pRDD, gridBound) = gridPartitioner(rdd, 10, 1)
+    val (pRDD, gridBound) = gridPartitioner(rdd, 10, 0.1)
     pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()

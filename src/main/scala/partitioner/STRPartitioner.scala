@@ -1,18 +1,18 @@
 package partitioner
 
-import org.apache.spark.Partitioner
-import org.apache.spark.sql.{DataFrame, SparkSession, functions}
-import org.apache.spark.rdd.{RDD, ShuffledRDD}
 import geometry.{Point, Rectangle, Shape}
+import org.apache.spark.Partitioner
+import org.apache.spark.rdd.{RDD, ShuffledRDD}
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
-import scala.math.{floor, sqrt}
+import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
-
 
 object STRPartitioner {
   /**
    * STR partitioner
-   * @param r : input RDD
+   *
+   * @param r            : input RDD
    * @param numPartition : number of partitions
    * @tparam T : type extending Shape
    * @param samplingRate : sampling rate
@@ -22,7 +22,7 @@ object STRPartitioner {
     val spark = SparkSession.builder().getOrCreate()
     // gen dataframeRDD on MBR
     val rectangleRDD = r.sample(withReplacement = false, samplingRate)
-    .map(x => (x.center().lat, x.center().lon))
+      .map(x => (x.center().lat, x.center().lon))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, numPartition, List("x", "y"), coverWholeRange = true)
     val boxes = res._1
@@ -33,7 +33,7 @@ object STRPartitioner {
       val yMin = boxes(i)(1)
       val xMax = boxes(i)(2)
       val yMax = boxes(i)(3)
-      boxesWIthID += (i -> Rectangle(Point(xMin,yMin), Point(xMax,yMax)))
+      boxesWIthID += (i -> Rectangle(Point(xMin, yMin), Point(xMax, yMax)))
     }
     val partitioner = new STRPartitioner(boxesWIthID.size, boxMap)
     (new ShuffledRDD[T, T, T](r.map(x => (x, x)), partitioner).map(x => x._1), boxesWIthID)
@@ -113,7 +113,7 @@ object STRPartitioner {
     val s = floor(sqrt(numPartitions)).toInt
     val n = floor(numPartitions / s.toDouble).toInt
     var x_boundaries = getBoundary(df, s, columns.head)
-    assert(s*n < numPartitions)
+    assert(s * n <= numPartitions)
     var y_boundaries = new Array[Array[Double]](0)
     for (i <- 0 to x_boundaries.length - 2) {
       val range = List(x_boundaries(i), x_boundaries(i + 1))
@@ -133,16 +133,23 @@ object STRPartitioner {
 }
 
 class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], Int)]]) extends Partitioner {
-  // calculate number of partitions - partition x and y dimension both into numPartitions partitions (totally numPartitions^2 partitions)
   override def numPartitions: Int = num
 
-  // the way to implement grid partitioning
+  val boxes: Array[List[Double]] = boxMap.keys.toArray
+  val minLon: Double = boxes.map(_.head).min
+  val minLat: Double = boxes.map(_ (1)).min
+  val maxLon: Double = boxes.map(_ (2)).max
+  val maxLat: Double = boxes.map(_.last).max
+
   override def getPartition(key: Any): Int = {
-    val K = key.asInstanceOf[Shape].center()
+    val c = key.asInstanceOf[Shape].center()
+    val K = Point(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat))
+    var flag = false
     for (k <- boxMap.keys) {
-      if (K.lat > k.head && K.lat <= k(2) && K.lon > k(1) && K.lon <= k(3)) {
+      if (K.lon >= k.head && K.lon <= k(2) && K.lat >= k(1) && K.lat <= k(3)) {
+        flag = true
         for (v <- boxMap(k)) {
-          if (K.lat > v._1.head && K.lat <= v._1(2) && K.lon > v._1(1) && K.lon <= v._1(3)) {
+          if (K.lon >= v._1.head && K.lon <= v._1(2) && K.lat >= v._1(1) && K.lat <= v._1(3)) {
             return v._2
           }
         }
@@ -151,4 +158,5 @@ class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], In
     num - 1
   }
 }
+
 

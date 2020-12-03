@@ -2,16 +2,15 @@ package partitioner
 
 import java.lang.System.nanoTime
 
-import geometry.{Rectangle, Shape}
+import geometry.Shape
 import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
 
 //import scala.math.{max, min}
-//import scala.reflect.ClassTag
 //import scala.util.Random
 
 
-object simpleQueryWithPartitioner extends App {
+object queryWithVoronoiPartitioner extends App {
   override def main(args: Array[String]): Unit = {
 
     val master = args(0)
@@ -21,12 +20,12 @@ object simpleQueryWithPartitioner extends App {
     val samplingRate = args(4).toDouble
     val dataSize = args(5).toInt
 
-    //    val master = "local"
-    //    val trajectoryFile = "preprocessing/traj_short.csv"
-    //    val queryFile = "datasets/queries.txt"
-    //    val numPartitions = 4
-    //    val samplingRate = 0.1
-    //    val dataSize = 1000
+    //        val master = "local"
+    //        val trajectoryFile = "preprocessing/traj_short.csv"
+    //        val queryFile = "datasets/queries.txt"
+    //        val numPartitions = 4
+    //        val samplingRate = 0.1
+    //        val dataSize = 1000
 
     /** set up Spark */
     val conf = new SparkConf()
@@ -40,7 +39,7 @@ object simpleQueryWithPartitioner extends App {
     //    for (_ <- 0 until DataNum) data = data :+
     //      Point(r.nextDouble * 100, r.nextDouble * 100)
     //    val rdd = sc.parallelize(data, numPartitions)
-
+    //
     //    /** generate mock queries */
     //    var queries = new Array[Rectangle](0)
     //    for (_ <- 0 until queryNum) {
@@ -51,6 +50,8 @@ object simpleQueryWithPartitioner extends App {
     //      queries = queries :+
     //        Rectangle(Point(min(v1, v2), min(v3, v4)), Point(max(v1, v2), max(v3, v4)))
     //    }
+    //val queryRDD = sc.parallelize(queries)
+
     /** generate trajectory MBR RDD */
     val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
 
@@ -59,10 +60,10 @@ object simpleQueryWithPartitioner extends App {
     val queryRDD = sc.parallelize(queries)
 
     var t = nanoTime()
-
     /** normal query */
-    val res1 = queryRDD.cartesian(rdd)
-      .filter { case (query, point) => point.inside(query) }
+    val res1 = rdd.cartesian(queryRDD)
+      .filter { case (point, query) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -72,7 +73,8 @@ object simpleQueryWithPartitioner extends App {
     /** repartition */
     t = nanoTime()
 
-    val (pRDD, gridBound) = gridPartitioner(rdd, numPartitions, samplingRate)
+    val (pRDD, pivotMap, pivotMaxDistMap) = voronoiPartitioner(rdd, numPartitions, samplingRate)
+
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
@@ -89,8 +91,9 @@ object simpleQueryWithPartitioner extends App {
     t = nanoTime()
 
     /** normal query on partitioned rdd */
-    val res2 = queryRDD.cartesian(pRDD)
-      .filter { case (query, point) => point.inside(query) }
+    val res2 = pRDD.cartesian(queryRDD)
+      .filter { case (point, query) => point.inside(query) }
+      .coalesce(numPartitions)
       .groupByKey()
       .mapValues(_.toArray)
     //    res1.foreach(x=> println(x._1, x._2.length))
@@ -98,19 +101,25 @@ object simpleQueryWithPartitioner extends App {
     println(s"Normal range query on partitioned RDD takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
     t = nanoTime()
 
-    /** query with grid partitioning */
-    val res = queryRDD.map(query => (query, gridBound.filter { case (_, bound) => bound.intersect(query) }.keys.toArray))
-      .flatMapValues(x => x)
-      .cartesian(pRDDWithIndex)
-      .filter(x => x._1._2 == x._2._1)
-      .map(x => (x._1._1, x._2._2))
-      .map { case (query, points) => (query, points.filter(point => point.inside(query))) }
-      .groupByKey()
-      .map(x => (x._1, x._2.flatten.toArray))
-    res.collect
-    res.foreach(x => println(x._1, x._2.length))
-    println(s"Range query with grid Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
+    /** query with voronoi partitioning */
 
+    val relevantPartitions = queryRDD.map(query => (query, query.center(), query.diagonals(0).length / 2))
+      .map {
+        case (query, center, diagonal) => (query,
+          pivotMaxDistMap.keys.toArray
+            .filter(point => center.dist(point) - diagonal < pivotMaxDistMap(point)).map(point => pivotMap(point)))
+      }
+      .flatMapValues(x => x) // (query, Int)
+
+    val res = pRDDWithIndex.cartesian(relevantPartitions)
+      .filter(x => x._2._2 == x._1._1)
+      .coalesce(numPartitions)
+      .map(x => (x._2._1, x._1._2.filter(y => y.inside(x._2._1))))
+      .groupByKey
+      .map(x => (x._1, x._2.toArray.flatten))
+
+    res.foreach(x => println(x._1, x._2.length))
+    println(s"Range query with voronoi Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
 
     sc.stop()
   }

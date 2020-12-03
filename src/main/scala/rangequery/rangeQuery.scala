@@ -2,7 +2,7 @@ package rangequery
 
 import org.apache.spark.Partitioner
 
-import main.scala.RTree.{RTree, Node}
+import RTree.{RTree, Node}
 import geometry.{Shape, Point, Rectangle}
 import System.nanoTime
 
