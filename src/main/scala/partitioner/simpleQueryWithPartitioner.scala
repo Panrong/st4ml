@@ -1,10 +1,10 @@
 package partitioner
 
-import java.lang.System.nanoTime
-
-import geometry.{Point, Rectangle, Shape}
+import geometry.Shape
 import mapmatching.preprocessing
 import org.apache.spark.{SparkConf, SparkContext}
+
+import java.lang.System.nanoTime
 
 //import scala.math.{max, min}
 //import scala.reflect.ClassTag
