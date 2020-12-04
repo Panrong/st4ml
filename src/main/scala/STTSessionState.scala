@@ -9,9 +9,7 @@ import org.apache.spark.sql.internal.SessionState
 
 import scala.collection.immutable
 
-/**
- * Created by dongx on 3/7/17.
- */
+
 private[stt] class STTSessionState(simbaSession: STTSession) extends SessionState(simbaSession) { self =>
   protected[stt] lazy val simbaConf = new STTConf
   protected[stt] val indexManager: IndexManager = new IndexManager

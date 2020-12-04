@@ -17,7 +17,7 @@ class HashPartitioner (num_partitions: Int) extends Partitioner {
   }
 }
 
-object HashPartition {
+object HashPartitioner {
   def sortBasedShuffleOn: Boolean = SparkEnv.get.shuffleManager.isInstanceOf[SortShuffleManager]
 
   def apply(origin: RDD[(Any, InternalRow)], num_partitions: Int): RDD[(Any, InternalRow)] = {

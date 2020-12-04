@@ -23,7 +23,7 @@ private[stt] abstract class IndexedRelation extends LogicalPlan {
   def withOutput(newOutput: Seq[Attribute]): IndexedRelation
 }
 
-private[simba] object IndexedRelation {
+private[stt] object IndexedRelation {
   def apply(child: SparkPlan, table_name: Option[String], index_type: IndexType,
             column_keys: List[Attribute], index_name: String): IndexedRelation = {
     index_type match {
