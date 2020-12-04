@@ -1,7 +1,7 @@
 package geometry
 
 import Distances.greatCircleDistance
-import graph.RoadEdge
+
 
 case class Trajectory(tripID: Long, taxiID: Long, startTime: Long, points: Array[Point]) extends Serializable {
   def mbr:Rectangle = {

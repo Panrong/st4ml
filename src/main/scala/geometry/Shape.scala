@@ -1,11 +1,16 @@
 package geometry
 
-abstract class Shape() {
+
+abstract class Shape() extends Serializable {
+
+  def intersect(other: Shape): Boolean
+  def mbr: MBR
+  def dist(other: Shape): Double
+
   def inside(rectangle: Rectangle): Boolean
 
   def intersect(rectangle: Rectangle): Boolean
 
-  def mbr(): Array[Double]
 
   def dist(point: Point): Double
 
