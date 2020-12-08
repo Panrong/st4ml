@@ -1,32 +1,44 @@
 package geometry
 
-import math.{max, min}
+import scala.math.{max, min}
 
+case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializable {
 
-case class Line(o: Point, d: Point, ID: Long = 0) extends Serializable {
-  def midPoint: Point = Point((this.o.lon + this.d.lon)/2, (this.o.lat + this.d.lat)/2)
+  def midPoint: Point = Point(Array((o.coordinates(0) + d.coordinates(0)) / 2, (o.coordinates(1) + d.coordinates(1)) / 2))
 
-  def midPointDistance(p: Point): (Double, Point) = (p.geoDistance(this.midPoint), this.midPoint)
+  def midPointDistance(p: Point): (Double, Point) = (p.geoDistance(midPoint), midPoint)
+
+  override def coordinates: Array[Double] = Array.concat(o.coordinates, d.coordinates)
+
+  override def center(): Point = midPoint
+
+  override def inside(rectangle: Rectangle): Boolean = mbr.inside(rectangle)
+
+  var timeStamp = 0L
+
+  var id = 0L
 
   def projectionDistance(p: Point): (Double, Point) = {
-    val v = p - this.o
-    val d = this.d - this.o
-    val projectionPoint = this.o + d * max(0, min(1, (v dot d) / d.normSquare))
+    val v = p - o
+    val d = this.d - o
+    val projectionPoint = o + d * max(0, min(1, (v dot d) / d.normSquare))
     val projectionDistance = p.geoDistance(projectionPoint)
     (projectionDistance, projectionPoint)
   }
 
   val length = Distances.greatCircleDistance(o, d)
 
-  def mbr(): Rectangle = {
-    val lat_min = min(o.lat, d.lat)
-    val long_min = min(o.lon, d.lon)
-    val lat_max = max(o.lat, d.lat)
-    val long_max = max(o.lon, d.lon)
-    Rectangle(Point(lat_min, long_min), Point(lat_max, long_max))
+  override def mbr(): Rectangle = {
+    val minLat = min(o.coordinates(1), d.coordinates(1))
+    val minLon = min(o.coordinates(0), d.coordinates(0))
+    val maxLat = max(o.coordinates(1), d.coordinates(1))
+    val maxLon = max(o.coordinates(0), d.coordinates(0))
+    Rectangle(Array(minLon, minLat, maxLon, maxLat))
   }
+
   def crosses(l: Line): Boolean = {
     def crossProduct(A: Point, B: Point, C: Point): Double = (B.x - A.x) * (C.y - A.y) - (B.y - A.y) * (C.x - A.x)
+
     val A = o
     val B = d
     val C = l.o
@@ -36,18 +48,26 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Serializable {
       min(A.y, B.y) <= max(C.y, D.y) &&
       min(C.y, D.y) <= max(A.y, B.y) &&
       crossProduct(A, B, C) * crossProduct(A, B, D) < 0 &&
-      crossProduct(C, D, A) * crossProduct(C, D, B) < 0)  true
-    else  false
+      crossProduct(C, D, A) * crossProduct(C, D, B) < 0) true
+    else false
   }
 
-  def intersects(r: Rectangle): Boolean = {
-    if (this.o.intersect(r) || this.d.intersect(r)) return true
-    else {
-      if (!this.mbr().intersect(r)) return false
+  override def intersect(other: Shape): Boolean = other match {
+    case r: Rectangle => {
+      if (o.intersect(r) || d.intersect(r)) true
       else {
-        for (e <- r.diagonals) if (e.crosses(this)) return true
-        return false
+        if (!mbr().intersect(r)) false
+        else {
+          for (e <- r.diagonals) if (e.crosses(this)) return true
+          false
+        }
       }
     }
+    case p: Point => {
+      if (projectionDistance(p) == 0) true
+      else false
+    }
   }
+
+  override def geoDistance(other: Shape): Double = projectionDistance(other.center())._1
 }
