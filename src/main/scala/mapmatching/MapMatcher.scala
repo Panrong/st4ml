@@ -13,7 +13,7 @@ import System.nanoTime
 
 import scala.collection.mutable.ArrayBuffer
 
-object MapMatcher {
+object MapMatcher extends Serializable{
 
   val timeCount = true
 
@@ -343,7 +343,7 @@ object MapMatcher {
     //val cleanedPairs = Array(p)
     //val newRoadDistMatrix = Array(roadDistArray)
 
-    if (cleanedPairs.length < 1) (p.keys.toArray, Array(("-1", Point(0, 0))))
+    if (cleanedPairs.length < 1) (p.keys.toArray, Array(("-1", Point(Array(0, 0)))))
     else {
       var bestRoads = new Array[(String, Point)](0)
       for ((pairs, id) <- cleanedPairs.zipWithIndex) {

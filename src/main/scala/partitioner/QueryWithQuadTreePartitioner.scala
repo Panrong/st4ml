@@ -76,7 +76,6 @@ object queryWithQuadTreePartitioner extends App {
     t = nanoTime()
 
     val (pRDD, quadTree, idPartitionMap) = quadTreePartitioner(rdd, numPartitions, samplingRate)
-    pRDD.persist(MEMORY_AND_DISK_SER)
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
       (index, partitionIterator) => {
         val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()

@@ -4,6 +4,8 @@ import geometry.{Grid, LineString, Point}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
+import scala.reflect.ClassTag
+import preprocessing.SparkSessionWrapper
 
 class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
                minLon: Double, minLat: Double, maxLon: Double, maxLat: Double, gridSize: Double)
@@ -85,7 +87,9 @@ class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
 
 }
 
-object RoadGrid {
+object RoadGrid{
+
+  implicit def tuple2Array[T: ClassTag](x: (T, T)): Array[T] = Array(x._1, x._2)
 
   def fromCSV(csvFilePath: String) : (Array[RoadVertex], Array[RoadEdge]) = {
     val source = Source.fromFile(csvFilePath)
@@ -96,12 +100,12 @@ object RoadGrid {
     for (line <- source.getLines) {
       if (line.startsWith("node")) {
         val Array(_, nodeId, nodeLon, nodeLat) = line.split(",").map(_.trim)
-        vertexArrayBuffer += RoadVertex(nodeId, Point(nodeLon.toDouble, nodeLat.toDouble))
+        vertexArrayBuffer += RoadVertex(nodeId, Point((nodeLon.toDouble, nodeLat.toDouble)))
       } else if (line.startsWith("edge")) {
         val Array(_, fromNodeId, toNodeId, isOneWay, length, gpsString) = line.split(",").map(_.trim)
 
         val gpsArray = gpsString.split("%").map(x => x.split(" "))
-        val gpsLineString = LineString(gpsArray.map(x => Point(x(0).toDouble, x(1).toDouble)))
+        val gpsLineString = LineString(gpsArray.map(x => Point((x(0).toDouble, x(1).toDouble))))
 
         edgeArrayBuffer += RoadEdge(
           s"$fromNodeId-$toNodeId",
