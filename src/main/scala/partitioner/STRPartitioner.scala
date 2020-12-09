@@ -23,7 +23,7 @@ object STRPartitioner {
     val spark = SparkSession.builder().getOrCreate()
     // gen dataframeRDD on MBR
     val rectangleRDD = r.sample(withReplacement = false, samplingRate)
-      .map(x => (x.center().lat, x.center().lon))
+      .map(x => (x.center().lon, x.center().lat))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, numPartition, List("x", "y"), coverWholeRange = true)
     val boxes = res._1

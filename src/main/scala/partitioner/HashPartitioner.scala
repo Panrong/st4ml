@@ -1,10 +1,10 @@
 //package partitioner
 //
-//import org.apache.spark.{Partitioner, SparkEnv}
 //import org.apache.spark.rdd.{RDD, ShuffledRDD}
 //import org.apache.spark.shuffle.sort.SortShuffleManager
 //import org.apache.spark.sql.catalyst.InternalRow
 //import org.apache.spark.util.MutablePair
+//import org.apache.spark.{Partitioner, SparkEnv}
 //
 ///**
 // * Linear Hash Partitioner with Java hashcode

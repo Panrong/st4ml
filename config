@@ -1,0 +1,3 @@
+// master "spark://Master:7077"
+master local[4]
+appName ST-TOOL_V2

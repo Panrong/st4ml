@@ -1,46 +1,27 @@
 package preprocessing
 
-import geometry.Distances.greatCircleDistance
-
-import java.lang.System.nanoTime
-import geometry.{Point, Trajectory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
+import geometry._
 
-import scala.util.control.Breaks
+import scala.util.control._
+import System.nanoTime
+import geometry.Distances.greatCircleDistance
 
-object readTrajFile {
+object preprocessingOld extends Serializable{
 
-  /**
-   *
-   * @param filename : path to the data file
-   * @param num      : number of trajectories to read
-   * @clean validate : validate the trajectories
-   * @return : Dataset[Trajectory]
-   *         +-------------------+--------+----------+--------------------+
-   *         |             tripID|  taxiID| startTime|              points|
-   *         +-------------------+--------+----------+--------------------+
-   *         |1372636858620000589|20000589|1372636858|[[-8.618643, 41.1...|
-   *         |1372637303620000596|20000596|1372637303|[[- 8.6 3 9 8 4 7, 41.1...|
-   *         |1372636951620000320|20000320|1372636951|[[-8.612964, 41.1...|
-   *         |1372636854620000520|20000520|1372636854|[[- 8.5 7 4 6 7 8, 41.1...|
-   *         |1372637091620000337|20000337|1372637091|[[-8.645994, 41.1...|
-   *         +-------------------+--------+----------+--------------------+
-   *
-   */
-  val timeCount = true
+  val ss = new SparkSessionWrapper("config")
+  val spark = ss.spark
+  val sc = ss.sc
+  val timeCount = ss.timeCount
 
-  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(0, 0, 0, 0)): Dataset[Trajectory] = {
-
-    val spark = SparkSession.builder().getOrCreate()
+  def genTrajRDD(filename: String, num: Int): RDD[Trajectory] = {
     val t = nanoTime
-    import spark.implicits._
     val df = spark.read.option("header", "true").csv(filename).limit(num)
     val samplingRate = 15
-    val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
+    val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4) // each traj should have no less than 2 recorded points
     val resRDD = trajRDD.map(row => {
       val tripID = row(0).toString.toLong
-      val taxiID = row(4).toString.toLong
       val startTime = row(5).toString.toLong
       val pointsString = row(8).toString
       var pointsCoord = new Array[Double](0)
@@ -55,8 +36,7 @@ object readTrajFile {
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
     if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
-    if (clean) checkMapCoverage(removeRedundancy(trajBreak(resRDD)), mapRange).toDS
-    else resRDD.toDS
+    resRDD
   }
 
   def splitTraj(trajectory: Trajectory, splitPoints: Array[Int]): Array[Trajectory] = {
@@ -126,11 +106,12 @@ object readTrajFile {
     if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     resRDD
   }
+
+  def apply(filename: String, num: Int = 2147483647, mapRange: List[Double] = List(-90, 0, 90, 180), clean: Boolean = true): Dataset[Trajectory] = {
+    import spark.implicits._
+    if (clean) checkMapCoverage(removeRedundancy(trajBreak(genTrajRDD(filename, num))), mapRange).toDS
+    else genTrajRDD(filename, num).toDS
+  }
+
 }
 
-//object readTrajTest extends App {
-//  override def main(args: Array[String]): Unit = {
-//    /** set up Spark */
-//    readTrajFile("/datasets/porto_traj.csv", 1000).show(5)
-//  }
-//}

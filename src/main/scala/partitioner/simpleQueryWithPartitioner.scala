@@ -4,11 +4,7 @@
 //import org.apache.spark.{SparkConf, SparkContext}
 //
 //import java.lang.System.nanoTime
-//
-////import scala.math.{max, min}
-////import scala.reflect.ClassTag
-////import scala.util.Random
-//
+//import preprocessing.{readQueryFile, readTrajFile}
 //
 //object simpleQueryWithPartitioner extends App {
 //  override def main(args: Array[String]): Unit = {
@@ -19,13 +15,6 @@
 //    val numPartitions = args(3).toInt
 //    val samplingRate = args(4).toDouble
 //    val dataSize = args(5).toInt
-//
-//    //    val master = "local"
-//    //    val trajectoryFile = "preprocessing/traj_short.csv"
-//    //    val queryFile = "datasets/queries.txt"
-//    //    val numPartitions = 4
-//    //    val samplingRate = 0.1
-//    //    val dataSize = 1000
 //
 //    /** set up Spark */
 //    val conf = new SparkConf()
@@ -53,11 +42,10 @@
 //    //    val queryRDD = sc.parallelize(queries)
 //
 //    /** generate trajectory MBR RDD */
-//    val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
+//    val rdd = readTrajFile(trajectoryFile, dataSize).rdd
 //
 //    /** generate query RDD */
-//    val queries = preprocessing.readQueryFile(queryFile)
-//    val queryRDD = sc.parallelize(queries)
+//    val queries = readQueryFile(queryFile).rdd
 //
 //    var t = nanoTime()
 //
