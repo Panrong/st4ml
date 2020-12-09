@@ -51,3 +51,13 @@ case class Trajectory(tripID: Long, startTime: Long, points: Array[Point], attri
     dist / time
   }
 }
+/*
+case class mmTrajectory(tripID: String, taxiID: String, startTime: Long = 0, points: Array[String]) extends Serializable {
+}
+
+case class subTrajectory(startTime: Long, endTime: Long, roadEdgeID: String, speed: Double) extends Serializable {
+}
+
+case class mmTrajectoryS(tripID: String, taxiID: String, startTime: Long = 0, subTrajectories: Array[subTrajectory]) extends Serializable {
+}
+*/

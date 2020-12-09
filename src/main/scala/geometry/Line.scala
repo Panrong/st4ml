@@ -16,7 +16,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
 
   var timeStamp = 0L
 
-  var id = 0L
+  override var id = 0L
 
   def projectionDistance(p: Point): (Double, Point) = {
     val v = p - o

@@ -1,10 +1,9 @@
 //package partitioner
 //
-//import java.lang.System.nanoTime
-//
-//import geometry.{Point, Rectangle, Shape}
-//import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER
+//import geometry.Shape
 //import org.apache.spark.{SparkConf, SparkContext}
+//
+//import java.lang.System.nanoTime
 //
 ////import scala.math.{max, min}
 ////import scala.util.Random

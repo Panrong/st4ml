@@ -4,7 +4,7 @@ import geometry.{mmTrajectoryS, subTrajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 
-object readMMTrajFile extends Serializable{
+object ReadMMTrajFile extends Serializable{
   /**
    *
    * @param filename : path to the data file

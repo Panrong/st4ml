@@ -1,12 +1,10 @@
 //package partitioner
 //
-//import java.lang.System.nanoTime
-//
-//import geometry.{Point, Rectangle, Shape}
+//import preprocessing.{preprocessingOld, readQueryFile}
+//import geometry.Shape
 //import org.apache.spark.{SparkConf, SparkContext}
 //
-////import scala.math.{max, min}
-////import scala.util.Random
+//import java.lang.System.nanoTime
 //
 //
 //object queryWithVoronoiPartitioner extends App {
@@ -19,44 +17,17 @@
 //    val samplingRate = args(4).toDouble
 //    val dataSize = args(5).toInt
 //
-//    //        val master = "local"
-//    //        val trajectoryFile = "preprocessing/traj_short.csv"
-//    //        val queryFile = "datasets/queries.txt"
-//    //        val numPartitions = 4
-//    //        val samplingRate = 0.1
-//    //        val dataSize = 1000
-//
 //    /** set up Spark */
 //    val conf = new SparkConf()
 //    conf.setAppName("Partitioner-Query-Test").setMaster(master)
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //
-//    //        /** generate mock points */
-//    //        var data = new Array[Point](0)
-//    //        val r = new Random(10)
-//    //        for (_ <- 0 until dataSize) data = data :+
-//    //          Point(r.nextDouble * 100, r.nextDouble * 100)
-//    //        val rdd = sc.parallelize(data, numPartitions)
-//    //
-//    //        /** generate mock queries */
-//    //        var queries = new Array[Rectangle](0)
-//    //        for (_ <- 0 until 100000) {
-//    //          val v1 = r.nextDouble * 100
-//    //          val v2 = r.nextDouble * 100
-//    //          val v3 = r.nextDouble * 100
-//    //          val v4 = r.nextDouble * 100
-//    //          queries = queries :+
-//    //            Rectangle(Point(min(v1, v2), min(v3, v4)), Point(max(v1, v2), max(v3, v4)))
-//    //        }
-//    //    val queryRDD = sc.parallelize(queries)
-//
 //    /** generate trajectory MBR RDD */
-//    val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
+//    val rdd = preprocessingOld.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
 //
 //    /** generate query RDD */
-//    val queries = preprocessing.readQueryFile(queryFile)
-//    val queryRDD = sc.parallelize(queries)
+//    val queryRDD = readQueryFile(queryFile).rdd.map(x => x.query)
 //
 //    var t = nanoTime()
 //    /** normal query */
@@ -105,14 +76,14 @@
 //      .map {
 //        case (query, center, diagonal) => (query,
 //          pivotMaxDistMap.keys.toArray
-//            .filter(point => center.dist(point) - diagonal < pivotMaxDistMap(point)).map(point => pivotMap(point)))
+//            .filter(point => center.geoDistance(point) - diagonal < pivotMaxDistMap(point)).map(point => pivotMap(point)))
 //      }
 //      .flatMapValues(x => x) // (query, Int)
 //
 //    val res = relevantPartitions.cartesian(pRDDWithIndex)
 //      .filter(x => x._1._2 == x._2._1)
 //      .coalesce(numPartitions)
-//      .map(x => (x._1._1, x._2._2.filter(y => y.inside(x._1._1))))
+//      .map(x => (x._1._1, x._2._2.filter(y => y.inside(x._1._1.query))))
 //      .groupByKey
 //      .map(x => (x._1, x._2.toArray.flatten))
 //

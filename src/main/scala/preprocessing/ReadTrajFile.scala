@@ -5,7 +5,7 @@ import geometry.Distances.greatCircleDistance
 import java.lang.System.nanoTime
 import geometry.{Point, Trajectory}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.{Dataset, SparkSession}
 
 import scala.util.control.Breaks
 
@@ -28,12 +28,11 @@ object readTrajFile {
    *         +-------------------+--------+----------+--------------------+
    *
    */
-  val ss = new SparkSessionWrapper("config")
-  val spark = ss.spark
-  val sc = ss.sc
-  val timeCount = ss.timeCount
+  val timeCount = true
 
   def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(0, 0, 0, 0)): Dataset[Trajectory] = {
+
+    val spark = SparkSession.builder().getOrCreate()
     val t = nanoTime
     import spark.implicits._
     val df = spark.read.option("header", "true").csv(filename).limit(num)
@@ -114,7 +113,7 @@ object readTrajFile {
       val loop = new Breaks
       loop.breakable {
         for (point <- traj.points) {
-          if (point.lat < mapRange.head || point.lat > mapRange(2) || point.lon < mapRange(1) || point.lon > mapRange(3)) {
+          if (point.lon < mapRange.head || point.lon > mapRange(2) || point.lat < mapRange(1) || point.lat > mapRange(3)) {
             check = false
             loop.break
           }
@@ -129,9 +128,9 @@ object readTrajFile {
   }
 }
 
-object readTrajTest extends App {
-  override def main(args: Array[String]): Unit = {
-    /** set up Spark */
-    readTrajFile("/datasets/porto_traj.csv", 1000).show(5)
-  }
-}
+//object readTrajTest extends App {
+//  override def main(args: Array[String]): Unit = {
+//    /** set up Spark */
+//    readTrajFile("/datasets/porto_traj.csv", 1000).show(5)
+//  }
+//}

@@ -1,7 +1,7 @@
 //package partitioner
 //
-//import geometry.Point
 //import org.apache.spark.{SparkConf, SparkContext}
+//
 //import scala.util.Random
 //
 //object voronoiTest extends App {

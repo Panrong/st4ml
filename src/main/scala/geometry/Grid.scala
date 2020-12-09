@@ -39,8 +39,8 @@ case class Grid(minLon: Double, minLat: Double, maxLon: Double, maxLat: Double, 
   }
 
   def getSimpleGrid(p: Point): GridId = {
-    val lon = p.x
-    val lat = p.y
+    val lon = p.lon
+    val lat = p.lat
     var x = 0
     var y = 0
     if (lon < minLon || lon > maxLon || lat < minLat || lat > maxLat ) {
