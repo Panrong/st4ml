@@ -29,7 +29,7 @@ object BuildIndex {
       Point(Array(5.0, 5.0)),
       Point(Array(6.0, 6.0))).toDF()
 
-    toyPointsDF.show()
+    toyPointsDF.rdd
 
   }
 

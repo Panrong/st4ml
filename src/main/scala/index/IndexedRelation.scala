@@ -1,5 +1,6 @@
 //package index
 //
+//import org.apache.spark.sql.SparkSession
 //import org.apache.spark.sql.catalyst.InternalRow
 //import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 //import org.apache.spark.sql.catalyst.expressions.Attribute
@@ -14,7 +15,7 @@
 //  var _indexedRDD: IndexedRDD
 //  def indexedRDD: IndexedRDD = _indexedRDD
 //
-//  def simbaSession = STTSession.getActiveSession.orNull
+//  def spark = SparkSession.getActiveSession.orNull
 //
 //  override def children: Seq[LogicalPlan] = Nil
 //  def output: Seq[Attribute]
