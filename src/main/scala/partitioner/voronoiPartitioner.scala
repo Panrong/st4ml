@@ -1,10 +1,10 @@
 package partitioner
 
-import geometry.{Point, Shape}
+import geometry.{Shape, Point}
 import org.apache.spark.ml.clustering.KMeans
-import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.{Partitioner, SparkContext}
 
 import scala.reflect.ClassTag
 
@@ -26,12 +26,12 @@ object voronoiPartitioner {
     val pivotRDD = sc.parallelize(pivotPoints)
     val numPartitions = pivotPoints.length
     val partitionedRDD = r.cartesian(pivotRDD)
-      .map { case (s, p) => (s, (pivotMap(p), s.dist(p))) }
+      .map { case (s, p) => (s, (pivotMap(p), s.geoDistance(p))) }
       .groupByKey
       .map { case (k, v) => (k, v.minBy(_._2)) }
       .map { case (k, v) => (v._1, k) }
     val pivotMaxDistMap = partitionedRDD.map {
-      case (idx, v) => (idx, v.dist(inversePivotMap(idx)))
+      case (idx, v) => (idx, v.geoDistance(inversePivotMap(idx)))
     }.groupByKey.map(x => (inversePivotMap(x._1), x._2.max)).collect.toMap
     implicit val partitioner: voronoiPartitioner[T] = new voronoiPartitioner(numPartitions)
     val resRDD = new ShuffledRDD[Int, T, T](partitionedRDD, partitioner).map(x => x._2)
@@ -44,7 +44,7 @@ object voronoiPartitioner {
     import spark.implicits._
     val kmeans = new KMeans().setK(num).setSeed(1L)
     val model = kmeans.fit(sampledRDD.toDF("features"))
-    model.clusterCenters.map(x => Point(x(0), x(1)))
+    model.clusterCenters.map(x => Point(Array(x(0), x(1))))
   }
 }
 

@@ -29,7 +29,7 @@ object gridPartitioner {
     val lonMin = sampledRDD.map(x => x.center().lon).min.formatted("%.4f").toDouble
     val lonMax = sampledRDD.map(x => x.center().lon).max.formatted("%.4f").toDouble
     val latLonRatio = (latMax - latMin) / (lonMax - lonMin)
-    val wholeRange = Rectangle(Point(latMin, lonMin), Point(latMax, lonMax))
+    val wholeRange = Rectangle(Array(lonMin,latMin,lonMax,latMax))
 
     /** select the decomposition way that has the most similar ratio to latLonRatio */
     val possibleDecompositions = decompose(numPartition)
@@ -52,15 +52,15 @@ object gridPartitioner {
   }
 
   def getPartitionBounds(wholeRange: Rectangle, decomposition: (Int, Int)): Map[Rectangle, Int] = {
-    val latLength = (wholeRange.x_max - wholeRange.x_min) / decomposition._1
-    val lonLength = (wholeRange.y_max - wholeRange.y_min) / decomposition._2
-    val lats = Range.BigDecimal(wholeRange.x_min, wholeRange.x_max, latLength)
+    val latLength = (wholeRange.yMax - wholeRange.yMin) / decomposition._1
+    val lonLength = (wholeRange.xMax - wholeRange.xMin) / decomposition._2
+    val lats = Range.BigDecimal(wholeRange.yMin, wholeRange.yMax, latLength)
       .map(_.toDouble).toArray
-    val lons = Range.BigDecimal(wholeRange.y_min, wholeRange.y_max, lonLength)
+    val lons = Range.BigDecimal(wholeRange.xMin, wholeRange.xMax, lonLength)
       .map(_.toDouble).toArray
     val a = lats.flatMap(lat => lons.map(lon => (lat, lon)))
     a.map(x =>
-      Rectangle(Point(x._1, x._2), Point(x._1 + latLength, x._2 + lonLength)))
+      Rectangle(Array(x._1, x._2,x._1 + latLength, x._2 + lonLength)))
       .zipWithIndex.toMap
   }
 
@@ -71,14 +71,14 @@ object gridPartitioner {
 class gridPartitioner[T <: Shape : ClassTag](num: Int, partitionBounds: Map[Rectangle, Int]) extends Partitioner {
   override def numPartitions: Int = num
 
-  val minLon: Double = partitionBounds.keys.map(_.x_min).toArray.min
-  val minLat: Double = partitionBounds.keys.map(_.y_min).toArray.min
-  val maxLon: Double = partitionBounds.keys.map(_.x_max).toArray.max
-  val maxLat: Double = partitionBounds.keys.map(_.y_max).toArray.max
+  val minLon: Double = partitionBounds.keys.map(_.xMin).toArray.min
+  val minLat: Double = partitionBounds.keys.map(_.yMin).toArray.min
+  val maxLon: Double = partitionBounds.keys.map(_.xMax).toArray.max
+  val maxLat: Double = partitionBounds.keys.map(_.yMax).toArray.max
 
   override def getPartition(key: Any): Int = {
     val c = key.asInstanceOf[Shape].center()
-    val k = Point(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat))
+    val k = Point(Array(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat)))
     val res = partitionBounds.filterKeys(k.inside).values.toArray
     res(0)
   }

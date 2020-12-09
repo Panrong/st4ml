@@ -34,7 +34,7 @@ object STRPartitioner {
       val latMin = boxes(i)(1)
       val lonMax = boxes(i)(2)
       val latMax = boxes(i)(3)
-      boxesWIthID += (i -> Rectangle(Point(lonMin, latMin), Point(lonMax, latMax)))
+      boxesWIthID += (i -> Rectangle(Array(lonMin, latMin,lonMax, latMax)))
     }
     val partitioner = new STRPartitioner(boxesWIthID.size, boxMap)
     (new ShuffledRDD[T, T, T](r.map(x => (x, x)), partitioner).map(x => x._1), boxesWIthID)
@@ -148,7 +148,7 @@ class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], In
 
   override def getPartition(key: Any): Int = {
     val c = key.asInstanceOf[Shape].center()
-    val K = Point(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat))
+    val K = Point(Array(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat)))
     boxMap.keys.toArray
       .filter(k => K.lon >= k.head && K.lon <= k(2) && K.lat >= k(1) && K.lat <= k(3))
       .flatMap(k => boxMap(k))

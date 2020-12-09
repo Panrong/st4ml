@@ -4,6 +4,7 @@ import geometry.Point
 import graph.{RoadGraph, RoadGrid}
 import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
+
 import preprocessing.{SparkSessionWrapper, readTrajFile}
 
 import java.io.File

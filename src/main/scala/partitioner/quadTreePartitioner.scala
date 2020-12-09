@@ -1,13 +1,13 @@
 package partitioner
 
+import geometry.{Rectangle, Shape, Point}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.{RDD, ShuffledRDD}
-import geometry.{Point, Rectangle, Shape}
 
+import scala.Array.concat
 import scala.collection.mutable
-import scala.reflect.ClassTag
 import scala.math.{max, min}
-import Array.concat
+import scala.reflect.ClassTag
 
 object quadTreePartitioner {
   /**
@@ -40,14 +40,14 @@ object quadTreePartitioner {
 class quadTreePartitioner[T <: Shape : ClassTag](num: Int, p: mutable.LinkedHashMap[Rectangle, Int]) extends Partitioner with Serializable {
   override def numPartitions: Int = num
 
-  val minLon: Double = p.keys.map(_.x_min).toArray.min
-  val minLat: Double = p.keys.map(_.y_min).toArray.min
-  val maxLon: Double = p.keys.map(_.x_max).toArray.max
-  val maxLat: Double = p.keys.map(_.y_max).toArray.max
+  val minLon: Double = p.keys.map(_.xMin).toArray.min
+  val minLat: Double = p.keys.map(_.yMin).toArray.min
+  val maxLon: Double = p.keys.map(_.xMax).toArray.max
+  val maxLat: Double = p.keys.map(_.yMax).toArray.max
 
   override def getPartition(key: Any): Int = {
     val c = key.asInstanceOf[Shape].center()
-    val k = Point(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat))
+    val k = Point(Array(max(min(c.lon, maxLon), minLon), max(min(c.lat, maxLat), minLat)))
     val res = p.filterKeys(k.inside).values.toArray
     res(0)
   }
@@ -75,7 +75,7 @@ class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) extends Se
     val latMin = lats(0)
     val latMax = lats.last
     val r = new Node[T](Rectangle(
-      Point(lonMin, latMin), Point(lonMax, latMax)))
+      Array(lonMin, latMin, lonMax, latMax)))
     r.entries = data
     r.id = 0
     r
@@ -83,7 +83,7 @@ class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) extends Se
 
   root.capacity = data.length
 
-  var nodeList = scala.collection.mutable.LinkedHashMap(0 -> root)
+  var nodeList: scala.collection.mutable.LinkedHashMap[Int, Node[T]] = scala.collection.mutable.LinkedHashMap(0 -> root)
 
   def partition: scala.collection.mutable.LinkedHashMap[Int, Node[T]] = {
     var currentLeaves = 1
@@ -92,16 +92,16 @@ class QuadTree[T <: Shape : ClassTag](data: Array[T], numLeaves: Int) extends Se
       val nodeToSplit = nodeList.values.toArray
         .filter(x => x.isLeaf).maxBy(_.capacity)
       val nodeToSplitId = nodeToSplit.id
-      val minLon = nodeToSplit.r.bottomLeft.lon
-      val minLat = nodeToSplit.r.bottomLeft.lat
-      val maxLon = nodeToSplit.r.topRight.lon
-      val maxLat = nodeToSplit.r.topRight.lat
+      val minLon = nodeToSplit.r.xMin
+      val minLat = nodeToSplit.r.yMin
+      val maxLon = nodeToSplit.r.xMax
+      val maxLat = nodeToSplit.r.yMax
       val cLon = nodeToSplit.r.center().lon
       val cLat = nodeToSplit.r.center().lat
-      val SW = new Node[T](Rectangle(nodeToSplit.r.bottomLeft, nodeToSplit.r.center()))
-      val SE = new Node[T](Rectangle(Point(cLon, minLat), Point(maxLon, cLat)))
-      val NE = new Node[T](Rectangle(nodeToSplit.r.center(), nodeToSplit.r.topRight))
-      val NW = new Node[T](Rectangle(Point(minLon, cLat), Point(cLon, maxLat)))
+      val SW = new Node[T](Rectangle(Array(minLon, minLat, cLon, cLat)))
+      val SE = new Node[T](Rectangle(Array(cLon, minLat, maxLon, cLat)))
+      val NE = new Node[T](Rectangle(Array(cLon, cLat, maxLon, maxLat)))
+      val NW = new Node[T](Rectangle(Array(minLon, cLat, cLon, maxLat)))
       SW.id = idx + 1
       SE.id = idx + 2
       NW.id = idx + 3
