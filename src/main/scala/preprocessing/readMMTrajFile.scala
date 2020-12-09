@@ -4,7 +4,7 @@ import geometry.{mmTrajectoryS, subTrajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 
-object readMMTrajFile extends SparkSessionWrapper{
+object readMMTrajFile extends Serializable{
   /**
    *
    * @param filename : path to the data file
@@ -21,6 +21,9 @@ object readMMTrajFile extends SparkSessionWrapper{
    *
    */
   def apply(filename: String): Dataset[mmTrajectoryS] = {
+    val ss = new SparkSessionWrapper("config")
+    val spark = ss.spark
+    val sc = ss.sc
     val customSchema = StructType(Array(
       StructField("taxiID", LongType, nullable = true),
       StructField("tripID", LongType, nullable = true),

@@ -1,6 +1,6 @@
 package geometry
 
-import Distances.greatCircleDistance
+import geometry.Distances.greatCircleDistance
 
 import scala.reflect.ClassTag
 
@@ -20,6 +20,9 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
 
   val x: Double = coordinates(0)
   val y: Double = coordinates(1)
+
+  val lon: Double = coordinates(0)
+  val lat: Double = coordinates(1)
 
   def +(other: Point): Point = Point((coordinates, other.coordinates).zipped.map(_ + _), t + other.t)
 

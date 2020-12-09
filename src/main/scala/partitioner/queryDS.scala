@@ -48,7 +48,7 @@ object queryDS extends App with preprocessing.SparkSessionWrapper {
 
     def rangeQuery(queryDs: Dataset[Query])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
       trajMbrDs.join(queryDs).as[TrajMBRQuery]
-        .filter(x => Rectangle(x.bottomLeft, x.TopRight).intersect(x.mbr))
+        .filter(x => Rectangle(Array.concat(x.bottomLeft.coordinates, x.TopRight.coordinates)).intersect(x.mbr))
         .groupBy(col("queryID"))
         .agg(collect_list("tripID").alias("trips")).as[resRangeQuery]
     }

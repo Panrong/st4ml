@@ -64,7 +64,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
       }
     }
     case p: Point => {
-      if (projectionDistance(p) == 0) true
+      if (projectionDistance(p)._1 == 0) true
       else false
     }
   }

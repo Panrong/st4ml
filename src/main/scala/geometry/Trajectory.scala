@@ -8,8 +8,8 @@ case class Trajectory(tripID: Long, startTime: Long, points: Array[Point], attri
   def mbr: Rectangle = Rectangle(Array(
     points.map(p => p.coordinates(0)).min,
     points.map(p => p.coordinates(1)).min,
-    points.map(p => p.coordinates(2)).max,
-    points.map(p => p.coordinates(3)).max
+    points.map(p => p.coordinates(0)).max,
+    points.map(p => p.coordinates(1)).max
   ), ID = tripID)
 
   def intersect(r: Rectangle): Boolean = {
@@ -51,7 +51,7 @@ case class Trajectory(tripID: Long, startTime: Long, points: Array[Point], attri
     dist / time
   }
 }
-
+/*
 case class mmTrajectory(tripID: String, taxiID: String, startTime: Long = 0, points: Array[String]) extends Serializable {
 }
 
@@ -60,3 +60,4 @@ case class subTrajectory(startTime: Long, endTime: Long, roadEdgeID: String, spe
 
 case class mmTrajectoryS(tripID: String, taxiID: String, startTime: Long = 0, subTrajectories: Array[subTrajectory]) extends Serializable {
 }
+*/

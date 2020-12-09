@@ -1,42 +1,44 @@
 package mapmatching
 
-import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.{SparkConf, SparkContext}
-import graph.{RoadGraph, RoadGrid}
-import System.nanoTime
-
-import scala.reflect.io.Directory
-import java.io.File
-
 import geometry.Point
+import graph.{RoadGraph, RoadGrid}
+import org.apache.spark.sql.Row
 import org.apache.spark.storage.StorageLevel
-import scala.math.min
+import preprocessing.{SparkSessionWrapper, readTrajFile}
+
+import java.io.File
+import java.lang.System.nanoTime
+import scala.math.{ceil, min}
+import scala.reflect.ClassTag
+import scala.reflect.io.Directory
 
 object RunMapMatching extends App {
-  def timeCount = true
 
   override def main(args: Array[String]): Unit = {
-    val directory = new Directory(new File(args(2)))
+    val trajFile = args(0)
+    val mapFile = args(1)
+    val resDir = args(2)
+    val numTraj = args(3).toInt
+    val batchSize = min(args(4).toInt, args(3).toInt)
+
+    val ss = new SparkSessionWrapper("config")
+    val spark = ss.spark
+    val timeCount = ss.timeCount
+
+    val directory = new Directory(new File(resDir))
     directory.deleteRecursively()
+
     var t = nanoTime
     val tStart = t
-    //set up spark environment
-    val conf = new SparkConf()
-    conf.setAppName("MapMatching_v1").setMaster(args(3))
-    val sc = new SparkContext(conf)
-    sc.setLogLevel("ERROR")
-    if (timeCount) {
-      println("... Setting Spark up took: " + (nanoTime - t) / 1e9d + "s")
-      t = nanoTime
-    }
-    val filename = args(0) //read file name from argument input
-    val rGrid = RoadGrid(args(1))
-    //    val rg = RoadGraph(rGrid.edges)
+
+    val rGrid = RoadGrid(mapFile)
     if (timeCount) {
       println("... Generating road graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
-    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon)).zipWithIndex().persist(StorageLevel.MEMORY_AND_DISK)
+    val trajRDD = readTrajFile(trajFile, numTraj, true, List(rGrid.minLon, rGrid.minLat, rGrid.maxLon, rGrid.maxLat)).rdd
+      .zipWithIndex()
+    trajRDD.persist(StorageLevel.MEMORY_AND_DISK)
     if (timeCount) {
       println("... Generating trajRDD took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
@@ -44,12 +46,11 @@ object RunMapMatching extends App {
     println("==== Start Map Matching")
 
     /** do map matching per batch */
-    val batchSize = 10000
-    val totalTraj = args(4).toInt
-    val totalBatch = totalTraj / batchSize
+
+    val totalBatch = ceil(numTraj.toDouble / batchSize).toInt
 
     for (batch <- 0 to totalBatch) {
-      val batchTrajRDD = trajRDD.filter(x => x._2 >= batch * batchSize && x._2 < min((batch + 1) * batchSize, totalTraj))
+      val batchTrajRDD = trajRDD.filter(x => x._2 >= batch * batchSize && x._2 < min((batch + 1) * batchSize, numTraj))
       val mapmatchedRDD = batchTrajRDD.map(x => x._1)
         .map(f = traj => {
           try {
@@ -87,16 +88,11 @@ object RunMapMatching extends App {
             val hx = cleanedPoints.map(_.lon).max
             val ly = cleanedPoints.map(_.lat).min
             val hy = cleanedPoints.map(_.lat).max
-            val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(lx, ly), Point(hx, hy))
+            val connRoadEdges = rGrid.getGraphEdgesByPoint(Point((lx, ly)), Point((hx, hy)))
             val rg = RoadGraph(connRoadEdges)
             val finalRes = MapMatcher.connectRoads(ids, rg)
 
             /** cal road speed */
-            //val roadSpeed = MapMatcher.connectRoadsAndCalSpeed(idsWPoints, rg, rGrid)
-            //println(roadSpeed.deep)
-            //          catch{
-            //            case _: Throwable => println("speed fault")
-            //          }
             if (timeCount) {
               println("... Connecting road segments took: " + (nanoTime - t) / 1e9d + "s")
               println("==== Map Matching Done")
@@ -106,7 +102,6 @@ object RunMapMatching extends App {
             for (v <- finalRes) vertexIDString = vertexIDString + "(" + v._1 + ":" + v._2.toString + ") "
             vertexIDString = vertexIDString.dropRight(1)
             var pointString = ""
-            //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
             var o = "0"
             for (i <- candidates.keys.toArray) {
               if (cleanedPoints.contains(i)) o = "1"
@@ -123,18 +118,16 @@ object RunMapMatching extends App {
             }
 
             /** cal road speed */
-            //          val roadSpeedString = roadSpeed.map(x=>(x._1,(x._2*3.6)formatted("%.2f"),x._3)).mkString(" ")
             val roadSpeedString = MapMatcher.genRoadSeg(finalRes.map(x => x._1), ids zip cleanedPoints)
               .deep
               .toString.drop(6).dropRight(1)
-            Row(traj.taxiID.toString, traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
+            Row(traj.tripID.toString, pointString, vertexIDString, candidateString, pointRoadPair, roadSpeedString)
           }
           catch {
             case _: Throwable =>
               println("****")
               val candidates = MapMatcher.getCandidates(traj, rGrid)
               var pointString = ""
-              //for (i <- traj.points) pointString = pointString + "(" + i.long + " " + i.lat + ")"
               var o = "0"
               for (i <- candidates.keys.toArray) {
                 if (candidates.keys.toArray.contains(i)) o = "1"
@@ -151,29 +144,25 @@ object RunMapMatching extends App {
               }
 
               /** cal road speed */
-              Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
-            //Row(traj.taxiID.toString, traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1")
+              Row(traj.tripID.toString, pointString, "(-1:-1)", candidateString, "-1", "-1")
           }
         })
-      // val persistMapMatchedRDD = mapmatchedRDD.persist(StorageLevel.MEMORY_AND_DISK)
 
-      val spark = SparkSession.builder().getOrCreate()
       import spark.implicits._
-
-      //    val df = persistMapMatchedRDD.map({
-      //      case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
-      //    }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair")
 
       /** with speed info */
       val df = mapmatchedRDD.map({
-        case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String, val7: String) => (val1, val2, val3, val4, val5, val6, val7)
-      }).toDF("taxiID", "tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime")
+        case Row(val1: String, val2: String, val3: String, val4: String, val5: String, val6: String) => (val1, val2, val3, val4, val5, val6)
+      }).toDF("tripID", "GPSPoints", "VertexID", "Candidates", "PointRoadPair", "RoadTime")
 
       df.write
         .option("header", value = true)
         .option("encoding", "UTF-8")
-        .csv(args(2)+s"/$batch")
+        .csv(args(2) + s"/$batch")
     }
     println("Total time: " + (nanoTime() - tStart) / 1e9d)
   }
+
+  implicit def tuple2Array[T: ClassTag](x: (T, T)): Array[T] = Array(x._1, x._2)
+
 }
