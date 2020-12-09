@@ -64,7 +64,7 @@ object MapMatcher extends Serializable{
     trajectory.points.map(x => (x, rGird.getNearestEdge(x, num))).foreach(
       x => candidates += (x._1 -> {
         val t = x._1.t
-        x._2.map(x => (x._1, x._2, x._3.assignTimeStamp(t)))
+        x._2.map(x => (x._1, x._2, x._3.setTimeStamp(t)))
       })
     )
     candidates
@@ -173,7 +173,7 @@ object MapMatcher extends Serializable{
             val p = (rGrid.id2vertex(x.split("-")(0)).point + rGrid.id2vertex(x.split("-")(1)).point) * 0.5
             //println(p.geoDistance(e1._2)/s)
             val t = p.geoDistance(e1._2) / s + e1._2.t
-            val pt = p.assignTimeStamp(t.toLong)
+            val pt = p.setTimeStamp(t.toLong)
             (x, pt, 0, s)
           })
           //println(res.deep)

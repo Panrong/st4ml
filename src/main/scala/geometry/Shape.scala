@@ -15,9 +15,9 @@ abstract class Shape() extends Serializable {
   def geoDistance(other: Shape): Double
 
   def inside(rectangle: Rectangle): Boolean
-
-  implicit def point2Shape(x: Point): Shape = x.asInstanceOf[Shape]
-
-  implicit def rectangle2Shape(x: Rectangle): Shape = x.asInstanceOf[Shape]
+//
+//  implicit def point2Shape(x: Point): Shape = x.asInstanceOf[Shape]
+//
+//  implicit def rectangle2Shape(x: Rectangle): Shape = x.asInstanceOf[Shape]
 
 }

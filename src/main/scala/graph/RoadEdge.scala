@@ -7,11 +7,11 @@ final case class RoadEdge(id: String, from: String, to: String, length: Double, 
 
   def midPointDistance(p: Point): (String, Double, Point) = {
     val (distance, midPoint) = ls.midPointDistance(p)
-    (id, distance, midPoint.assignTimeStamp(p.t))
+    (id, distance, midPoint.setTimeStamp(p.t))
   }
 
   def projectionDistance(p: Point): (String, Double, Point) = {
     val (distance, projectedPoint) = ls.projectionDistance(p)
-    (id, distance, projectedPoint.assignTimeStamp(p.t))
+    (id, distance, projectedPoint.setTimeStamp(p.t))
   }
 }
