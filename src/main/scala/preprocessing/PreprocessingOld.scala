@@ -8,7 +8,7 @@ import scala.util.control._
 import System.nanoTime
 import geometry.Distances.greatCircleDistance
 
-object preprocessingOld extends Serializable{
+object PreprocessingOld extends Serializable{
 
   val ss = new SparkSessionWrapper("config")
   val spark = ss.spark

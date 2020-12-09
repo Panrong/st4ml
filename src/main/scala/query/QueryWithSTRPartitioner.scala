@@ -7,7 +7,7 @@ import preprocessing.{Query, resRangeQuery}
 
 import java.lang.System.nanoTime
 
-object queryWithSTRPartitioner {
+object QueryWithSTRPartitioner {
   def apply(trajDS: Dataset[Trajectory], queryDS: Dataset[preprocessing.Query], numPartitions: Int, samplingRate: Double): Dataset[resRangeQuery] = {
 
     println("==== START QUERY WITH STR PARTITIONER")

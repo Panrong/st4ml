@@ -4,7 +4,7 @@ import geometry.Trajectory
 import org.apache.spark.sql.{Dataset, SparkSession}
 import preprocessing._
 
-object queryWithRDD {
+object QueryWithRDD {
   def apply(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPartitions: Int): Dataset[resRangeQuery] = {
     println("==== START QUERY WITH RDD")
     val trajRDD = trajDS.rdd.map(x => (x.tripID, x.mbr.center()))

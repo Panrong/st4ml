@@ -5,7 +5,7 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.sql.functions.{col, collect_list, size}
 import preprocessing._
 
-object queryWithDS extends App {
+object QueryWithDS extends App {
 
   def apply(trajDS: Dataset[Trajectory], queryDS:Dataset[Query]): Dataset[resRangeQuery] = {
     println("==== START QUERY WITH DATASET")

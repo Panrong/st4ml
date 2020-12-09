@@ -1,12 +1,12 @@
 package examples
 
 import org.apache.spark.sql.SparkSession
-import preprocessing.{readQueryFile, readTrajFile}
-import query.{queryWithDS, queryWithRDD, queryWithSTRPartitioner}
+import preprocessing.{ReadQueryFile, readTrajFile}
+import query.{QueryWithDS, QueryWithRDD, QueryWithSTRPartitioner}
 
 import scala.io.Source
 
-object rangeQueryExample extends App {
+object RangeQueryExample extends App {
 
   override def main(args: Array[String]): Unit = {
 
@@ -35,20 +35,20 @@ object rangeQueryExample extends App {
     trajDS.show(5)
 
     /** generate query DS */
-    val queryDS = readQueryFile(queryFile)
+    val queryDS = ReadQueryFile(queryFile)
     println("=== query DS: ")
     queryDS.show(5)
 
     /** query with DS */
-    queryWithDS(trajDS, queryDS).show(5)
+    QueryWithDS(trajDS, queryDS).show(5)
 
     /** query with RDD */
-    queryWithRDD(trajDS, queryDS, numPartitions).show(5)
+    QueryWithRDD(trajDS, queryDS, numPartitions).show(5)
 
 
     /** query with STR partitioner */
 
-    queryWithSTRPartitioner(trajDS, queryDS, numPartitions, samplingRate).show(5)
+    QueryWithSTRPartitioner(trajDS, queryDS, numPartitions, samplingRate).show(5)
 
     /** stop Spark session */
     sc.stop()

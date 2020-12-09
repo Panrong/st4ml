@@ -7,7 +7,7 @@ import scala.io.Source
 import scala.reflect.ClassTag
 
 
-object readQueryFile extends Serializable {
+object ReadQueryFile extends Serializable {
   implicit def tuple4Array[T: ClassTag](x: (T, T, T, T)): Array[T] = Array(x._1, x._2, x._3, x._4)
 
   def apply(f: String): Dataset[Query] = {
