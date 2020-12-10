@@ -64,11 +64,14 @@ object RangeQueryExample extends App {
       .orderBy(asc("queryID"))
       .show
 
-    val a = Rectangle(Array(0,0,1,1))
-    val b = Rectangle(Array(2,2,3,3))
-    val c = Point(Array(1,2))
-    println(a.minDist(b))
-    println(a.minDist(c))
+    /** query with STR partitioner */
+
+    val gridRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate,"grid")
+    (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
+      .select("queryID", "query", "trips", "count")
+      .orderBy(asc("queryID"))
+      .show
+
     /** stop Spark session */
     sc.stop()
   }

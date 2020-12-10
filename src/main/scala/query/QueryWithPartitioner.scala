@@ -13,7 +13,7 @@ object QueryWithPartitioner {
   def apply(trajDS: Dataset[Trajectory], queryDS: Dataset[preprocessing.Query],
             numPartitions: Int, samplingRate: Double, partitioner:String = "STR"): Dataset[resRangeQuery] = {
 
-    println("==== START QUERY WITH STR PARTITIONER")
+    println(s"==== START QUERY WITH ${partitioner.toUpperCase} PARTITIONER")
     val trajRDD = trajDS.rdd.map(x => x.mbr.assignID(x.tripID))
     val queryRDD = queryDS.rdd
 
