@@ -1,8 +1,10 @@
 package examples
 
+import geometry.{Point, Rectangle}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.asc
 import preprocessing.{ReadQueryFile, readTrajFile}
-import query.{QueryWithDS, QueryWithRDD, QueryWithSTRPartitioner}
+import query.{QueryWithDS, QueryWithPartitioner, QueryWithRDD}
 
 import scala.io.Source
 
@@ -12,13 +14,15 @@ object RangeQueryExample extends App {
 
     /** set up Spark environment */
     var config: Map[String, String] = Map()
-    Source.fromFile("config").getLines
+    val f =Source.fromFile("config")
+      f.getLines
       .filterNot(_.startsWith("//"))
       .filterNot(_.startsWith("\n"))
       .foreach(l => {
         val p = l.split(" ")
         config = config + (p(0) -> p(1))
       })
+    f.close()
     val spark = SparkSession.builder().master(config("master")).appName(config("appName")).getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -33,23 +37,38 @@ object RangeQueryExample extends App {
     val trajDS = readTrajFile(trajectoryFile, num = dataSize)
     println("=== traj DS: ")
     trajDS.show(5)
-
     /** generate query DS */
     val queryDS = ReadQueryFile(queryFile)
-    println("=== query DS: ")
     queryDS.show(5)
 
     /** query with DS */
-    QueryWithDS(trajDS, queryDS).show(5)
+    val dsRes = QueryWithDS(trajDS, queryDS)
+    (dsRes join(queryDS, dsRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
+      .select("queryID", "query", "trips", "count")
+      .orderBy(asc("queryID"))
+      .show
+
 
     /** query with RDD */
-    QueryWithRDD(trajDS, queryDS, numPartitions).show(5)
-
+    val rddRes = QueryWithRDD(trajDS, queryDS, numPartitions)
+    (rddRes join(queryDS, rddRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
+      .select("queryID", "query", "trips", "count")
+      .orderBy(asc("queryID"))
+      .show
 
     /** query with STR partitioner */
 
-    QueryWithSTRPartitioner(trajDS, queryDS, numPartitions, samplingRate).show(5)
+    val strRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate)
+    (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
+      .select("queryID", "query", "trips", "count")
+      .orderBy(asc("queryID"))
+      .show
 
+    val a = Rectangle(Array(0,0,1,1))
+    val b = Rectangle(Array(2,2,3,3))
+    val c = Point(Array(1,2))
+    println(a.minDist(b))
+    println(a.minDist(c))
     /** stop Spark session */
     sc.stop()
   }

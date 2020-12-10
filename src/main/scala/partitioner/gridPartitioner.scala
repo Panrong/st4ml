@@ -24,18 +24,18 @@ object gridPartitioner {
 
     /** determine the number of divisions per latitude and longitude */
     val sampledRDD = r.sample(withReplacement = false, samplingRate)
-    val latMin = sampledRDD.map(x => x.center().lat).min.formatted("%.4f").toDouble
-    val latMax = sampledRDD.map(x => x.center().lat).max.formatted("%.4f").toDouble
-    val lonMin = sampledRDD.map(x => x.center().lon).min.formatted("%.4f").toDouble
-    val lonMax = sampledRDD.map(x => x.center().lon).max.formatted("%.4f").toDouble
-    val latLonRatio = (latMax - latMin) / (lonMax - lonMin)
-    val wholeRange = Rectangle(Array(lonMin,latMin,lonMax,latMax))
+    val lonMin = sampledRDD.map(x => x.mbr.coordinates(0)).min.formatted("%.4f").toDouble
+    val lonMax = sampledRDD.map(x => x.mbr.coordinates(2)).max.formatted("%.4f").toDouble
+    val latMin = sampledRDD.map(x => x.mbr.coordinates(1)).min.formatted("%.4f").toDouble
+    val latMax = sampledRDD.map(x => x.mbr.coordinates(3)).max.formatted("%.4f").toDouble
+    val lonLatRatio = (lonMax - lonMin) / (latMax - latMin)
+    val wholeRange = Rectangle(Array(lonMin, latMin, lonMax, latMax))
 
     /** select the decomposition way that has the most similar ratio to latLonRatio */
     val possibleDecompositions = decompose(numPartition)
     val bestDecomposition = possibleDecompositions
-      .map(x => (x, abs(x._1 / x._2.toDouble - latLonRatio)))
-      .minBy(x => x._2)._1 //(latNum, lonNum)
+      .map(x => (x, abs(x._1 / x._2.toDouble - lonLatRatio)))
+      .minBy(x => x._2)._1 //(lonNum, latNum)
     val partitionBounds = getPartitionBounds(wholeRange, bestDecomposition)
     val partitioner = new gridPartitioner[T](numPartition, partitionBounds)
     val pRDD = new ShuffledRDD[T, T, T](r.map(x => (x, x)), partitioner)
@@ -52,15 +52,15 @@ object gridPartitioner {
   }
 
   def getPartitionBounds(wholeRange: Rectangle, decomposition: (Int, Int)): Map[Rectangle, Int] = {
-    val latLength = (wholeRange.yMax - wholeRange.yMin) / decomposition._1
-    val lonLength = (wholeRange.xMax - wholeRange.xMin) / decomposition._2
-    val lats = Range.BigDecimal(wholeRange.yMin, wholeRange.yMax, latLength)
-      .map(_.toDouble).toArray
+    val lonLength = (wholeRange.xMax - wholeRange.xMin) / decomposition._1
+    val latLength = (wholeRange.yMax - wholeRange.yMin) / decomposition._2
     val lons = Range.BigDecimal(wholeRange.xMin, wholeRange.xMax, lonLength)
-      .map(_.toDouble).toArray
-    val a = lats.flatMap(lat => lons.map(lon => (lat, lon)))
+      .map(_.toDouble).toArray.take(decomposition._1)
+    val lats = Range.BigDecimal(wholeRange.yMin, wholeRange.yMax, latLength)
+      .map(_.toDouble).toArray.take(decomposition._2)
+    val a = lons.flatMap(lon => lats.map(lat => (lon, lat)))
     a.map(x =>
-      Rectangle(Array(x._1, x._2,x._1 + latLength, x._2 + lonLength)))
+      Rectangle(Array(x._1, x._2, x._1 + lonLength, x._2 + latLength)))
       .zipWithIndex.toMap
   }
 

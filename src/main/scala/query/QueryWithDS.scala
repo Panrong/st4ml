@@ -2,7 +2,7 @@ package query
 
 import geometry.{Rectangle, Trajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
-import org.apache.spark.sql.functions.{col, collect_list, size}
+import org.apache.spark.sql.functions.{col, collect_list, count, countDistinct, length, size}
 import preprocessing._
 
 object QueryWithDS extends App {
@@ -15,13 +15,12 @@ object QueryWithDS extends App {
     val trajMbrDS = addMBR(trajDS)
     println("=== trajWithMBR DS: ")
     trajMbrDS.show(5)
-
-    def rangeQuery(queryDs: Dataset[Query])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
-      trajMbrDs.join(queryDs).as[TrajMBRQuery]
+    def rangeQuery(queryDS: Dataset[Query])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
+      trajMbrDs.join(queryDS).as[TrajMBRQuery]
         .filter(x => x.query.intersect(Rectangle(x.mbr)))
         .groupBy(col("queryID"))
-        .agg(collect_list("tripID").alias("trips"))
-        .withColumn("count", size($"trips"))
+        .agg(collect_list("tripID").as("trips"),
+          count("tripID").as("count"))
         .as[resRangeQuery]
     }
 
