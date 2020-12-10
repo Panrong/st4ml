@@ -70,4 +70,39 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
   }
 
   override def geoDistance(other: Shape): Double = projectionDistance(other.center())._1
+
+  override def minDist(other: Shape): Double = other match {
+    case p: Point => minDist(p)
+    case r: Rectangle => minDist(r)
+    case l: Line => minDist(l)
+  }
+
+  def minDist(p: Point): Double = {
+    require(p.coordinates.length == 2)
+    val len = o.minDist(d)
+    if (len == 0) return p.minDist(o)
+    var t = ((p.coordinates(0) - o.coordinates(0)) * (d.coordinates(0) - o.coordinates(0))
+      + (p.coordinates(1) - o.coordinates(1)) * (d.coordinates(1) - o.coordinates(1))) / (len * len)
+    t = max(0, min(1, t))
+    val proj_x = o.coordinates(0) + t * (d.coordinates(0) - o.coordinates(0))
+    val proj_y = o.coordinates(1) + t * (d.coordinates(1) - o.coordinates(1))
+    p.minDist(Point(Array(proj_x, proj_y)))
+  }
+  
+  def minDist(r: Rectangle): Double = {
+    val l1 = Line(r.low, Point(Array(r.low.coordinates(0), r.high.coordinates(1))))
+    val l2 = Line(r.low, Point(Array(r.high.coordinates(0), r.low.coordinates(1))))
+    val l3 = Line(r.high, Point(Array(r.low.coordinates(0), r.high.coordinates(1))))
+    val l4 = Line(r.high, Point(Array(r.high.coordinates(0), r.low.coordinates(1))))
+    min(min(minDist(l1), minDist(l2)), min(minDist(l3), minDist(l4)))
+  }
+  
+  def minDist(l: Line): Double = {
+    if (intersect(l)) 0.0
+    else {
+      min(min(minDist(l.o), minDist(l.d)), min(l.minDist(o), l.minDist(d)))
+    }
+  }
+  
+  
 }

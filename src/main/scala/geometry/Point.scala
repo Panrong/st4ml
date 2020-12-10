@@ -6,7 +6,8 @@ import scala.reflect.ClassTag
 
 case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with Serializable{
 
-  require(coordinates.length == 2, s"Point should have 2 dimensions while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
+  require(coordinates.length == 2, s"Point should have 2 dimensions while " +
+    s"${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
 
   def hasTimestamp: Boolean = t != 0L
 
@@ -44,6 +45,21 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
     case p: Point => greatCircleDistance(this, p)
     case r: Rectangle => greatCircleDistance(this, r.center())
     case l: Line => l.geoDistance(this)
+  }
+
+  override def minDist(other: Shape): Double = other match {
+    case p: Point => minDist(p)
+    case r: Rectangle => r.minDist(this)
+    case l: Line => l.minDist(this)
+  }
+
+  def minDist(other: Point): Double = {
+    require(coordinates.length == other.coordinates.length)
+    var ans = 0.0
+    for (i <- coordinates.indices) {
+      ans += (coordinates(i) - other.coordinates(i)) * (coordinates(i) - other.coordinates(i))
+    }
+    Math.sqrt(ans)
   }
 
   override def intersect(other: Shape): Boolean = other match {

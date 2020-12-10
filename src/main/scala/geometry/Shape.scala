@@ -14,6 +14,8 @@ abstract class Shape() extends Serializable {
 
   def geoDistance(other: Shape): Double
 
+  def minDist(other: Shape): Double
+
   def inside(rectangle: Rectangle): Boolean
 
   var id: Long

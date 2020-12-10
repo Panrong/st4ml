@@ -4,11 +4,15 @@ import scala.math.{max, min}
 
 case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
   require(coordinates.length == 4,
-    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
-  val xMin: Double = coordinates.head
+    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
+    s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
+  val xMin: Double = coordinates(0)
   val xMax: Double = coordinates(2)
   val yMin: Double = coordinates(1)
   val yMax: Double = coordinates(3)
+
+  val low: Point = Point(Array(xMin, yMin))
+  val high: Point = Point(Array(xMax, yMax))
 
   var timeStamp = 0L
 
@@ -22,11 +26,49 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
 
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
-    case r: Rectangle => this.overlap(r) > 0
+//    case r: Rectangle => this.overlappingArea(r) > 0
+    case r: Rectangle => r.isOverlap(this)
     case l: Line => l.intersect(this)
   }
 
   override def geoDistance(other: Shape): Double = other.geoDistance(center())
+
+  override def minDist(other: Shape): Double = {
+    other match {
+      case p: Point => minDist(p)
+      case r: Rectangle => minDist(r)
+      case l: Line => l.minDist(this)
+    }
+  }
+
+  def minDist(p: Point): Double = {
+    require(low.coordinates.length == p.coordinates.length)
+    var ans = 0.0
+    for (i <- p.coordinates.indices) {
+      if (p.coordinates(i) < low.coordinates(i)) {
+        ans += (low.coordinates(i) - p.coordinates(i)) * (low.coordinates(i) - p.coordinates(i))
+      } else if (p.coordinates(i) > high.coordinates(i)) {
+        ans += (p.coordinates(i) - high.coordinates(i)) * (p.coordinates(i) - high.coordinates(i))
+      }
+    }
+    Math.sqrt(ans)
+  }
+
+  def minDist(other: Rectangle): Double = {
+    require(low.coordinates.length == other.low.coordinates.length)
+    var ans = 0.0
+    for (i <- low.coordinates.indices) {
+      var x = 0.0
+      if (other.high.coordinates(i) < low.coordinates(i)) {
+        x = Math.abs(other.high.coordinates(i) - low.coordinates(i))
+      } else if (high.coordinates(i) < other.low.coordinates(i)) {
+        x = Math.abs(other.low.coordinates(i) - high.coordinates(i))
+      }
+      ans += x * x
+    }
+    Math.sqrt(ans)
+  }
+
 
   def assignID(i: Long): Rectangle = {
     id = i
@@ -44,11 +86,28 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   //    Rectangle(Point(newLongMin, newLatMin), Point(newLongMax, newLatMax))
   //  }
 
-
-  def overlap(r: Rectangle): Double = {
+  def overlappingArea(r: Rectangle): Double = {
     val overlapX = max((xMax - xMin) + (r.xMax - r.xMin) - (max(xMax, r.xMax) - min(xMin, r.xMin)), 0)
     val overlapY = max((yMax - yMin) + (r.yMax - r.yMin) - (max(yMax, r.yMax) - min(yMin, r.yMin)), 0)
     overlapX * overlapY
+  }
+
+  // Two rectangles intersect only on boundaries are considered as true
+  def isOverlap(other: Rectangle): Boolean = {
+    require(low.coordinates.length == other.low.coordinates.length)
+    for (i <- low.coordinates.indices)
+      if (low.coordinates(i) > other.high.coordinates(i) || high.coordinates(i) < other.low.coordinates(i)) {
+        return false
+      }
+    true
+  }
+
+  def overlappingRatio(r: Rectangle): Double = {
+    val intersect_low = low.coordinates.zip(r.low.coordinates).map(x => Math.max(x._1, x._2))
+    val intersect_high = high.coordinates.zip(r.high.coordinates).map(x => Math.min(x._1, x._2))
+    val diff_intersect = intersect_low.zip(intersect_high).map(x => x._2 - x._1)
+    if (diff_intersect.forall(_ > 0)) 1.0 * diff_intersect.product / area
+    else 0.0
   }
 
   //  def includeEntry(shape: Shape): Rectangle = {
