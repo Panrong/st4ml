@@ -1,14 +1,13 @@
 package examples
 
-import geometry.{Point, Rectangle}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.asc
 import preprocessing.{ReadQueryFile, readTrajFile}
-import query.{QueryWithDS, QueryWithPartitioner, QueryWithRDD}
+import query.QueryWithIndexing
 
 import scala.io.Source
 
-object RangeQueryExample extends App {
+object RangeQueryRTreeExample extends App {
 
   override def main(args: Array[String]): Unit = {
 
@@ -41,32 +40,10 @@ object RangeQueryExample extends App {
     val queryDS = ReadQueryFile(queryFile)
     queryDS.show(5)
 
-    /** query with DS */
-    val dsRes = QueryWithDS(trajDS, queryDS)
-    (dsRes join(queryDS, dsRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
 
+    /** query with STR partitioner + RTree indexing*/
 
-    /** query with RDD */
-    val rddRes = QueryWithRDD(trajDS, queryDS, numPartitions)
-    (rddRes join(queryDS, rddRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
-
-    /** query with STR partitioner */
-
-    val strRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate)
-    (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
-
-    /** query with grid partitioner */
-
-    val gridRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate,"grid")
+    val strRes = QueryWithIndexing(trajDS, queryDS, numPartitions, samplingRate, "STR", 10)
     (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
       .select("queryID", "query", "trips", "count")
       .orderBy(asc("queryID"))
