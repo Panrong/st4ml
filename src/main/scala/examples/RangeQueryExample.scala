@@ -1,6 +1,5 @@
 package examples
 
-import geometry.{Point, Rectangle}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.asc
 import preprocessing.{ReadQueryFile, readTrajFile}
