@@ -1,9 +1,8 @@
 package examples
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.asc
-import preprocessing.{ReadQueryFile, readTrajFile}
-import query.{QueryWithDS, QueryWithPartitioner, QueryWithRDD}
+
+import query.QuerySubmitter
 
 import scala.io.Source
 
@@ -13,8 +12,8 @@ object RangeQueryExample extends App {
 
     /** set up Spark environment */
     var config: Map[String, String] = Map()
-    val f =Source.fromFile("config")
-      f.getLines
+    val f = Source.fromFile("config")
+    f.getLines
       .filterNot(_.startsWith("//"))
       .filterNot(_.startsWith("\n"))
       .foreach(l => {
@@ -32,44 +31,25 @@ object RangeQueryExample extends App {
     val samplingRate = args(3).toDouble
     val dataSize = args(4).toInt
 
-    /** generate trajectory MBR DS */
-    val trajDS = readTrajFile(trajectoryFile, num = dataSize)
-    println("=== traj DS: ")
-    trajDS.show(5)
-    /** generate query DS */
-    val queryDS = ReadQueryFile(queryFile)
-    queryDS.show(5)
+    val querySubmitter = QuerySubmitter(trajectoryFile, queryFile, numPartitions, dataSize)
 
     /** query with DS */
-    val dsRes = QueryWithDS(trajDS, queryDS)
-    (dsRes join(queryDS, dsRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
-
+    querySubmitter.queryWithDS().show
 
     /** query with RDD */
-    val rddRes = QueryWithRDD(trajDS, queryDS, numPartitions)
-    (rddRes join(queryDS, rddRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
+    querySubmitter.queryWithRDD().show
 
     /** query with STR partitioner */
 
-    val strRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate)
-    (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
+    querySubmitter.queryWithPartitioner(samplingRate).show
 
     /** query with grid partitioner */
 
-    val gridRes = QueryWithPartitioner(trajDS, queryDS, numPartitions, samplingRate,"grid")
-    (strRes join(queryDS, strRes("queryID") === queryDS("queryID")) drop queryDS.col("queryID"))
-      .select("queryID", "query", "trips", "count")
-      .orderBy(asc("queryID"))
-      .show
+    querySubmitter.queryWithPartitioner(samplingRate, "grid").show
+
+    /** query with RTree index */
+
+    querySubmitter.queryWithIndex(samplingRate, 10).show
 
     /** stop Spark session */
     sc.stop()
