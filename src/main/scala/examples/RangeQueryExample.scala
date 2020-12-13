@@ -1,7 +1,8 @@
 package examples
 
-import org.apache.spark.sql.SparkSession
-
+import geometry.Trajectory
+import org.apache.spark.sql.{Dataset, SparkSession}
+import preprocessing.{Query, resRangeQuery}
 import query.QuerySubmitter
 
 import scala.io.Source
@@ -29,27 +30,34 @@ object RangeQueryExample extends App {
     val queryFile = args(1)
     val numPartitions = args(2).toInt
     val samplingRate = args(3).toDouble
-    val dataSize = args(4).toInt
+    val rtreeCapacity = args(4).toInt
+    val dataSize = args(5).toInt
 
     val querySubmitter = QuerySubmitter(trajectoryFile, queryFile, numPartitions, dataSize)
 
+    val trajDS = querySubmitter.tDS
+    val queryDS = querySubmitter.qDS
+
+
     /** query with DS */
-    querySubmitter.queryWithDS().show
+    val queryWDS: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithDS
+    trajDS.transform(queryWDS(queryDS)).show
 
     /** query with RDD */
-    querySubmitter.queryWithRDD().show
+    val queryWRDD: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithRDD
+    trajDS.transform(queryWRDD(queryDS)).show
+
 
     /** query with STR partitioner */
-
-    querySubmitter.queryWithPartitioner(samplingRate).show
+    val queryWPartitioner: Dataset[Query] =>  (Double,String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithPartitioner
+    trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "STR")).show
 
     /** query with grid partitioner */
-
-    querySubmitter.queryWithPartitioner(samplingRate, "grid").show
+    trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "grid")).show
 
     /** query with RTree index */
-
-    querySubmitter.queryWithIndex(samplingRate, 10).show
+    val queryWIndex: Dataset[Query] =>  (Double,Int, String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithIndex
+    trajDS.transform(queryWIndex(queryDS)(samplingRate, rtreeCapacity, "STR")).show
 
     /** stop Spark session */
     sc.stop()
