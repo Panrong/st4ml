@@ -6,13 +6,12 @@ import geometry.Point
 import scala.reflect.ClassTag
 
 object RoadGridTest extends App {
-  implicit def tuple2Array[T: ClassTag](x: (T, T)): Array[T] = Array(x._1, x._2)
 //  val rGrid = RoadGrid("D:\\spark-projects\\spark-map-matching\\preprocessing\\test.csv")
-  val rGrid = RoadGrid("data/porto.csv")
+  val rGrid = RoadGrid("datasets/porto.csv")
   println(rGrid)
   println("--------------------")
 
-  val p0 = Point((-8.6152995, 41.1427807))
+  val p0 = Point(Array(-8.6152995, 41.1427807))
   val k =5
   println("Test getNearestVertex")
   rGrid.getNearestVertex(p0, k).foreach(println)
@@ -27,7 +26,7 @@ object RoadGridTest extends App {
   rGrid.getNearestEdge(p0, k, "projection", r=6).foreach(println)
   println("--------------------")
 
-  val p1 = Point((-8.614661, 41.143212))
+  val p1 = Point(Array(-8.614661, 41.143212))
   val edges = rGrid.getGraphEdgesByPoint(p0, p1) // using default r=50, about 500 meter
   val rGraph = RoadGraph(edges)
 

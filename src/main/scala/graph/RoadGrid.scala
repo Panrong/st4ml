@@ -5,7 +5,6 @@ import geometry.{Grid, LineString, Point}
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.reflect.ClassTag
-import preprocessing.SparkSessionWrapper
 
 class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
                minLon: Double, minLat: Double, maxLon: Double, maxLat: Double, gridSize: Double)

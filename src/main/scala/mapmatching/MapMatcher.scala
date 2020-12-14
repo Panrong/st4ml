@@ -33,7 +33,8 @@ object MapMatcher extends Serializable{
   }
 
   def transitionProbArray(point1: Point, point2: Point, roadDistArray: Array[Array[Double]],
-                          beta: Double): Array[Array[Double]] = roadDistArray.map(_.map(transitionProb(point1, point2, _, beta)))
+                          beta: Double): Array[Array[Double]] =
+    roadDistArray.map(_.map(transitionProb(point1, point2, _, beta)))
 
 
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
@@ -59,7 +60,8 @@ object MapMatcher extends Serializable{
   }
 
 
-  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5): mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = {
+  def getCandidates(trajectory: Trajectory, rGird: RoadGrid, num: Int = 5):
+  mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = {
     var candidates: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = mutable.LinkedHashMap()
     trajectory.points.map(x => (x, rGird.getNearestEdge(x, num))).foreach(
       x => candidates += (x._1 -> {
@@ -73,7 +75,6 @@ object MapMatcher extends Serializable{
   def getRoadDistArray(candidates: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],
                        rGrid: RoadGrid): Array[Array[Array[Double]]] = {
     val roadArray = candidates.values.toArray
-
     val candiSetPairs = roadArray.sliding(2).toArray
     val roadDist = candiSetPairs.map { candiSetPair =>
       val pairs = candiSetPair(0).map(x => candiSetPair(1).map(y => (x, y)))
@@ -87,7 +88,8 @@ object MapMatcher extends Serializable{
             val p1 = rGrid.id2vertex(endVertex).point
             val edges = rGrid.getGraphEdgesByPoint(p0, p1)
             val rGraph = RoadGraph(edges)
-            rGraph.getShortestPathAndLength(startVertex, endVertex)._2 + x._3.geoDistance(p0) + y._3.geoDistance(p1)
+            rGraph.getShortestPathAndLength(startVertex, endVertex)._2 +
+              x._3.geoDistance(p0) + y._3.geoDistance(p1)
           }
         })
     }
@@ -97,117 +99,26 @@ object MapMatcher extends Serializable{
   def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
     if (ids(0) == "-1") Array(("-1", -1))
     else {
-
-      //      val vertexIDs = ids.flatMap(_.split("-")).sliding(2).collect {
-      //        case Array(a, b) if a != b => b
-      //      }.toArray
-
       // remove consecutive duplicates
       val vertexIDs = ids(0) +: ids.flatMap(_.split("-")).sliding(2).collect {
         case Array(a, b) if a != b => b
       }.toArray
-
-
-      //      var roadIDs = Array(vertexIDs(0))
       try {
-        //        for (i <- 0 to vertexIDs.length - 2) {
-        //          roadIDs = concat(roadIDs, g.getShortestPath(vertexIDs(i), vertexIDs(i + 1)).toArray.drop(1))
-        //        }
-        //        var res = new Array[(String, Int)](0)
-        //        for (e <- roadIDs) {
-        //          if (vertexIDs.contains(e)) res = res :+ (e, 1)
-        //          else res = res :+ (e, 0)
-        //        }
-
         val filledVertexIDs = vertexIDs.sliding(2).toArray.map {
           case Array(oVertex, dVertex) =>
             if (g.hasEdge(oVertex, dVertex)) Array((oVertex, 1), (dVertex, 1))
             else g.getShortestPath(oVertex, dVertex).toArray.map(x => (x, 0))
         }
-
         val filledVertexIDsFlatten = filledVertexIDs.flatten
         // remove consecutive duplicates
         filledVertexIDsFlatten(0) +: filledVertexIDsFlatten.sliding(2).collect {
           case Array(a, b) if a._1 != b._1 => b
         }.toArray
-
       } catch {
         case _: NoSuchElementException => Array(("-1", -1))
       }
     }
   }
-
-  def connectRoadsAndCalSpeed(idsWPoint: Array[(String, Point)], g: RoadGraph, rGrid: RoadGrid): Array[(String, Double, Int)] = {
-    // return edgeID, speed and indicator(1 or 0 for matched or inferred)\
-
-    // check consecutive points, if belong to the same road, use average value to replace
-    val compressedIdsWPoints = idsWPoint.toList.foldLeft(List[(String, Point, Int)]()) { (x, y) =>
-      if (x.isEmpty || x.last._1 != y._1) x ::: List((y._1, y._2, 1))
-      else {
-        val l = x.last
-        val toAdd = List((l._1, (l._2 * l._3 + y._2) * (1 / (l._3.toDouble + 1)), l._3 + 1))
-        //        println(x)
-        //        println(y)
-        //        println(toAdd)
-        //        println(l._2 * l._3 + y._2)
-        //        println(1 / (l._3.toDouble + 1))
-        x.dropRight(1) ::: toAdd
-      }
-    }.map(x => (x._1, x._2)).toArray
-    if (compressedIdsWPoints(0)._1 == "-1" || compressedIdsWPoints.length < 2) Array(("-1", -1, -1))
-    else {
-      val connectedSubEdgeArray = compressedIdsWPoints.sliding(2).toArray.flatMap(x => { // x: Array(e1,e2)
-        val e1 = x(0)
-        val e2 = x(1)
-        if (e1._1.split("-")(1) == e2._1.split("-")(0)) Array((e1._1, e1._2, 1, -1: Double))
-        else {
-          val (shortestPathVertex, len) = g.getShortestPathAndLength(e1._1.split("-")(1), e2._1.split("-")(0))
-          //          println(e1._1, e2._1)
-          //          println(shortestPathVertex)
-          val shortestPath = shortestPathVertex.sliding(2).toArray.map(x => x.head + "-" + x(1))
-          //          println(shortestPath.deep)
-          val s = (len + e1._2.geoDistance(rGrid.id2vertex(e1._1.split("-")(1)).point)
-            + e2._2.geoDistance(rGrid.id2vertex(e2._1.split("-")(0)).point)) /
-            (e2._2.t - e1._2.t)
-          val res = (e1._1, e1._2, 1, -1: Double) +: shortestPath.map(x => {
-            val p = (rGrid.id2vertex(x.split("-")(0)).point + rGrid.id2vertex(x.split("-")(1)).point) * 0.5
-            //println(p.geoDistance(e1._2)/s)
-            val t = p.geoDistance(e1._2) / s + e1._2.t
-            val pt = p.setTimeStamp(t.toLong)
-            (x, pt, 0, s)
-          })
-          //println(res.deep)
-          res
-        }
-      }) :+ (compressedIdsWPoints.last._1, compressedIdsWPoints.last._2, 1, -1: Double) //(roadID, Point, indicator, speed) if indicator =1, speed = -1, else Point = 0
-      if (connectedSubEdgeArray.length == 2) {
-        val e1 = connectedSubEdgeArray(0)
-        val e2 = connectedSubEdgeArray(1)
-        val s = e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t)
-        Array((e1._1, s, e1._3), (e2._1, s, e2._3))
-      }
-      else {
-        (connectedSubEdgeArray(0)._1, connectedSubEdgeArray(1)._2.geoDistance(connectedSubEdgeArray(0)._2) / (connectedSubEdgeArray(1)._2.t - connectedSubEdgeArray(0)._2.t), 1) +:
-          connectedSubEdgeArray.sliding(3).toArray.map(x => {
-            val e1 = x(0)
-            val e2 = x(1)
-            val e3 = x(2)
-            if (e2._4 != -1) (e2._1, e2._4, e2._3)
-            else {
-              val s1 = min(e1._2.geoDistance(e2._2) / (e2._2.t - e1._2.t), 33)
-              val s2 = min(e2._2.geoDistance(e3._2) / (e3._2.t - e2._2.t), 33)
-              val s = (s1 * e2._2.geoDistance(g.id2edge(e2._1).ls.points(0)) +
-                s2 * e2._2.geoDistance(g.id2edge(e2._1).ls.points.last)) /
-                g.id2edge(e2._1).length
-              //println(e2._2, e2._2.t)
-              //println(s, s1, s2)
-              (e2._1, s, e2._3)
-            }
-          })
-      }
-    }
-  }
-
   def genRoadSeg(allVertices: Array[String], mappedRoads: Array[(String, Point)]): Array[(String, Long)] = {
     //mappedRoads: roadID, projection point (roadID may have conjugated duplication)
     val allRoadSegs = allVertices.sliding(2).map(x => s"${x(0)}-${x(1)}").toArray
@@ -229,7 +140,8 @@ object MapMatcher extends Serializable{
     // check if all probs are 0 from one time to the next
     // if so, remove the points until prob != 0
     // if time interval > 180s, break into two trajs
-    // return new pairs array(if split then have multiple pairs) and new corresponding roadDistArray(to prevent recalculation)
+    // return new pairs array(if split then have multiple pairs)
+    // and new corresponding roadDistArray(to prevent recalculation)
 
     /** helper function */
     def splitArray[T](xs: Array[T], sep: T): List[Array[T]] = {
@@ -303,7 +215,8 @@ object MapMatcher extends Serializable{
       newTransPorbArray = newTransPorbArray :+ subTransProbArray
     }
     if (breakPoints.length == 0) {
-      if (filteredPoints.length < 2) (new Array[mutable.LinkedHashMap[Point, Array[(String, Double, Point)]]](0), new Array[Array[Array[Array[Double]]]](0))
+      if (filteredPoints.length < 2)
+        (new Array[mutable.LinkedHashMap[Point, Array[(String, Double, Point)]]](0), new Array[Array[Array[Array[Double]]]](0))
       else {
         var newPairs: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]] = mutable.LinkedHashMap()
         for (p <- filteredPoints) {
@@ -328,7 +241,8 @@ object MapMatcher extends Serializable{
     }
   }
 
-  def apply(p: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]], roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[(String, Point)]) = {
+  def apply(p: mutable.LinkedHashMap[Point, Array[(String, Double, Point)]],
+            roadDistArray: Array[Array[Array[Double]]], g: RoadGrid): (Array[Point], Array[(String, Point)]) = {
     // pairs: Map(GPS point -> candidate road segments)
     val beta = 0.2
     // val deltaZ = 4.07
@@ -338,11 +252,6 @@ object MapMatcher extends Serializable{
       println(".... Cleaning points with graph took: " + (nanoTime - t) / 1e9d + "s")
       t = nanoTime
     }
-    //println(p)
-    //println(cleanedPairs(0))
-    //val cleanedPairs = Array(p)
-    //val newRoadDistMatrix = Array(roadDistArray)
-
     if (cleanedPairs.length < 1) (p.keys.toArray, Array(("-1", Point(Array(0, 0)))))
     else {
       var bestRoads = new Array[(String, Point)](0)
@@ -366,20 +275,14 @@ object MapMatcher extends Serializable{
           println(".... Generating transition prob matrix took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
+
         var ids = Array(-1)
         ids = viterbi(eProbs, tProbs)
-        //        try {
-        //          ids = viterbi(eProbs, tProbs)
-        //        } catch {
-        //          case _: Throwable => {
-        //            println("... Map matching failed ...")
-        //            return (points, Array("-1"))
-        //          }
-        //        }
         if (timeCount) {
           println(".... Viterbi algorithm took: " + (nanoTime - t) / 1e9d + "s")
           t = nanoTime
         }
+
         var bestRoadsP = new Array[(String, Point)](0)
         for (j <- ids.indices) {
           val candidates = pairs.values.toArray
