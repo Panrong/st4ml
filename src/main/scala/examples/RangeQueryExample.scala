@@ -1,8 +1,9 @@
 package examples
 
-import org.apache.spark.sql.SparkSession
-import preprocessing.{ReadQueryFile, readTrajFile}
-import query.{QueryWithDS, QueryWithRDD, QueryWithSTRPartitioner}
+import geometry.Trajectory
+import org.apache.spark.sql.{Dataset, SparkSession}
+import preprocessing.{Query, resRangeQuery}
+import query.QuerySubmitter
 
 import scala.io.Source
 
@@ -12,13 +13,15 @@ object RangeQueryExample extends App {
 
     /** set up Spark environment */
     var config: Map[String, String] = Map()
-    Source.fromFile("config").getLines
+    val f = Source.fromFile("config")
+    f.getLines
       .filterNot(_.startsWith("//"))
       .filterNot(_.startsWith("\n"))
       .foreach(l => {
         val p = l.split(" ")
         config = config + (p(0) -> p(1))
       })
+    f.close()
     val spark = SparkSession.builder().master(config("master")).appName(config("appName")).getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -27,27 +30,35 @@ object RangeQueryExample extends App {
     val queryFile = args(1)
     val numPartitions = args(2).toInt
     val samplingRate = args(3).toDouble
-    val dataSize = args(4).toInt
+    val rtreeCapacity = args(4).toInt
+    val dataSize = args(5).toInt
 
-    /** generate trajectory MBR DS */
-    val trajDS = readTrajFile(trajectoryFile, num = dataSize)
-    println("=== traj DS: ")
-    trajDS.show(5)
+    val querySubmitter = QuerySubmitter(trajectoryFile, queryFile, numPartitions, dataSize)
 
-    /** generate query DS */
-    val queryDS = ReadQueryFile(queryFile)
-    println("=== query DS: ")
-    queryDS.show(5)
+    val trajDS = querySubmitter.tDS
+    val queryDS = querySubmitter.qDS
+
 
     /** query with DS */
-    QueryWithDS(trajDS, queryDS).show(5)
+    val queryWDS: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithDS
+    trajDS.transform(queryWDS(queryDS)).show
 
     /** query with RDD */
-    QueryWithRDD(trajDS, queryDS, numPartitions).show(5)
+    val queryWRDD: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithRDD
+    trajDS.transform(queryWRDD(queryDS)).show
 
 
     /** query with STR partitioner */
-    QueryWithSTRPartitioner(trajDS, queryDS, numPartitions, samplingRate).show(5)
+    val queryWPartitioner: Dataset[Query] =>  (Double,String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithPartitioner
+    trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "STR")).show
+
+    /** query with grid partitioner */
+    trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "grid")).show
+
+    /** query with RTree index */
+    val queryWIndex: Dataset[Query] =>  (Double,Int, String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithIndex
+    trajDS.transform(queryWIndex(queryDS)(samplingRate, rtreeCapacity, "STR")).show
+
 
     /** stop Spark session */
     sc.stop()

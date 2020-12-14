@@ -5,7 +5,7 @@ import scala.math.{max, min}
 case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
   require(coordinates.length == 4,
     s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
-    s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
+      s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
   val xMin: Double = coordinates(0)
   val xMax: Double = coordinates(2)
   val yMin: Double = coordinates(1)
@@ -26,7 +26,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
 
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
-//    case r: Rectangle => this.overlappingArea(r) > 0
+    //    case r: Rectangle => this.overlappingArea(r) > 0
     case r: Rectangle => r.isOverlap(this)
     case l: Line => l.intersect(this)
   }
