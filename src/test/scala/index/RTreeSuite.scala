@@ -16,15 +16,13 @@ class RTreeSuite extends AnyFunSuite {
       }
     }
   }
-  val rtree = RTree.apply(entries, 5)
+  val rtree = RTree(entries, 5)
 
   test("RTree: range, simple"){
     val A = Point(Array(0.0, 0.0))
     val B = Point(Array(9.0, 9.0))
     val mbr = Rectangle(A.coordinates ++ B.coordinates)
     val range = rtree.range(mbr)
-
-    range.foreach(println)
 
     for(x <- range){
       assert(mbr.intersect(x._1))

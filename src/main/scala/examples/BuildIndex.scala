@@ -3,6 +3,7 @@ package examples
 import org.apache.spark.sql.SparkSession
 
 import geometry.Point
+import index.RTree
 
 object BuildIndex {
   def main(args: Array[String]): Unit = {
@@ -12,13 +13,13 @@ object BuildIndex {
       .appName("BuildIndex")
       .getOrCreate()
 
-    buildRTree(spark)
+    buildRTreeByPoints(spark)
 
 
     spark.stop()
   }
 
-  private def buildRTree(spark: SparkSession): Unit = {
+  private def buildRTreeByPoints(spark: SparkSession): Unit = {
     import spark.implicits._
 
     val toyPointsDF = Seq(
@@ -29,7 +30,8 @@ object BuildIndex {
       Point(Array(5.0, 5.0)),
       Point(Array(6.0, 6.0))).toDF()
 
-    toyPointsDF.rdd
+    toyPointsDF.show()
+    toyPointsDF.col("coordinates")
 
   }
 

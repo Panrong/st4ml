@@ -47,7 +47,6 @@ object RangeQueryExample extends App {
 
 
     /** query with STR partitioner */
-
     QueryWithSTRPartitioner(trajDS, queryDS, numPartitions, samplingRate).show(5)
 
     /** stop Spark session */
