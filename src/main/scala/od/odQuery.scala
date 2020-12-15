@@ -3,7 +3,7 @@ package od
 import org.apache.spark.rdd.RDD
 import geometry.mmTrajectory
 import geometry.Distances.greatCircleDistance
-import graph.RoadGrid
+import road.RoadGrid
 
 object odQuery {
   /** helper functions */

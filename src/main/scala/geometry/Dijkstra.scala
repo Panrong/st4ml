@@ -1,6 +1,6 @@
 package geometry
 
-import graph.Util.iterateRight
+import road.Util.iterateRight
 
 import scala.language.implicitConversions
 

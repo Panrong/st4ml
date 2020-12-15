@@ -47,7 +47,6 @@ object RangeQueryExample extends App {
     val queryWRDD: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithRDD
     trajDS.transform(queryWRDD(queryDS)).show
 
-
     /** query with STR partitioner */
     val queryWPartitioner: Dataset[Query] =>  (Double,String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithPartitioner
     trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "STR")).show
