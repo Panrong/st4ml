@@ -11,6 +11,9 @@ package STInstance
  */
 case class Trajectory[U, T](override val id: Long,
                             coord: Array[(U, Long)],
-                            override var property: Option[Map[String, T]]) extends STInstance[T] {
+                            override var property: Option[Map[String, T]])
+  extends STInstance[T] {
+  override def toString: String =
+    s"Trajectory $id:\nCoord: ${coord.deep}\nProperties: ${property}"
 
 }

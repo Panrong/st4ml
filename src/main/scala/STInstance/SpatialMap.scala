@@ -13,4 +13,8 @@ case class SpatialMap[U, T](
                              vertices: Map[String, U],
                              override var property: Option[Map[String, T]]
                            ) extends STInstance[T] {
+
+  def setID(i: Long): SpatialMap[U, T] = {
+    SpatialMap(i, this.vertices, this.property)
+  }
 }

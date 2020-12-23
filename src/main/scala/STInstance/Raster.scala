@@ -11,7 +11,7 @@ package STInstance
 case class Raster[U, T](
                          override val id: Long,
                          vertices: Map[String, List[(Long, U)]],
-                         override var property: Option[Map[String, T]]
-                       ) extends STInstance[T] {
+                         override var property: Option[Map[String, T]])
+  extends STInstance[T] {
 }
 
