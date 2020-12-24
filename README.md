@@ -1,8 +1,21 @@
 # ST-Tool
 
+## New Mapmatched result file format:
+20201224🎄 - Kaiqi
+
+The complete mm result is backuped in guizu-gpu at /home/liukaiqi/mmres_all
+
+Header: `tripID GPSPoints VertexID Candidates PointRoadPai RoadTime`
+ - tripID: for identidfication
+ - GPSPoints: recorded GPS info in free space of format: `(lon lat:flag)` where flag indicates whether a point is map matched (`1`) or removed (`0`)
+ - VertexID: the vertex ID of the map matched trajectory, each two consecutive IDs form an edge on the road graph. The format is `(ID:flag)` where flag indicates whether a vertex is directly matched from GPS points (`1`) or interpolated from shortest path connection (`0`)
+ - Candidates: possible road edges to be mapped to each feasible GPSPoints (with flag 1). The format is `idx:(edge1 edge2 ...)` seperated by `;`
+ -  PointRoadPair: information aggregated from GPSPoints and VetexID. The format is `(lon,lat,edge)`
+ -  RoadTime: estimated timestamp when the trajectory passes the middle point of the road segment (used for speed calculation). The format is `(roadID, timeStamp)`
+ 
 ## Update: the version for delivery locates at /home/spark/ST-TOOL-V1/ ( only jars and no source codes)
 
-## Update: the documentation has been linked to http://18.141.153.85:8000/
+## Update: the documentation has been linked to http://13.251.63.80:8000/
 
 ## Mapmatched result file format for visualization use:
 20200926 - Kaiqi
