@@ -134,13 +134,14 @@ class MapMatchingSubmitter(trajDS: Dataset[Trajectory],
             val connRoadEdges = rGrid.getGraphEdgesByPoint(Point(Array(lx, ly)), Point(Array(hx, hy)))
             val rg = RoadGraph(connRoadEdges)
             val finalRes = MapMatcher.connectRoads(ids, rg)
+            println(finalRes.deep)
             println("==== Map Matching Done")
             var vertexIDString = ""
             for (v <- finalRes) vertexIDString = vertexIDString + "(" + v._1 + ":" + v._2.toString + ") "
             vertexIDString = vertexIDString.dropRight(1)
             var pointString = ""
-            var o = "0"
             for (i <- candidates.keys.toArray) {
+              var o = "0"
               if (cleanedPoints.contains(i)) o = "1"
               pointString = pointString + "(" + i.lon + " " + i.lat + " : " + o + ")"
             }
