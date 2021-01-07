@@ -16,7 +16,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
 
   var timeStamp = 0L
 
-  override var id = 0L
+  override var id = ID
 
   def projectionDistance(p: Point): (Double, Point) = {
     val v = p - o
@@ -75,6 +75,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
     case p: Point => minDist(p)
     case r: Rectangle => minDist(r)
     case l: Line => minDist(l)
+    case c: Cube => minDist(c.toRectangle)
   }
 
   def minDist(p: Point): Double = {
@@ -88,7 +89,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
     val proj_y = o.coordinates(1) + t * (d.coordinates(1) - o.coordinates(1))
     p.minDist(Point(Array(proj_x, proj_y)))
   }
-  
+
   def minDist(r: Rectangle): Double = {
     val l1 = Line(r.low, Point(Array(r.low.coordinates(0), r.high.coordinates(1))))
     val l2 = Line(r.low, Point(Array(r.high.coordinates(0), r.low.coordinates(1))))
@@ -96,13 +97,13 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
     val l4 = Line(r.high, Point(Array(r.high.coordinates(0), r.low.coordinates(1))))
     min(min(minDist(l1), minDist(l2)), min(minDist(l3), minDist(l4)))
   }
-  
+
   def minDist(l: Line): Double = {
     if (intersect(l)) 0.0
     else {
       min(min(minDist(l.o), minDist(l.d)), min(l.minDist(o), l.minDist(d)))
     }
   }
-  
-  
+
+  def setID(id: Long): Line = Line(this.o, this.d, id)
 }

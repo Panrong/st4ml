@@ -35,19 +35,19 @@
 //  }
 //  test("STR: partitioner, simple") {
 //    val sc = spark.sparkContext
-//    val rdd = sc.parallelize(entries)
-//    val (pRDD, idBoundMap) = STRPartitioner(rdd, 9, 0.5)
+//    val dataRDD = sc.parallelize(entries)
+//    val (pRDD, idBoundMap) = STRPartitioner(dataRDD, 9, 0.5)
 //    assert(pRDD.getNumPartitions == 9)
 //  }
 //  test("STR: coverage, simple") {
 //    val sc = spark.sparkContext
-//    val rdd = sc.parallelize(entries)
-//    val (pRDD, idBoundMap) = STRPartitioner(rdd, 9, 0.5)
+//    val dataRDD = sc.parallelize(entries)
+//    val (pRDD, idBoundMap) = STRPartitioner(dataRDD, 9, 0.5)
 //    val wholeRange = Rectangle(Array(
-//      rdd.map(_.coordinates(0)).min,
-//      rdd.map(_.coordinates(1)).min,
-//      rdd.map(_.coordinates(0)).min,
-//      rdd.map(_.coordinates(1)).min))
+//      dataRDD.map(_.coordinates(0)).min,
+//      dataRDD.map(_.coordinates(1)).min,
+//      dataRDD.map(_.coordinates(0)).min,
+//      dataRDD.map(_.coordinates(1)).min))
 //
 //    for (r <- idBoundMap.values) assert(r.inside(wholeRange))
 //

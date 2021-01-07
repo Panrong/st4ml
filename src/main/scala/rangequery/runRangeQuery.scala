@@ -4,7 +4,7 @@
 //import geometry.{Point, Rectangle, Trajectory}
 //import org.apache.spark.{SparkConf, SparkContext}
 //import mapmatching.preprocessing
-//import mapmatching.preprocessing.readQueryFile
+//import mapmatching.preprocessing.ReadQueryFile
 //import graph.RoadGrid
 //import System.nanoTime
 //
@@ -29,7 +29,7 @@
 //    /** repartition */
 //    var t = nanoTime
 //    val rg = RoadGrid(roadGraphFile, gridSize)
-//    val trajRDD = preprocessing.readMMTrajFile(mmTrajFile).map(x => {
+//    val dataRDD = preprocessing.readMMTrajFile(mmTrajFile).map(x => {
 //      var points = new Array[Point](0)
 //      for (p <- x.points) {
 //        val v = rg.id2vertex(p)
@@ -51,14 +51,14 @@
 //      }
 //      Trajectory(tripID, taxiID, x.startTime, points)
 //    }).repartition(numPartition)
-//    println(trajRDD.count)
+//    println(dataRDD.count)
 //    println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
 //    t = nanoTime
-//    val mbrRDD = trajRDD.map(traj => traj.mbr.assignID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
+//    val mbrRDD = dataRDD.map(traj => traj.mbr.assignID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
 //    for (i <- mbrRDD.take(2)) println(i)
 //    /** generate RTree for each partition */
-//    val RTreeRDD = mbrRDD.mapPartitionsWithIndex((index, iter) => {
-//      Iterator((index, rangeQuery.genRTree(iter.toArray, rTreeCapacity)))
+//    val RTreeRDD = mbrRDD.mapPartitionsWithIndex((selection.indexer, iter) => {
+//      Iterator((selection.indexer, rangeQuery.genRTree(iter.toArray, rTreeCapacity)))
 //    })
 //    RTreeRDD.cache
 //    RTreeRDD.foreach(x => println(x))
@@ -74,7 +74,7 @@
 //    catch {
 //      case ex: java.lang.NumberFormatException => {
 //        val queryFile = query
-//        queries = readQueryFile(queryFile)
+//        queries = ReadQueryFile(queryFile)
 //      }
 //    }
 //
@@ -109,7 +109,7 @@
 //    /** query with filter */
 //    //    t = nanoTime
 //    //    for (queryRange <- genRandomQueryBoxes(Rectangle(Point(-8.6999794, 41.1000015), Point(-8.5000023, 41.2500677423077)), args(4).toInt)) {
-//    //      val queriedTrajRDD2 = trajRDD.filter(x => x.intersect(queryRange))
+//    //      val queriedTrajRDD2 = dataRDD.filter(x => x.intersect(queryRange))
 //    //      println("=== " + queriedTrajRDD2.count + " trajectories in the range (" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")")
 //    //    }
 //    //    println("... Filter query time: " + (nanoTime - t) / 1e9d + "s")

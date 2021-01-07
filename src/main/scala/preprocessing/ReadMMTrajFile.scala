@@ -7,7 +7,7 @@ import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType
 object ReadMMTrajFile extends Serializable{
   /**
    *
-   * @param filename : path to the data file
+   * @param filename : path to the dataRDD file
    * @return : Dataset[mmTrajectoryS]
    * +-------------------+--------+----------+--------------------+
    * |             tripID|  taxiID| startTime|     subTrajectories|

@@ -24,4 +24,6 @@ abstract class Shape() extends Serializable {
 
   implicit def rectangle2Shape(x: Rectangle): Shape = x.asInstanceOf[Shape]
 
+  override def equals(obj: Any): Boolean =
+    this.center == obj.asInstanceOf[Shape].center && this.id == obj.asInstanceOf[Shape].id
 }

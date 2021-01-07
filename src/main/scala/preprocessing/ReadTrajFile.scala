@@ -3,17 +3,16 @@ package preprocessing
 import geometry.Distances.greatCircleDistance
 
 import java.lang.System.nanoTime
-import geometry.{Point, Trajectory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 import scala.util.control.Breaks
 
-object readTrajFile {
+object ReadTrajFile {
 
   /**
    *
-   * @param filename : path to the data file
+   * @param filename : path to the dataRDD file
    * @param num      : number of trajectories to read
    * @clean validate : validate the trajectories
    * @return : Dataset[Trajectory]
@@ -30,7 +29,7 @@ object readTrajFile {
    */
   val timeCount = true
 
-  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(0, 0, 0, 0)): Dataset[Trajectory] = {
+  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)): Dataset[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     val t = nanoTime
@@ -45,11 +44,11 @@ object readTrajFile {
       val pointsString = row(8).toString
       var pointsCoord = new Array[Double](0)
       for (i <- pointsString.split(',')) pointsCoord = pointsCoord :+ i.replaceAll("[\\[\\]]", "").toDouble
-      var points = new Array[Point](0)
+      var points = new Array[geometry.Point](0)
       for (i <- 0 to pointsCoord.length - 2 by 2) {
-        points = points :+ Point(Array(pointsCoord(i), pointsCoord(i + 1)), startTime + samplingRate * i / 2)
+        points = points :+ geometry.Point(Array(pointsCoord(i), pointsCoord(i + 1)), startTime + samplingRate * i / 2)
       }
-      Trajectory(tripID, startTime, points)
+      geometry.Trajectory(tripID, startTime, points, Map("taxiID"-> taxiID.toString))
     })
     println("==== Read CSV Done")
     println("--- Total number of lines: " + df.count)
@@ -59,20 +58,20 @@ object readTrajFile {
     else resRDD.toDS
   }
 
-  def splitTraj(trajectory: Trajectory, splitPoints: Array[Int]): Array[Trajectory] = {
+  def splitTraj(trajectory: geometry.Trajectory, splitPoints: Array[Int]): Array[geometry.Trajectory] = {
     if (splitPoints.length == 1) Array(trajectory)
     else {
-      var trajs = new Array[Trajectory](0)
+      var trajs = new Array[geometry.Trajectory](0)
       //println(splitPoints.deep)
       for (i <- 0 to splitPoints.length - 2) {
         val points = trajectory.points.slice(splitPoints(i), splitPoints(i + 1) + 1)
-        trajs = trajs :+ Trajectory(trajectory.tripID, points(0).t, points)
+        trajs = trajs :+ geometry.Trajectory(trajectory.tripID, points(0).t, points)
       }
       trajs
     }
   }
 
-  def trajBreak(trajRDD: RDD[Trajectory], speed: Double = 50, timeInterval: Double = 180): RDD[Trajectory] = {
+  def trajBreak(trajRDD: RDD[geometry.Trajectory], speed: Double = 50, timeInterval: Double = 180): RDD[geometry.Trajectory] = {
     val t = nanoTime
     println("==== Split trajectories with speed limit " + speed + " m/s and time interval limit " + timeInterval + " s")
     // speed and time interval check
@@ -91,14 +90,14 @@ object readTrajFile {
     newTrajRDD
   }
 
-  def removeRedundancy(trajRDD: RDD[Trajectory], sigmaZ: Double = 4.07): RDD[Trajectory] = {
+  def removeRedundancy(trajRDD: RDD[geometry.Trajectory], sigmaZ: Double = 4.07): RDD[geometry.Trajectory] = {
     val t = nanoTime
     val resRDD = trajRDD.map(traj => {
       var newPoints = Array(traj.points(0))
       for (p <- 1 until traj.points.length) {
         if (greatCircleDistance(traj.points(p), newPoints.last) >= 2 * sigmaZ) newPoints = newPoints :+ traj.points(p)
       }
-      Trajectory(traj.tripID, traj.startTime, newPoints)
+      geometry.Trajectory(traj.tripID, traj.startTime, newPoints)
     })
     println("==== Remove Redundancy Done")
     println("--- Now total number of entries: " + resRDD.count)
@@ -106,7 +105,7 @@ object readTrajFile {
     resRDD
   }
 
-  def checkMapCoverage(trajRDD: RDD[Trajectory], mapRange: List[Double]): RDD[Trajectory] = {
+  def checkMapCoverage(trajRDD: RDD[geometry.Trajectory], mapRange: List[Double]): RDD[geometry.Trajectory] = {
     val t = nanoTime
     val resRDD = trajRDD.filter(traj => {
       var check = true
@@ -128,9 +127,14 @@ object readTrajFile {
   }
 }
 
-//object readTrajTest extends App {
-//  override def main(args: Array[String]): Unit = {
-//    /** set up Spark */
-//    readTrajFile("/datasets/porto_traj.csv", 1000).show(5)
-//  }
-//}
+object readTrajTest extends App {
+  override def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder().master("local").getOrCreate()
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    /** set up Spark */
+    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd.map(x=>STInstance.implicits.geometry2Instance(x))
+    trajRDD.take(5).foreach(println(_))
+    sc.stop()
+  }
+}

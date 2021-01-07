@@ -13,7 +13,7 @@ object gridPartitioner {
    *
    * @param r            : input RDD
    * @param numPartition : number of partitions, has to be to 3k+1 (otherwise is rounded)
-   * @param samplingRate : sample some data to determine the boundary, less than 1
+   * @param samplingRate : sample some dataRDD to determine the boundary, less than 1
    * @tparam T : type extends Shape
    * @return partitioned RDD and a map of  PartitionNum -> boundary
    */

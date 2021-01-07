@@ -1,6 +1,6 @@
 //package rangequery
 //
-//import org.apache.spark.Partitioner
+//import org.apache.spark.partitioner
 //
 //import RTree.{RTree, Node}
 //import geometry.{Shape, Point, Rectangle}
@@ -40,7 +40,7 @@
 //}
 //
 //
-//case class keyPartitioner(numParts: Int) extends Partitioner {
+//case class keyPartitioner(numParts: Int) extends partitioner {
 //  override def numPartitions: Int = numParts
 //
 //  override def getPartition(key: Any): Int = key.toString.toInt % numParts

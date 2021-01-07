@@ -5,7 +5,7 @@
 //import org.apache.spark.sql.Dataset
 //import org.apache.spark.sql.catalyst.expressions.Attribute
 //import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-//import index._
+//import selection.indexer._
 //import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK
 //
 //import scala.collection.mutable.ArrayBuffer

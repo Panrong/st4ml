@@ -1,14 +1,14 @@
 //package partitioner
 //
 //import geometry.{Point, Rectangle, Trajectory}
-//import org.apache.spark.rdd.RDD
+//import org.apache.spark.dataRDD.RDD
 //import org.apache.spark.sql.{Dataset, Row}
 //import org.apache.spark.sql.functions.{col, collect_list, struct}
-//import preprocessing.readTrajFile
+//import preprocessing.ReadTrajFile
 //
 //import java.lang.System.nanoTime
 //
-//case class Query(bottomLeft: Point, topRight: Point, queryID: Long) extends Serializable
+//case class Query2d(bottomLeft: Point, topRight: Point, queryID: Long) extends Serializable
 //
 //case class TrajectoryWithMBR(tripID: Long, taxiID: Long, startTime: Long, points: Array[Point], mbr: Rectangle) extends Serializable
 //
@@ -29,11 +29,11 @@
 //    import spark.implicits._
 //
 //    /** generate trajectory MBR RDD */
-//    val trajDS = readTrajFile(trajectoryFile, dataSize)
+//    val trajDS = ReadTrajFile(trajectoryFile, dataSize)
 //
 //    /** generate query RDD */
-//    val queries = preprocessing.readQueryFile(queryFile)
-//    val queryDS = queries.toSeq.toDS.withColumnRenamed("ID", "queryID").as[Query]
+//    val queries = preprocessing.ReadQueryFile(queryFile)
+//    val queryDS = queries.toSeq.toDS.withColumnRenamed("ID", "queryID").as[Query2d]
 //    queryDS.show(5)
 //
 //    var t = nanoTime()
@@ -46,7 +46,7 @@
 //      .transform(rangeQuery(queryDS))
 //      .show(5)
 //
-//    def rangeQuery(queryDs: Dataset[Query])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
+//    def rangeQuery(queryDs: Dataset[Query2d])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
 //      trajMbrDs.join(queryDs).as[TrajMBRQuery]
 //        .filter(x => Rectangle(Array.concat(x.bottomLeft.coordinates, x.TopRight.coordinates)).intersect(x.mbr))
 //        .groupBy(col("queryID"))
@@ -57,8 +57,8 @@
 //  }
 //
 //  //  def addMBR(ds: Dataset[Trajectory]): RDD[TrajectoryWithMBR] = {
-//  //    val trajRDD = ds.rdd
-//  //    trajRDD.map(traj => TrajectoryWithMBR(traj.tripID, traj.taxiID, traj.startTime, traj.points, mbr = {
+//  //    val dataRDD = ds.dataRDD
+//  //    dataRDD.map(traj => TrajectoryWithMBR(traj.tripID, traj.taxiID, traj.startTime, traj.points, mbr = {
 //  //      val lons = traj.points.map(_.lon).sorted
 //  //      val lats = traj.points.map(_.lat).sorted
 //  //      Rectangle(Point(lons.head, lats.head), Point(lons.last, lats.last))

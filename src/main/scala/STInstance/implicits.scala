@@ -1,5 +1,7 @@
 package STInstance
 
+import scala.reflect.ClassTag
+
 object implicits {
   implicit def trajectory2Points[T](traj: Trajectory[(Double, Double), T]): Array[Point[Long]] = {
     implicit def tuple2Array(a: (Double, Double)): Array[Double] = Array(a._1, a._2)
@@ -23,28 +25,27 @@ object implicits {
   implicit def trajectory2SM[T](traj: Trajectory[String, T]): SpatialMap[(Long, Long), Null] =
     vertices2SM(trajectory2SMVertices(traj))
 
-  /** Point */
-  implicit def instance2Geometry[T](p: Point[T]): geometry.Point =
-    geometry.Point(p.coord, p.timeStamp).setID(p.id)
-
   implicit def geometry2Instance(p: geometry.Point): Point[Null] =
     Point(p.id, p.coordinates, p.t, None)
-
-  /** Trajectory */
-  implicit def instance2Geometry[T](traj: Trajectory[(Double, Double), T]):
-  geometry.Trajectory = {
-    val points = traj.coord.map(x =>
-      geometry.Point(Array(x._1._1, x._1._2), x._2))
-    geometry.Trajectory(traj.id,
-      traj.coord.head._2,
-      points,
-      traj.property.getOrElse(Map()).mapValues(_.toString))
-  }
 
   implicit def geometry2Instance(traj: geometry.Trajectory):
   Trajectory[(Double, Double), String] =
     Trajectory(traj.tripID,
       traj.points.map(x => ((x.coordinates(0), x.coordinates(1)), x.timeStamp)),
       Some(traj.attributes))
+
+  implicit def instance2Geometry[T: ClassTag](instance: STInstance[T]): geometry.Shape = {
+    instance match {
+      case p: Point[T] => geometry.Point(p.coord, p.timeStamp).setID(p.id)
+      case traj: Trajectory[(Double, Double), T] => {
+        val points = traj.coord.map(x =>
+          geometry.Point(Array(x._1._1, x._1._2), x._2))
+        geometry.Trajectory(traj.id,
+          traj.coord.head._2,
+          points,
+          traj.property.getOrElse(Map()).mapValues(_.toString)).mbr
+      }
+    }
+  }
 
 }

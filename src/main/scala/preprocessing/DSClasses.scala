@@ -1,11 +1,11 @@
 package preprocessing
 
-import geometry.{Point, Rectangle}
+import geometry.{Point, Rectangle, Cube}
 
 
 /** required case classes */
-case class Query(query: Rectangle, queryID: Long) extends Serializable
-
+//case class Query2d(query: Rectangle, queryID: Long) extends Serializable
+//case class Query3d(query: Cube, queryID: Long) extends Serializable
 case class TrajectoryWithMBR(tripID: Long, startTime: Long, points: Array[Point],
                              mbr: Array[Double]) extends Serializable
 

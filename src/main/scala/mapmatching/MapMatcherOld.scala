@@ -134,17 +134,17 @@
 ////          if(newProb.isNaN) println(probs(t - 1)(last) , tProbs(t - 1)(last)(c) , eProbs(t)(c))
 //          candiProbs = candiProbs :+ newProb
 //        }
-//        val index = max(0, candiProbs.indexOf(candiProbs.max))
+//        val selection.indexer = max(0, candiProbs.indexOf(candiProbs.max))
 ////        println("000")
-////        println(candiProbs.deep, index)
-//        probs(t)(c) = candiProbs(index)
+////        println(candiProbs.deep, selection.indexer)
+//        probs(t)(c) = candiProbs(selection.indexer)
 ////        println("!!!")
 ////        println(eProbs(0).length)
 ////        println(candiProbs.size)
 ////        println(probs.size)
-////        println(index)
-////        println(states(t-1)(index))
-//        states(t)(c) = c :: states(t - 1)(index)
+////        println(selection.indexer)
+////        println(states(t-1)(selection.indexer))
+//        states(t)(c) = c :: states(t - 1)(selection.indexer)
 //      }
 //    }
 //    val finalProb = probs(eProbs.length - 1)

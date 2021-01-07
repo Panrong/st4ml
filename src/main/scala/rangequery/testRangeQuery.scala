@@ -33,8 +33,8 @@
 //    //println(rg.gridNumOverLon)
 //
 //    //println(rg.gridNumOverLat)
-//    val gridVertexArray = rGrid.grid2Vertex.map{case(k,v) => (k.x * gridNumOverLat + k.y, v.map(x=>x.id))}.toArray // Array[grid index in single integer, Array[roadVertex]]
-//    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid index, v: Array[roadVertex]
+//    val gridVertexArray = rGrid.grid2Vertex.map{case(k,v) => (k.x * gridNumOverLat + k.y, v.map(x=>x.id))}.toArray // Array[grid selection.indexer in single integer, Array[roadVertex]]
+//    val roadVertexRDD = sc.parallelize(gridVertexArray).partitionBy(keyPartitioner(numPartitions)) //k: grid selection.indexer, v: Array[roadVertex]
 //    //println("roadVertexRDD sample: ")
 //    //roadVertexRDD.take(2).foreach(x=>println(x._1, x._2.deep))
 //    /** range query on road vertices */

@@ -2,9 +2,9 @@ package examples
 
 import geometry.Trajectory
 import org.apache.spark.sql.{Dataset, SparkSession}
-import preprocessing.{Query, resRangeQuery}
+import preprocessing.{resRangeQuery}
 import query.QuerySubmitter
-
+import STInstance.Query2d
 import scala.io.Source
 
 object RangeQueryExample extends App {
@@ -40,22 +40,22 @@ object RangeQueryExample extends App {
 
 
     /** query with DS */
-    val queryWDS: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithDS
+    val queryWDS: Dataset[Query2d] => Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithDS
     trajDS.transform(queryWDS(queryDS)).show
 
     /** query with RDD */
-    val queryWRDD: Dataset[Query] =>  Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithRDD
+    val queryWRDD: Dataset[Query2d] => Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithRDD
     trajDS.transform(queryWRDD(queryDS)).show
 
     /** query with STR partitioner */
-    val queryWPartitioner: Dataset[Query] =>  (Double,String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithPartitioner
+    val queryWPartitioner: Dataset[Query2d] => (Double, String) => Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithPartitioner
     trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "STR")).show
 
     /** query with grid partitioner */
     trajDS.transform(queryWPartitioner(queryDS)(samplingRate, "grid")).show
 
-    /** query with RTree index */
-    val queryWIndex: Dataset[Query] =>  (Double,Int, String) => Dataset[Trajectory] => Dataset[resRangeQuery]  = querySubmitter.queryWithIndex
+    /** query with RTree selection.indexer */
+    val queryWIndex: Dataset[Query2d] => (Double, Int, String) => Dataset[Trajectory] => Dataset[resRangeQuery] = querySubmitter.queryWithIndex
     trajDS.transform(queryWIndex(queryDS)(samplingRate, rtreeCapacity, "STR")).show
 
 

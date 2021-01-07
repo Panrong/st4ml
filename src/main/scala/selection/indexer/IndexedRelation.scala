@@ -1,4 +1,4 @@
-//package index
+//package selection.indexer
 //
 //import org.apache.spark.sql.SparkSession
 //import org.apache.spark.sql.catalyst.InternalRow
@@ -8,7 +8,7 @@
 //
 //
 //
-//private case class IPartition(data: Array[InternalRow], index: Index)
+//private case class IPartition(dataRDD: Array[InternalRow], selection.indexer: Index)
 //
 //private abstract class IndexedRelation extends LogicalPlan {
 //  self: Product =>

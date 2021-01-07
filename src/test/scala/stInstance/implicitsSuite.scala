@@ -3,7 +3,8 @@ package stInstance
 import org.scalatest.funsuite.AnyFunSuite
 import STInstance.{Point, SpatialMap, Trajectory}
 
-class implicitsSuite extends AnyFunSuite {
+class implicitsSuite extends AnyFunSuite{
+
   val r = new scala.util.Random
   var coords = new Array[((Double, Double), Long)](0)
   var roadIDs = new Array[(String, Long)](0)
@@ -41,20 +42,20 @@ class implicitsSuite extends AnyFunSuite {
     println(spatialMapFromVertices)
   }
 
-  test("Instance geometry conversion") {
-    import STInstance.implicits._
-    println("=== Test point")
-    val point = Point(0, Array(0.1, 0.2), 0, None)
-    assert(point.center.minDist(geometry.Point(Array(0.1, 0.2))) == 0)
-    val point2 = geometry.Point(Array(0.3, 0.4))
-    assert(point2.timeStamp == 0L)
-    println("=== Pass")
-    println("=== Test trajectory")
-    println(traj.mbr)
-    val traj2 = geometry.Trajectory(0L, 0L,
-      Array(geometry.Point(Array(0.1, 0.2), 1L), geometry.Point(Array(0.1, 0.3), 2L)),
-      Map("test" -> "trajectory"))
-    trajectory2Points(traj2).foreach(println(_))
-    println("=== Pass")
-  }
+//  test("Instance geometry conversion") {
+//    import STInstance.implicits._
+//    println("=== Test point")
+//    val point = Point(0, Array(0.1, 0.2), 0, None)
+//    assert(point.center.minDist(geometry.Point(Array(0.1, 0.2))) == 0)
+//    val point2 = geometry.Point(Array(0.3, 0.4))
+//    assert(point2.timeStamp == 0L)
+//    println("=== Pass")
+//    println("=== Test trajectory")
+//    println(traj.mbr)
+//    val traj2 = geometry.Trajectory(0L, 0L,
+//      Array(geometry.Point(Array(0.1, 0.2), 1L), geometry.Point(Array(0.1, 0.3), 2L)),
+//      Map("test" -> "trajectory"))
+//    trajectory2Points(traj2).foreach(println(_))
+//    println("=== Pass")
+//  }
 }

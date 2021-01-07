@@ -1,4 +1,4 @@
-//package index
+//package selection.indexer
 //
 //import org.apache.spark.storage.StorageLevel
 //import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
@@ -56,13 +56,13 @@
 //      STRPartitioner(dataRDD, dimension, numShufflePartitions, sampleRate, transferThreshold, max_entries_per_node)
 //
 //    val indexed = partitionedRDD.mapPartitions { iter =>
-//      val data = iter.toArray
-//      var index: RTree = null
-//      if (data.length > 0) index = RTree(data.map(_._1).zipWithIndex, max_entries_per_node)
-//      Array(IPartition(data.map(_._2), index)).iterator
+//      val dataRDD = iter.toArray
+//      var selection.indexer: RTree = null
+//      if (dataRDD.length > 0) selection.indexer = RTree(dataRDD.map(_._1).zipWithIndex, max_entries_per_node)
+//      Array(IPartition(dataRDD.map(_._2), selection.indexer)).iterator
 //    }.persist(StorageLevel.MEMORY_AND_DISK_SER)
 //
-//    val partitionSize = indexed.mapPartitions(iter => iter.map(_.data.length)).collect()
+//    val partitionSize = indexed.mapPartitions(iter => iter.map(_.dataRDD.length)).collect()
 //
 //    global_rtree = RTree(mbr_bounds.zip(partitionSize)
 //      .map(x => (x._1._1, x._1._2, x._2)), max_entries_per_node)

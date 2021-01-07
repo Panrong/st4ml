@@ -1,6 +1,6 @@
 //package partitioner
 //
-//import preprocessing.{preprocessingOld, readQueryFile}
+//import preprocessing.{preprocessingOld, ReadQueryFile}
 //import geometry.Shape
 //import org.apache.spark.{SparkConf, SparkContext}
 //
@@ -19,19 +19,19 @@
 //
 //    /** set up Spark */
 //    val conf = new SparkConf()
-//    conf.setAppName("Partitioner-Query-Test").setMaster(master)
+//    conf.setAppName("partitioner-Query2d-Test").setMaster(master)
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //
 //    /** generate trajectory MBR RDD */
-//    val rdd = preprocessingOld.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
+//    val dataRDD = preprocessingOld.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
 //
 //    /** generate query RDD */
-//    val queryRDD = readQueryFile(queryFile).rdd.map(x => x.query)
+//    val queryRDD = ReadQueryFile(queryFile).dataRDD.map(x => x.query)
 //
 //    var t = nanoTime()
 //    /** normal query */
-//    val res1 = rdd.cartesian(queryRDD)
+//    val res1 = dataRDD.cartesian(queryRDD)
 //      .filter { case (point, query) => point.inside(query) }
 //      .coalesce(numPartitions)
 //      .groupByKey()
@@ -43,16 +43,16 @@
 //    /** repartition */
 //    t = nanoTime()
 //
-//    val (pRDD, pivotMap, pivotMaxDistMap) = voronoiPartitioner(rdd, numPartitions, samplingRate)
+//    val (pRDD, pivotMap, pivotMaxDistMap) = voronoiPartitioner(dataRDD, numPartitions, samplingRate)
 //
 //    val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
-//      (index, partitionIterator) => {
+//      (selection.indexer, partitionIterator) => {
 //        val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
 //        var partitionList = List[Shape]()
 //        while (partitionIterator.hasNext) {
 //          partitionList = partitionIterator.next() :: partitionList
 //        }
-//        partitionsMap(index) = partitionList
+//        partitionsMap(selection.indexer) = partitionList
 //        partitionsMap.iterator
 //      }
 //    }
@@ -60,7 +60,7 @@
 //    pRDD.cache()
 //    t = nanoTime()
 //
-//    /** normal query on partitioned rdd */
+//    /** normal query on partitioned dataRDD */
 //    val res2 = queryRDD.cartesian(pRDD)
 //      .filter { case (query, point) => point.inside(query) }
 //      .coalesce(numPartitions)

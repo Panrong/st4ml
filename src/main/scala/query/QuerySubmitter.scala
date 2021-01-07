@@ -1,18 +1,17 @@
 package query
 
 import geometry.{Rectangle, Shape, Trajectory}
-import index.RTree
+import selection.indexer.RTree
 import org.apache.spark.sql.functions.{asc, col, collect_list, count}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import partitioner.{STRPartitioner, gridPartitioner}
-import preprocessing.{Query, ReadQueryFile, TrajMBRQuery, TrajectoryWithMBR, readTrajFile, resRangeQuery}
+import preprocessing.{ReadQueryFile, TrajMBRQuery, TrajectoryWithMBR, ReadTrajFile, resRangeQuery}
+import STInstance._
+class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query2d], numPartitions: Int) {
+  val qDS: Dataset[Query2d] = queryDS
+  val tDS: Dataset[Trajectory] = trajDS
 
-class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPartitions: Int) {
-  val tDS = trajDS
-
-  val qDS = queryDS
-
-  def queryWithRDD(queryDS: Dataset[Query])(trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
+  def queryWithRDD(queryDS: Dataset[Query2d])(trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
     println("==== START QUERY WITH RDD")
     val trajRDD = trajDS.rdd.map(x => (x.tripID, x.mbr))
     val queryRDD = queryDS.rdd
@@ -35,7 +34,7 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
       .orderBy(asc("queryID")).as[resRangeQuery]
   }
 
-  def queryWithDS(queryDS: Dataset[Query])(trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
+  def queryWithDS(queryDS: Dataset[Query2d])(trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
     println("==== START QUERY WITH DATASET")
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -53,7 +52,7 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
     //    println("=== trajWithMBR DS: ")
     //    trajMbrDS.show(5)
 
-    def rangeQuery(queryDS: Dataset[Query])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
+    def rangeQuery(queryDS: Dataset[Query2d])(trajMbrDs: Dataset[TrajectoryWithMBR]): Dataset[resRangeQuery] = {
       trajMbrDs.join(queryDS).as[TrajMBRQuery]
         .filter(x => x.query.intersect(Rectangle(x.mbr)))
         .groupBy(col("queryID"))
@@ -68,10 +67,9 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
       .orderBy(asc("queryID")).as[resRangeQuery]
   }
 
-  def queryWithPartitioner(queryDS: Dataset[Query])
+  def queryWithPartitioner(queryDS: Dataset[Query2d])
                           (samplingRate: Double, partitioner: String = "STR")
-                          (trajDS: Dataset[Trajectory]):
-  Dataset[resRangeQuery] = {
+                          (trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
 
     println(s"==== START QUERY WITH ${partitioner.toUpperCase} PARTITIONER")
     val trajRDD = trajDS.rdd.map(x => x.mbr.assignID(x.tripID))
@@ -89,7 +87,7 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
         val r = STRPartitioner(trajRDD, numPartitions, samplingRate)
         pRDD = r._1
         gridBound = r._2
-      case _ => throw new Exception("Partitioner not supported")
+      case _ => throw new Exception("partitioner not supported")
     }
 
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
@@ -127,7 +125,7 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
       .orderBy(asc("queryID")).as[resRangeQuery]
   }
 
-  def queryWithIndex(queryDS: Dataset[Query])
+  def queryWithIndex(queryDS: Dataset[Query2d])
                     (samplingRate: Double, max_entries_per_node: Int, partitioner: String = "STR")
                     (trajDS: Dataset[Trajectory]): Dataset[resRangeQuery] = {
 
@@ -147,7 +145,7 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
         val r = STRPartitioner(trajRDD, numPartitions, samplingRate)
         pRDD = r._1
         gridBound = r._2
-      case _ => throw new Exception("Partitioner not supported")
+      case _ => throw new Exception("partitioner not supported")
     }
 
     val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
@@ -198,8 +196,10 @@ class QuerySubmitter(trajDS: Dataset[Trajectory], queryDS: Dataset[Query], numPa
 object QuerySubmitter {
 
   def apply(trajectoryFile: String, queryFile: String, numPartitions: Int, dataSize: Int = Double.PositiveInfinity.toInt): QuerySubmitter = {
-    val trajDS = readTrajFile(trajectoryFile, num = dataSize)
+    val trajDS = ReadTrajFile(trajectoryFile, num = dataSize)
+    val trajRDD = trajDS.rdd.map(x=>STInstance.implicits.geometry2Instance(x))
     val queryDS = ReadQueryFile(queryFile)
+    val queryRDD = queryDS.rdd
     new QuerySubmitter(trajDS, queryDS, numPartitions)
   }
 }

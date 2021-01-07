@@ -13,8 +13,8 @@
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //    val rGrid = RoadGrid(args(1))
-//    val trajRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon), true, 100).zipWithIndex()
-//    val speedRDD = trajRDD.map(x => {
+//    val dataRDD = preprocessing(filename, List(rGrid.minLat, rGrid.minLon, rGrid.maxLat, rGrid.maxLon), true, 100).zipWithIndex()
+//    val speedRDD = dataRDD.map(x => {
 //      val gpsPoints = x._1.points
 //      val tripID = x._1.tripID
 //      val speeds = gpsPoints.sliding(2).toArray.map {

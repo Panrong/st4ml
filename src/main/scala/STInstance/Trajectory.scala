@@ -13,6 +13,7 @@ case class Trajectory[U, T](override val id: Long,
                             coord: Array[(U, Long)],
                             override var property: Option[Map[String, T]])
   extends STInstance[T] {
+  assert(coord.length > 1, "The number of points in a trajectory has to be at least 2.")
   override def toString: String =
     s"Trajectory $id:\nCoord: ${coord.deep}\nProperties: ${property}"
 

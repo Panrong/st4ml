@@ -2,7 +2,7 @@ package geometry
 
 import geometry.Distances.greatCircleDistance
 
-case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with Serializable{
+case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with Serializable {
 
   require(coordinates.length == 2, s"Point should have 2 dimensions while " +
     s"${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
@@ -43,12 +43,14 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
     case p: Point => greatCircleDistance(this, p)
     case r: Rectangle => greatCircleDistance(this, r.center())
     case l: Line => l.geoDistance(this)
+    case c: Cube => greatCircleDistance(this, c.toRectangle.center())
   }
 
   override def minDist(other: Shape): Double = other match {
     case p: Point => minDist(p)
     case r: Rectangle => r.minDist(this)
     case l: Line => l.minDist(this)
+    case c: Cube => c.minDist(this)
   }
 
   def minDist(other: Point): Double = {
@@ -64,6 +66,7 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
     case p: Point => coordinates sameElements p.coordinates
     case r: Rectangle => this.inside(r)
     case l: Line => l.intersect(this)
+    case c: Cube => this.inside(c.toRectangle)
   }
 
   def ==(other: Point): Boolean = { // timestamp not considered

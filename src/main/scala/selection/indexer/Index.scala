@@ -1,4 +1,4 @@
-package index
+package selection.indexer
 
 trait Index
 

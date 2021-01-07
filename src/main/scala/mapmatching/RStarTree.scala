@@ -386,7 +386,7 @@
 //      else 1
 //    }
 //
-//    def chooseSplitIndex(node: Node, axis: Int): Int = { // return axis, index
+//    def chooseSplitIndex(node: Node, axis: Int): Int = { // return axis, selection.indexer
 //      var boxes = getChildBoxes(node)
 //      if (axis == 0) boxes = boxes.sortBy(r => (r.x_min, r.x_max))
 //      else boxes = boxes.sortBy(r => (r.y_min, r.y_max))

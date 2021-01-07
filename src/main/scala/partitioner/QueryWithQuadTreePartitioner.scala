@@ -29,16 +29,16 @@
 //
 //    /** set up Spark */
 //    val conf = new SparkConf()
-//    conf.setAppName("Partitioner-Query-Test").setMaster(master)
+//    conf.setAppName("partitioner-Query2d-Test").setMaster(master)
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //
 //    //        /** generate mock points */
-//    //        var data = new Array[Point](0)
+//    //        var dataRDD = new Array[Point](0)
 //    //        val r = new Random(10)
-//    //        for (_ <- 0 until dataSize) data = data :+
+//    //        for (_ <- 0 until dataSize) dataRDD = dataRDD :+
 //    //          Point(r.nextDouble * 100, r.nextDouble * 100)
-//    //        val rdd = sc.parallelize(data, numPartitions)
+//    //        val dataRDD = sc.parallelize(dataRDD, numPartitions)
 //    //
 //    //        /** generate mock queries */
 //    //        var queries = new Array[Rectangle](0)
@@ -53,14 +53,14 @@
 //    //    val queryRDD = sc.parallelize(queries)
 //
 //    /** generate trajectory MBR RDD */
-//    val rdd = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
+//    val dataRDD = preprocessing.genTrajRDD(trajectoryFile, dataSize).map(_.mbr)
 //
 //    /** generate query RDD */
-//    val queries = preprocessing.readQueryFile(queryFile)
+//    val queries = preprocessing.ReadQueryFile(queryFile)
 //    val queryRDD = sc.parallelize(queries)
 //    var t = nanoTime()
 //    /** normal query */
-//    val res1 = queryRDD.cartesian(rdd)
+//    val res1 = queryRDD.cartesian(dataRDD)
 //      .filter { case (query, point) => point.inside(query) }
 //      .coalesce(numPartitions)
 //      .groupByKey()
@@ -73,22 +73,22 @@
 //    /** repartition */
 //    t = nanoTime()
 //
-//    val (pRDD, quadTree, idPartitionMap) = quadTreePartitioner(rdd, numPartitions, samplingRate)
+//    val (pRDD, quadTree, idPartitionMap) = quadTreePartitioner(dataRDD, numPartitions, samplingRate)
 //    val pRDDWithIndex = pRDD.mapPartitionsWithIndex {
-//      (index, partitionIterator) => {
+//      (selection.indexer, partitionIterator) => {
 //        val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
 //        var partitionList = List[Shape]()
 //        while (partitionIterator.hasNext) {
 //          partitionList = partitionIterator.next() :: partitionList
 //        }
-//        partitionsMap(index) = partitionList
+//        partitionsMap(selection.indexer) = partitionList
 //        partitionsMap.iterator
 //      }
 //    }
 //    println(s"Partitioning takes ${((nanoTime() - t) * 10e-9).formatted("%.3f")} seconds")
 //    t = nanoTime()
 //
-//    /** normal query on partitioned rdd */
+//    /** normal query on partitioned dataRDD */
 //    val res2 = queryRDD.cartesian(pRDD)
 //      .filter { case (query, point) => point.inside(query) }
 //      .coalesce(numPartitions)

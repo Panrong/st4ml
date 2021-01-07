@@ -1,4 +1,4 @@
-//package index
+//package selection.indexer
 //
 //import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 //import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences}
@@ -28,9 +28,9 @@
 //
 //    val partitionedRDD = HashPartition(dataRDD, numShufflePartitions)
 //    val indexed = partitionedRDD.mapPartitions(iter => {
-//      val data = iter.toArray
-//      val index = HashMapIndex(data)
-//      Array(IPartition(data.map(_._2), index)).iterator
+//      val dataRDD = iter.toArray
+//      val selection.indexer = HashMapIndex(dataRDD)
+//      Array(IPartition(dataRDD.map(_._2), selection.indexer)).iterator
 //    }).persist(StorageLevel.MEMORY_AND_DISK_SER)
 //
 //    indexed.setName(table_name.map(n => s"$n $index_name").getOrElse(child.toString))

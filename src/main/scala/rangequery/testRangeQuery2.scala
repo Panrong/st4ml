@@ -18,7 +18,7 @@
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //    var t = nanoTime()
-//    val queries = preprocessing.readQueryFile(query)
+//    val queries = preprocessing.ReadQueryFile(query)
 //    val numQueries = queries.length
 //    val queryRDD = sc.parallelize(queries, numPartition)
 //    val roadMapRDD = sc.parallelize(
@@ -47,7 +47,7 @@
 //
 //    for (i <- res.collect) {
 //      val queryRange = i._1
-//      println(s"Query Range: $queryRange : ${i._2.length} sub-trajectories")
+//      println(s"Query2d Range: $queryRange : ${i._2.length} sub-trajectories")
 //    }
 //    println(s"--- $numQueries range queries takes ${((nanoTime()-t)/10e9).formatted("%.3f")} s")
 //  }

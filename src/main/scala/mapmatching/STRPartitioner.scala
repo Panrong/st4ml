@@ -1,8 +1,8 @@
 //package mapmatching
 //
-//import org.apache.spark.Partitioner
+//import org.apache.spark.partitioner
 //import org.apache.spark.sql.{DataFrame, SparkSession, functions}
-//import org.apache.spark.rdd.{RDD, ShuffledRDD}
+//import org.apache.spark.dataRDD.{RDD, ShuffledRDD}
 //import geometry.{Line, Point, Rectangle}
 //
 //import scala.math.{ceil, sqrt}
@@ -27,14 +27,14 @@
 //    //print content of each partition
 //    val p = indexedRDD.map(x => x._1)
 //    val pointsWithIndex = p.mapPartitionsWithIndex {
-//      (index, partitionIterator) => {
+//      (selection.indexer, partitionIterator) => {
 //        val partitionsMap = scala.collection.mutable.Map[Int, List[Rectangle]]()
 //        var partitionList = List[Rectangle]()
 //        while (partitionIterator.hasNext) {
 //          //println(partitionIterator.next())
 //          partitionList = partitionIterator.next() :: partitionList
 //        }
-//        partitionsMap(index) = partitionList
+//        partitionsMap(selection.indexer) = partitionList
 //        partitionsMap.iterator
 //      }
 //    }
@@ -173,7 +173,7 @@
 //
 //}
 //
-//class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], Int)]]) extends Partitioner {
+//class STRPartitioner(num: Int, boxMap: Map[List[Double], Array[(List[Double], Int)]]) extends partitioner {
 //  // calculate number of partitions - partition x and y dimension both into numPartitions partitions (totally numPartitions^2 partitions)
 //  override def numPartitions: Int = num
 //

@@ -11,9 +11,9 @@ case class Grid(minLon: Double, minLat: Double, maxLon: Double, maxLat: Double, 
   val grids: Map[GridId, GridBoundary] = buildSimpleGrids()
 
   /**
-  A grid's index, starting from 0 at the bottom left point (minLon, minLat)
-    x is the grid index over longitude
-    y is the grid index over latitude
+  A grid's selection.indexer, starting from 0 at the bottom left point (minLon, minLat)
+    x is the grid selection.indexer over longitude
+    y is the grid selection.indexer over latitude
    */
   final case class GridId(x: Int, y: Int)
 

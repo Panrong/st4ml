@@ -16,7 +16,7 @@ object MapMatchingSubmitter {
             resDir: String,
             saving: String): MapMatchingSubmitter = {
     val rGrid = RoadGrid(mapFile)
-    val trajDS = preprocessing.readTrajFile(trajFile,
+    val trajDS = preprocessing.ReadTrajFile(trajFile,
       numTraj,
       clean = true,
       mapRange = List(rGrid.minLon, rGrid.minLat, rGrid.maxLon, rGrid.maxLat))

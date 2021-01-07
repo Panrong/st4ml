@@ -6,8 +6,7 @@ import geometry.Distances.greatCircleDistance
 case class Trajectory(tripID: Long,
                       startTime: Long,
                       points: Array[Point],
-                      attributes: Map[String, String] = Map())
-  extends Serializable {
+                      attributes: Map[String, String] = Map()) extends Serializable {
 
   def mbr: Rectangle = Rectangle(Array(
     points.map(p => p.coordinates(0)).min,

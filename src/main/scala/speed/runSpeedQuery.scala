@@ -26,7 +26,7 @@
 //    sc.setLogLevel("ERROR")
 //    println("... Setting up Spark time: " + (nanoTime - t) / 1e9d + "s")
 //    t = nanoTime()
-//    val queries = preprocessing.readQueryFile(query)
+//    val queries = preprocessing.ReadQueryFile(query)
 //    val queryRDD = sc.parallelize(queries, numPartition)
 //    //    queryRDD.collect
 //    //    println("... query RDD generation time: " + (nanoTime - t) / 1e9d + "s")
@@ -85,7 +85,7 @@
 //    for (i <- res.collect) {
 //      val queryRange = i._1
 //      val q = "(" + queryRange.x_min + ", " + queryRange.y_min + ", " + queryRange.x_max + ", " + queryRange.y_max + ")"
-//      println(s"Query Range: $q : ${i._2.length} sub-trajectories has speed in the range ($minSpeed, $maxSpeed)")
+//      println(s"Query2d Range: $q : ${i._2.length} sub-trajectories has speed in the range ($minSpeed, $maxSpeed)")
 //    }
 //    println(s"==== Speed query for ${queries.length} ranges takes ${(nanoTime() - t) / 1e9d}s.")
 //    sc.stop()
@@ -161,7 +161,7 @@
 //
 //    for (i <- res.collect) {
 //      val queryRange = i._1
-//      println(s"Query road ID: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
+//      println(s"Query2d road ID: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
 //    }
 //    println(s"==== Speed query for ${queries.length} road IDs takes ${(nanoTime() - t) / 1e9d}s.")
 //    sc.stop()

@@ -1,4 +1,4 @@
-package index
+package selection.indexer
 
 import org.scalatest.funsuite.AnyFunSuite
 

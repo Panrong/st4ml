@@ -2,21 +2,22 @@ package geometry
 
 import scala.math.{max, min}
 
-case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
+case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
   require(coordinates.length == 4,
-    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
+    s"Rectangle should have 6 coordinates(xMin, yMin, xMax, yMax,tMin, tMax) " +
       s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
   val xMin: Double = coordinates(0)
   val xMax: Double = coordinates(2)
   val yMin: Double = coordinates(1)
   val yMax: Double = coordinates(3)
+  val tMin: Double = coordinates(4)
+  val tMax: Double = coordinates(5)
 
   val low: Point = Point(Array(xMin, yMin))
   val high: Point = Point(Array(xMax, yMax))
 
-  var timeStamp = 0L
-
-  require(xMin <= xMax && yMin <= yMax, s"The order should be (xMin, yMin, xMax, yMax). Input($xMin, $yMin, $xMax, $yMax)")
+  require(xMin <= xMax && yMin <= yMax && tMin <= tMax,
+    "The order should be (xMin, yMin, xMax, yMax, tMin, tMax)")
 
   val area: Double = (xMax - xMin) * (yMax - yMin)
 
@@ -27,9 +28,9 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
     //    case r: Rectangle => this.overlappingArea(r) > 0
-    case r: Rectangle => r.isOverlap(this)
+    case r: Rectangle => r.isOverlap(this.toRectangle)
     case l: Line => l.intersect(this)
-    case c: Cube => c.toRectangle.isOverlap(this)
+    case c: Cube => c.toRectangle.intersect(this.toRectangle) && c.temporalOverlap(this)
   }
 
   override def geoDistance(other: Shape): Double = other.geoDistance(center())
@@ -37,10 +38,18 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   override def minDist(other: Shape): Double = {
     other match {
       case p: Point => minDist(p)
-      case r: Rectangle => minDist(r)
+      case r: Cube => minDist(r)
       case l: Line => l.minDist(this)
-      case c: Cube => minDist(c.toRectangle)
     }
+  }
+
+  def toRectangle: Rectangle = Rectangle(this.coordinates.take(4), this.id)
+
+  def temporalOverlap(cube: Cube): Boolean = {
+    val t1 = this.coordinates.takeRight(2)
+    val t2 = cube.coordinates.takeRight(2)
+    if (t1(1) - t1(0) + t2(1) - t2(0) >= max(t2(1), t1(1)) - min(t2(0), t1(0))) true
+    else false
   }
 
   def minDist(p: Point): Double = {
@@ -56,7 +65,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
     Math.sqrt(ans)
   }
 
-  def minDist(other: Rectangle): Double = {
+  def minDist(other: Cube): Double = {
     require(low.coordinates.length == other.low.coordinates.length)
     var ans = 0.0
     for (i <- low.coordinates.indices) {
@@ -72,21 +81,10 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   }
 
 
-  def assignID(i: Long): Rectangle = {
+  def assignID(i: Long): Cube = {
     id = i
     this
   }
-
-  //  def dilate(d: Double): Rectangle = {
-  //    // dilate the rectangle with d meter
-  //    //approx 1 latitude degree = 111km
-  //    // approx 1 longitude degree =111.413*cos(phi)-0.094*cos(3*phi) where phi is latitude
-  //    val newLatMin = bottomLeft.lat - d / 111000
-  //    val newLatMax = topRight.lat + d / 111000
-  //    val newLongMin = bottomLeft.lon - (111413 * cos(bottomLeft.lat.toRadians) - 94 * cos(3 * bottomLeft.lat.toRadians))
-  //    val newLongMax = topRight.lon - (111.413 * cos(topRight.lat.toRadians) - 0.094 * cos(3 * topRight.lat.toRadians))
-  //    Rectangle(Point(newLongMin, newLatMin), Point(newLongMax, newLatMax))
-  //  }
 
   def overlappingArea(r: Rectangle): Double = {
     val overlapX = max((xMax - xMin) + (r.xMax - r.xMin) - (max(xMax, r.xMax) - min(xMin, r.xMin)), 0)
@@ -112,79 +110,16 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
     else 0.0
   }
 
-  //  def includeEntry(shape: Shape): Rectangle = {
-  //    // return a new Rectangle
-  //    if (shape.isInstanceOf[Point]) {
-  //      val point = shape.asInstanceOf[Point]
-  //      val new_x_min = min(point.x, this.x_min)
-  //      val new_x_max = max(point.x, this.x_max)
-  //      val new_y_min = min(point.y, this.y_min)
-  //      val new_y_max = max(point.y, this.y_max)
-  //      //println(Point(new_x_min, new_y_min), Point(new_x_max, new_y_max))
-  //      Rectangle(Point(new_x_min, new_y_min), Point(new_x_max, new_y_max))
-  //    }
-  //    else if (shape.isInstanceOf[Rectangle]) {
-  //      val rectangle = shape.asInstanceOf[Rectangle]
-  //      val new_x_min = min(rectangle.x_min, this.x_min)
-  //      val new_x_max = max(rectangle.x_max, this.x_max)
-  //      val new_y_min = min(rectangle.y_min, this.y_min)
-  //      val new_y_max = max(rectangle.y_max, this.y_max)
-  //      Rectangle(Point(new_x_min, new_y_min), Point(new_x_max, new_y_max))
-  //    }
-  //    else throw new IllegalArgumentException
-  //  }
-  //
-  //  def enlargement(shape: Shape): Double = {
-  //    //calculate the enlargement needed to include one entry
-  //    val newRectangle = this.includeEntry(shape)
-  //    newRectangle.area - this.area
-  //  }
-  //
-  //  def margin(): Double = {
-  //    (x_max - x_min + y_max - y_min) * 2
-  //  }
-
   override def inside(r: Rectangle): Boolean = {
     if (xMin >= r.xMin && yMin >= r.yMin && xMax <= r.xMax && yMax <= r.yMax) true
     else false
   }
 
-
-  override def mbr(): Rectangle = this
-
-
-  //  def addPointAttr(points: Array[Point]): Rectangle = {
-  //    var s = new Array[String](0)
-  //    for (p <- points) s = s :+ p.lon.toString + "," + p.lat.toString
-  //    this.attr += ("points" -> s)
-  //    this
-  //  }
-  //
-  //  var trajectory: Trajectory = Trajectory(0, 0, 0, Array(Point(0, 0)))
-  //
-  //  def addTrajAttr(traj: Trajectory): Rectangle = {
-  //    this.trajectory = traj
-  //    this
-  //  }
+  override def mbr(): Rectangle = this.toRectangle
 
   val vertices: Array[Point] = Array(Point(Array(xMin, yMin)), Point(Array(xMin, yMax)), Point(Array(xMax, yMax)), Point(Array(xMax, yMin)))
   val edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
   val diagonals: Array[Line] = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
 
-  def assignTimeStamp(t: Long): Rectangle = {
-    timeStamp = t
-    this
-  }
-
   override def toString = s"${this.xMin},${this.yMin},${this.xMax},${this.yMax}"
-
-  /** find the reference point of the overlapping of two rectangles (the left bottom point) */
-  def referencePoint(other: Shape): Option[Point] = {
-    if(!this.isOverlap(other.mbr)) None
-    else{
-      val xs = Array(this.xMin, this.xMax, other.mbr.xMin, other.mbr.xMax).sorted
-      val ys = Array(this.yMin, this.yMax, other.mbr.yMin, other.mbr.yMax).sorted
-      Some(Point(Array(xs(1), ys(1))))
-    }
-  }
 }

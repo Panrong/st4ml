@@ -18,7 +18,7 @@
 //    val sc = new SparkContext(conf)
 //    sc.setLogLevel("ERROR")
 //
-//    val queries = preprocessing.readQueryFile(query)
+//    val queries = preprocessing.ReadQueryFile(query)
 //    val queryRDD = sc.parallelize(queries, numPartition)
 //    val roadMapRDD = sc.parallelize(
 //      RoadGrid(roadGraphFile).edges.map(x => (x.ls.mbr, x.id)), numPartition) // (mbr, roadID)
@@ -45,7 +45,7 @@
 //
 //    for (i <- res.collect) {
 //      val queryRange = i._1
-//      println(s"Query Range: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
+//      println(s"Query2d Range: $queryRange : ${i._2.length} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
 //    }
 //  }
 //}
@@ -84,7 +84,7 @@
 //
 //    for (i <- res.collect) {
 //      val queryRange = i._1
-//      println(s"Query road ID: $queryRange : ${i._2.size} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
+//      println(s"Query2d road ID: $queryRange : ${i._2.size} sub-trajectories with speed  in the range ($minSpeed, $maxSpeed)")
 //    }
 //  }
 //}
