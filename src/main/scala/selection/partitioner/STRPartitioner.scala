@@ -136,14 +136,10 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
    * Partition spatial dataRDD using STR algorithm
    *
    * @param dataRDD       :data RDD
-   * @param numPartitions : number of partitions
-   * @param samplingRate  : sampling rate for defining the boundaries
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
-  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T],
-                                                numPartitions: Int,
-                                                samplingRate: Double): RDD[(Int, T)] = {
+   def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
@@ -157,15 +153,12 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
    *
    * @param dataRDD       : data RDD
    * @param queryRDD      : query RDD
-   * @param numPartitions : number of partitions
-   * @param samplingRate  : sampling rate for defining the boundaries
    * @tparam T : type pf spatial dataRDD, extending geometry.Shape
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
-  def copartition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T],
-                                                  queryRDD: RDD[STInstance.Query2d],
-                                                  numPartitions: Int,
-                                                  samplingRate: Double): (RDD[(Int, T)], RDD[(Int, Rectangle)]) = {
+  def copartition[T <: geometry.Shape : ClassTag]
+  (dataRDD: RDD[T], queryRDD: RDD[STInstance.Query2d]):
+  (RDD[(Int, T)], RDD[(Int, Rectangle)]) = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)

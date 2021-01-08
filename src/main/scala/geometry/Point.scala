@@ -103,5 +103,5 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
 
   override def center(): Point = this
 
-  override def toString = s"Point($x,$y,$t)"
+  override def toString = s"Point($x,$y,$t,id=$id)"
 }
