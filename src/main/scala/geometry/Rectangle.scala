@@ -150,7 +150,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   }
 
 
-  override def mbr(): Rectangle = this
+  override val mbr: Rectangle = this
 
 
   //  def addPointAttr(points: Array[Point]): Rectangle = {
@@ -187,11 +187,4 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
       Some(Point(Array(xs(1), ys(1))))
     }
   }
-
-  var borders = Array(
-    Line(Point(Array(xMin, yMin)),Point(Array(xMin, yMax))),
-    Line(Point(Array(xMin, yMax)),Point(Array(xMax, yMax))),
-    Line(Point(Array(xMax, yMax)),Point(Array(xMax, yMin))),
-    Line(Point(Array(xMax, yMin)),Point(Array(xMin, yMax)))
-  )
 }

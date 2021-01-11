@@ -1,6 +1,6 @@
 package selection.partitioner
 
-import geometry.{Rectangle, Shape}
+import geometry.{Rectangle, Shape, Point}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
@@ -135,11 +135,11 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
   /**
    * Partition spatial dataRDD using STR algorithm
    *
-   * @param dataRDD       :data RDD
+   * @param dataRDD :data RDD
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
-   def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
@@ -151,8 +151,8 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
   /**
    * Partition spatial dataRDD and queries simultaneously
    *
-   * @param dataRDD       : data RDD
-   * @param queryRDD      : query RDD
+   * @param dataRDD  : data RDD
+   * @param queryRDD : query RDD
    * @tparam T : type pf spatial dataRDD, extending geometry.Shape
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
@@ -196,24 +196,47 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
   def assignPartition[T <: Shape : ClassTag](dataRDD: RDD[T],
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
-    val rddWithIndex = dataRDD
-      .map(x => {
-        val mbr = x.mbr
-        val mbrShrink = Rectangle(Array(
-          min(max(mbr.xMin, boundary.head), boundary(2)),
-          min(max(mbr.yMin, boundary(1)), boundary(3)),
-          max(min(mbr.xMax, boundary(2)), boundary.head),
-          max(min(mbr.yMax, boundary(3)), boundary(1))))
-        (x, partitionMap.filter {
-          case (_, v) => v.intersect(mbrShrink)
-        })
-      })
-      .map(x => (x._1, x._2.keys.toArray))
-      .flatMapValues(x => x)
-      .map {
-        case (k, v) => (v, k)
+    dataRDD match {
+      case pointRDD: RDD[Point] => {
+        println("... Dealing with point data")
+        val rddWithIndex = pointRDD
+          .map(x => {
+            val pointShrink = Point(Array(
+              min(max(x.asInstanceOf[Point].x, boundary.head), boundary(2)),
+              min(max(x.asInstanceOf[Point].y, boundary(1)), boundary(3))
+            ))
+            (x, partitionMap.filter {
+              case (_, v) => pointShrink.inside(v)
+            }.head)
+          })
+          .map(x => (x._1, x._2._1))
+          .map {
+            case (k, v) => (v, k)
+          }
+        rddWithIndex
       }
-    rddWithIndex
+      case _ => {
+        val rddWithIndex = dataRDD
+          .map(x => {
+            val mbr = x.mbr
+            val mbrShrink = Rectangle(Array(
+              min(max(mbr.xMin, boundary.head), boundary(2)),
+              min(max(mbr.yMin, boundary(1)), boundary(3)),
+              max(min(mbr.xMax, boundary(2)), boundary.head),
+              max(min(mbr.yMax, boundary(3)), boundary(1))))
+            (x, partitionMap.filter {
+              case (_, v) => v.intersect(mbrShrink)
+            })
+          })
+          .map(x => (x._1, x._2.keys.toArray))
+          .flatMapValues(x => x)
+          .map {
+            case (k, v) => (v, k)
+          }
+        rddWithIndex
+      }
+    }
+
   }
 
 }
