@@ -25,9 +25,9 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], query: Rect
     spark.broadcast(query)
     dataRDD
       .filter(x =>
-        x._2.intersect(query) &&
-          query.referencePoint(x._2).get.inside(partitionRange(x._1))) // filter by reference point
-      .distinct
+        x._2.intersect(query)
+          && query.referencePoint(x._2).get.inside(partitionRange(x._1))
+      )// filter by reference point
   }
 
   /**

@@ -1,8 +1,9 @@
 package selection.selector
 
 import geometry.Rectangle
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
-import selection.partitioner.{STRPartitioner, HashPartitioner}
+import selection.partitioner.{HashPartitioner, STRPartitioner}
 
 import scala.io.Source
 
@@ -89,7 +90,9 @@ object SelectorTest extends App {
      *********************/
     val pointRDD = ReadPointFile("datasets/cams.json")
     println(s"\n\nOriginal point dataset contains ${pointRDD.count} entries")
-    val query2 = Rectangle(Array(29, 118, 31, 121))
+    val query2 = Rectangle(Array( 118.35,29.183,120.5, 30.55))
+    //val query2 = Rectangle(Array( 118,29,121, 31))
+
 
     /**
      * Usage of selector (+ indexer + partitioner)
@@ -102,10 +105,10 @@ object SelectorTest extends App {
     val partitionRange2 = partitioner2.partitionRange
     val selector2 = new SpatialSelector(pRDD2, query2)
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
-
+    println(pRDD2.count)
     /** query by filtering */
     t = nanoTime()
-    val queriedRDD1p = selector2.query(partitionRange2)
+    val queriedRDD1p = selector2.query(partitionRange2).map(x => x._2.id.toString).distinct
     println(s"==== Queried dataset contains ${queriedRDD1p.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
