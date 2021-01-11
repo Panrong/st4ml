@@ -8,6 +8,8 @@ import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
 class STRPartitioner(numPartitions: Int, samplingRate: Double) {
+  var partitionRange: Map[Int, Rectangle] = Map()
+
   /**
    * Generate ranges using STR for partitioning
    *
@@ -15,8 +17,6 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return : map of partitionID --> rectangle
    */
-
-  var partitionRange: Map[Int, Rectangle] = Map()
 
   def getPartitionRange[T <: Shape : ClassTag](dataRDD: RDD[T]): Map[Int, Rectangle] = {
     def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
@@ -196,10 +196,10 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) {
   def assignPartition[T <: Shape : ClassTag](dataRDD: RDD[T],
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
-    dataRDD match {
-      case pointRDD: RDD[Point] => {
+    dataRDD.take(1).head match {
+      case p: Point => {
         println("... Dealing with point data")
-        val rddWithIndex = pointRDD
+        val rddWithIndex = dataRDD
           .map(x => {
             val pointShrink = Point(Array(
               min(max(x.asInstanceOf[Point].x, boundary.head), boundary(2)),
