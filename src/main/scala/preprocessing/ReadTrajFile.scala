@@ -29,7 +29,8 @@ object ReadTrajFile {
    */
   val timeCount = true
 
-  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)): Dataset[geometry.Trajectory] = {
+  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
+  Dataset[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     val t = nanoTime
@@ -48,7 +49,7 @@ object ReadTrajFile {
       for (i <- 0 to pointsCoord.length - 2 by 2) {
         points = points :+ geometry.Point(Array(pointsCoord(i), pointsCoord(i + 1)), startTime + samplingRate * i / 2)
       }
-      geometry.Trajectory(tripID, startTime, points, Map("taxiID"-> taxiID.toString))
+      geometry.Trajectory(tripID, startTime, points, Map("taxiID" -> taxiID.toString))
     })
     println("==== Read CSV Done")
     println("--- Total number of lines: " + df.count)
@@ -133,7 +134,7 @@ object readTrajTest extends App {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     /** set up Spark */
-    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd.map(x=>STInstance.implicits.geometry2Instance(x))
+    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd.map(x => STInstance.implicits.geometry2Instance(x))
     trajRDD.take(5).foreach(println(_))
     sc.stop()
   }

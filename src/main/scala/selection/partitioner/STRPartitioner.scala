@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int, samplingRate: Double) {
+class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializable {
   var partitionRange: Map[Int, Rectangle] = Map()
 
   /**

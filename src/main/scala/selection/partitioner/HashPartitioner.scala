@@ -13,9 +13,8 @@ class HashPartitioner(numPartitions: Int) extends Serializable {
     pRDD
   }
 
-  var partitionRange: Map[Int, Rectangle] = Map()
-  for (i <- 0 until numPartitions) {
-    partitionRange = partitionRange + (i -> Rectangle(Array(-180, -90, 180, 90)))
-  }
-
+  var partitionRange: Map[Int, Rectangle] =
+    (0 until numPartitions)
+      .zipAll(List(Rectangle(Array(-180, -90, 180, 90))), 0, Rectangle(Array(-180, -90, 180, 90)))
+      .toMap
 }
