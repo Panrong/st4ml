@@ -14,7 +14,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   val low: Point = Point(Array(xMin, yMin))
   val high: Point = Point(Array(xMax, yMax))
 
-  var timeStamp = 0L
+  var timeStamp = (0L, 0L)
 
   require(xMin <= xMax && yMin <= yMax, s"The order should be (xMin, yMin, xMax, yMax). Input($xMin, $yMin, $xMax, $yMax)")
 
@@ -27,7 +27,14 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
     //    case r: Rectangle => this.overlappingArea(r) > 0
-    case r: Rectangle => r.isOverlap(this)
+    case r: Rectangle => {
+      require(low.coordinates.length == r.low.coordinates.length)
+      for (i <- low.coordinates.indices)
+        if (low.coordinates(i) >= r.high.coordinates(i) || high.coordinates(i) <= r.low.coordinates(i)) {
+          return false
+        }
+      true
+    }
     case l: Line => l.intersect(this)
     case c: Cube => c.toRectangle.isOverlap(this)
   }
@@ -171,8 +178,13 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
   val edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
   val diagonals: Array[Line] = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
 
-  def assignTimeStamp(t: Long): Rectangle = {
+  def setTimeStamp(t: (Long, Long)): Rectangle = {
     timeStamp = t
+    this
+  }
+
+  def setTimeStamp(t: Long): Rectangle = {
+    timeStamp = (t, t)
     this
   }
 
@@ -180,8 +192,8 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
 
   /** find the reference point of the overlapping of two rectangles (the left bottom point) */
   def referencePoint(other: Shape): Option[Point] = {
-    if(!this.isOverlap(other.mbr)) None
-    else{
+    if (!this.isOverlap(other.mbr)) None
+    else {
       val xs = Array(this.xMin, this.xMax, other.mbr.xMin, other.mbr.xMax).sorted
       val ys = Array(this.yMin, this.yMax, other.mbr.yMin, other.mbr.yMax).sorted
       Some(Point(Array(xs(1), ys(1))))

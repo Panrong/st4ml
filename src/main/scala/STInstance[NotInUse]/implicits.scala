@@ -31,7 +31,7 @@ object implicits {
   implicit def geometry2Instance(traj: geometry.Trajectory):
   Trajectory[(Double, Double), String] =
     Trajectory(traj.tripID,
-      traj.points.map(x => ((x.coordinates(0), x.coordinates(1)), x.timeStamp)),
+      traj.points.map(x => ((x.coordinates(0), x.coordinates(1)), x.timeStamp._1)),
       Some(traj.attributes))
 
   implicit def instance2Geometry[T: ClassTag](instance: STInstance[T]): geometry.Shape = {

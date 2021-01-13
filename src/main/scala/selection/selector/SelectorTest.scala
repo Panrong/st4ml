@@ -40,15 +40,23 @@ object SelectorTest extends App {
     /** *************************
      * test trajectory dataset
      * ************************ */
-
     val trajDS: Dataset[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
-    val trajRDD = trajDS.rdd.map(x => x.mbr)
-    val query = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
-
+    val trajRDD = trajDS.rdd.map(x => x.mbr.setTimeStamp((x.points.head.timeStamp._1, x.points.last.timeStamp._2)))
+    val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
+    val tQuery = (1372700000L, 1372750000L)
     println(s"\nOriginal trajectory dataset contains ${trajRDD.count} entries")
-
+    println("\n*-*-*-*-*-*-*-*-*-*-*-*")
+    /** benchmark */
+    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
+    println(s"*- Full scan S: ${fullSRDD.count} -*")
+    val fullSTRDD = fullSRDD.filter(x => {
+      val (ts, te) = x.timeStamp
+      x.intersect(sQuery) && (ts <= tQuery._2 && ts >= tQuery._1 || te <= tQuery._2 && te >= tQuery._1)
+    })
+    println(s"*- Full scan ST: ${fullSTRDD.count} -*")
+    println("*-*-*-*-*-*-*-*-*-*-*-*\n")
     /**
-     * Usage of selector (+ indexer + partitioner)
+     * Usage of spatialSelector (+ indexer + partitioner)
      */
 
     /** partition */
@@ -56,21 +64,27 @@ object SelectorTest extends App {
     val partitioner = new STRPartitioner(numPartitions, samplingRate)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val selector = new SpatialSelector(pRDD, query)
+    val spatialSelector = new SpatialSelector(pRDD, sQuery)
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
-    /** query by filtering */
+    /** spatial query by filtering */
     t = nanoTime()
-    val queriedRDD1 = selector.query(partitionRange)
+    val queriedRDD1 = spatialSelector.query(partitionRange)
     println(s"==== Queried dataset contains ${queriedRDD1.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
-    /** query with index */
+    /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = selector.queryWithRTreeIndex(rtreeCapacity, partitionRange)
+    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange)
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
+    /** temporal query by filtering */
+    t = nanoTime()
+    val temporalSelector = new TemporalSelector(queriedRDD2, tQuery)
+    val queriedRDD3 = temporalSelector.query()
+    println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
+    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** test hash partitioner */
     println("\n==== HASH ====")
@@ -79,7 +93,7 @@ object SelectorTest extends App {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new SpatialSelector(pRDDHash, query)
+    val selectorHash = new SpatialSelector(pRDDHash, sQuery)
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
@@ -92,6 +106,13 @@ object SelectorTest extends App {
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
+    t = nanoTime()
+    val temporalSelectorH = new TemporalSelector(queriedRDD2Hash, tQuery)
+    val queriedRDD3Hash = temporalSelectorH.query()
+    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
+    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
+
+    /*
     /** *******************
      * test point dataset
      * ******************* */
@@ -103,7 +124,7 @@ object SelectorTest extends App {
 
 
     /**
-     * Usage of selector (+ indexer + partitioner)
+     * Usage of spatialSelector (+ indexer + partitioner)
      */
 
     /** partition */
@@ -114,18 +135,18 @@ object SelectorTest extends App {
     val selector2 = new SpatialSelector(pRDD2, query2)
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
-    /** query by filtering */
+    /** sQuery by filtering */
     t = nanoTime()
-    val queriedRDD1p = selector2.query(partitionRange2) //.map(x => x._2.id.toString).distinct
+    val queriedRDD1p = selector2.sQuery(partitionRange2) //.map(x => x._2.id.toString).distinct
     println(s"==== Queried dataset contains ${queriedRDD1p.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
-    /** query with index */
+    /** sQuery with index */
     t = nanoTime()
     val queriedRDD2p = selector2.queryWithRTreeIndex(rtreeCapacity, partitionRange2) //.map(x => x._2.id.toString).distinct
     println(s"==== Queried dataset contains ${queriedRDD2p.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
-
+    */
     sc.stop()
   }
 }

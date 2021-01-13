@@ -5,13 +5,12 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 
 import scala.io.Source
 import scala.reflect.ClassTag
-import STInstance.Query2d
 
 
 object ReadQueryFile extends Serializable {
   implicit def tuple4Array[T: ClassTag](x: (T, T, T, T)): Array[T] = Array(x._1, x._2, x._3, x._4)
 
-  def apply(f: String): Dataset[Query2d] = {
+  def apply(f: String): Dataset[(Rectangle)] = {
     var queries = new Array[Rectangle](0)
     for ((line, i) <- (Source.fromFile(f).getLines).zipWithIndex) {
       val r = line.split(" ")
@@ -19,9 +18,8 @@ object ReadQueryFile extends Serializable {
     }
     val spark = SparkSession.builder.getOrCreate()
     import spark.implicits._
-    queries.map(x => (x, x.ID)).toSeq.toDS()
+    queries.toSeq.toDS()
       .withColumnRenamed("_1", "query")
-      .withColumnRenamed("_2", "queryID")
-      .as[Query2d]
+      .as[Rectangle]
   }
 }

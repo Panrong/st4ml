@@ -20,6 +20,8 @@ abstract class Shape() extends Serializable {
 
   var id: Long
 
+  var timeStamp: (Long, Long)
+
   implicit def point2Shape(x: Point): Shape = x.asInstanceOf[Shape]
 
   implicit def rectangle2Shape(x: Rectangle): Shape = x.asInstanceOf[Shape]

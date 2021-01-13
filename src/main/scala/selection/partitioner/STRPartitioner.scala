@@ -29,7 +29,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
       }
       q = 0.0 +: q
       if (q.length < n + 1) q = q :+ 1.0
-      df.stat.approxQuantile(column, q, 0.0001)
+      df.stat.approxQuantile(column, q, 0.001)
     }
 
     def getStrip(df: DataFrame, range: List[Double], column: String): DataFrame = {
@@ -67,7 +67,6 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
         case f: Float => f
         case d: Double => d
       }
-
       val x_min = df.select(functions.min(column.head)).collect()(0)(0)
       val x_max = df.select(functions.max(column.head)).collect()(0)(0)
       val y_min = df.select(functions.min(column(1))).collect()(0)(0)
@@ -129,6 +128,14 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
       boxesWIthID += (i -> Rectangle(Array(lonMin, latMin, lonMax, latMax)))
     }
     this.partitionRange = boxesWIthID
+    val areaSum = partitionRange.values.map(_.area).sum.formatted("%.5f")
+    val rangeArea = Rectangle(Array(
+      partitionRange.values.map(_.xMin).min,
+      partitionRange.values.map(_.yMin).min,
+      partitionRange.values.map(_.xMax).max,
+      partitionRange.values.map(_.yMax).max)).area.formatted("%.5f")
+    assert(areaSum == rangeArea,
+      s"Range boundary error, whole range area $rangeArea, area sum $areaSum")
     boxesWIthID
   }
 
@@ -157,14 +164,14 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
   def copartition[T <: geometry.Shape : ClassTag]
-  (dataRDD: RDD[T], queryRDD: RDD[STInstance.Query2d]):
+  (dataRDD: RDD[T], queryRDD: RDD[Rectangle]):
   (RDD[(Int, T)], RDD[(Int, Rectangle)]) = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
     val pRDD = assignPartition(dataRDD, partitionMap, boundary)
       .partitionBy(partitioner)
-    val pQueryRDD = assignPartition(queryRDD.map(_.toShape), partitionMap, boundary)
+    val pQueryRDD = assignPartition(queryRDD, partitionMap, boundary)
       .partitionBy(partitioner)
     (pRDD, pQueryRDD)
   }

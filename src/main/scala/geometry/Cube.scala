@@ -16,6 +16,8 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
   val low: Point = Point(Array(xMin, yMin))
   val high: Point = Point(Array(xMax, yMax))
 
+  var timeStamp = (0L, 0L)
+
   require(xMin <= xMax && yMin <= yMax && tMin <= tMax,
     "The order should be (xMin, yMin, xMax, yMax, tMin, tMax)")
 
@@ -120,6 +122,16 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
   val vertices: Array[Point] = Array(Point(Array(xMin, yMin)), Point(Array(xMin, yMax)), Point(Array(xMax, yMax)), Point(Array(xMax, yMin)))
   val edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
   val diagonals: Array[Line] = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
+
+  def setTimeStamp(t: (Long, Long)): Cube = {
+    timeStamp = t
+    this
+  }
+
+  def setTimeStamp(t: Long): Cube = {
+    timeStamp = (t, t)
+    this
+  }
 
   override def toString = s"${this.xMin},${this.yMin},${this.xMax},${this.yMax}"
 }

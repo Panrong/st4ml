@@ -9,8 +9,8 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
 
   def hasTimestamp: Boolean = t != 0L
 
-  var timeStamp: Long = t
-  override var id = 0L
+  var timeStamp: (Long, Long) = (t, t)
+  var id = 0L
 
   def dimensions: Int = {
     if (hasTimestamp) 3
@@ -90,6 +90,11 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
   }
 
   def setTimeStamp(t: Long): Point = {
+    timeStamp = (t, t)
+    this
+  }
+
+  def setTimeStamp(t: (Long, Long)): Point = {
     timeStamp = t
     this
   }

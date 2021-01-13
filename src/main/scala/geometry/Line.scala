@@ -14,7 +14,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
 
   override def inside(rectangle: Rectangle): Boolean = mbr.inside(rectangle)
 
-  var timeStamp = 0L
+  var timeStamp = (0L, 0L)
 
   override var id = ID
 
@@ -106,4 +106,14 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
   }
 
   def setID(id: Long): Line = Line(this.o, this.d, id)
+
+  def setTimeStamp(t: (Long, Long)): Line = {
+    timeStamp = t
+    this
+  }
+
+  def setTimeStamp(t: Long): Line = {
+    timeStamp = (t, t)
+    this
+  }
 }

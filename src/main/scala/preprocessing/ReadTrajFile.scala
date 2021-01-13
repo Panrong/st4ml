@@ -134,7 +134,7 @@ object readTrajTest extends App {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     /** set up Spark */
-    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd.map(x => STInstance.implicits.geometry2Instance(x))
+    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd
     trajRDD.take(5).foreach(println(_))
     sc.stop()
   }

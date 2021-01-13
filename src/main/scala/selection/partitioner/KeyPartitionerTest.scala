@@ -43,8 +43,8 @@ object KeyPartitionerTest extends App {
     /** full scan */
     println("\n=== Test full scan ===")
     var t = nanoTime
-    val res1 = trajRDD.cartesian(queryRDD).filter(x => x._1.intersect(x._2.query)).map {
-      case (traj, query) => (query.queryID, traj)
+    val res1 = trajRDD.cartesian(queryRDD).filter(x => x._1.intersect(x._2)).map {
+      case (traj, query) => (query.id, traj)
     }
       .groupByKey(numPartitions)
       .mapValues(x => x.toArray.length)
