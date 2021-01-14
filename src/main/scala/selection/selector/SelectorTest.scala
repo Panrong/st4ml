@@ -55,11 +55,13 @@ object SelectorTest extends App {
     })
     println(s"*- Full scan ST: ${fullSTRDD.count} -*")
     println("*-*-*-*-*-*-*-*-*-*-*-*\n")
+
     /**
      * Usage of spatialSelector (+ indexer + partitioner)
      */
 
     /** partition */
+    println("==== STR ====")
     t = nanoTime()
     val partitioner = new STRPartitioner(numPartitions, samplingRate)
     val pRDD = partitioner.partition(trajRDD)
@@ -69,13 +71,13 @@ object SelectorTest extends App {
 
     /** spatial query by filtering */
     t = nanoTime()
-    val queriedRDD1 = spatialSelector.query(partitionRange)
+    val queriedRDD1 = spatialSelector.query(partitionRange).map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD1.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange)
+    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange).map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -86,31 +88,31 @@ object SelectorTest extends App {
     println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
-    /** test hash partitioner */
-    println("\n==== HASH ====")
+        /** test hash partitioner */
+        println("\n==== HASH ====")
 
-    t = nanoTime()
-    val hashPartitioner = new HashPartitioner(numPartitions)
-    val pRDDHash = hashPartitioner.partition(trajRDD)
-    val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new SpatialSelector(pRDDHash, sQuery)
-    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
+        t = nanoTime()
+        val hashPartitioner = new HashPartitioner(numPartitions)
+        val pRDDHash = hashPartitioner.partition(trajRDD)
+        val partitionRangeHash = hashPartitioner.partitionRange
+        val selectorHash = new SpatialSelector(pRDDHash, sQuery)
+        println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
-    t = nanoTime()
-    val queriedRDD1Hash = selectorHash.query(partitionRangeHash)
-    println(s"==== Queried dataset contains ${queriedRDD1Hash.count} entries (filtering)")
-    println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
+        t = nanoTime()
+        val queriedRDD1Hash = selectorHash.query(partitionRangeHash)
+        println(s"==== Queried dataset contains ${queriedRDD1Hash.count} entries (filtering)")
+        println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
-    t = nanoTime()
-    val queriedRDD2Hash = selectorHash.queryWithRTreeIndex(rtreeCapacity, partitionRangeHash)
-    println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
-    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
+        t = nanoTime()
+        val queriedRDD2Hash = selectorHash.queryWithRTreeIndex(rtreeCapacity, partitionRangeHash)
+        println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
+        println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
-    t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(queriedRDD2Hash, tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query()
-    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
-    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
+        t = nanoTime()
+        val temporalSelectorH = new TemporalSelector(queriedRDD2Hash, tQuery)
+        val queriedRDD3Hash = temporalSelectorH.query()
+        println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
+        println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
     /*
     /** *******************

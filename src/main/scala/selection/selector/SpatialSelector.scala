@@ -11,23 +11,24 @@ import selection.indexer._
  * Selecting a subset of the original dataset with spatial range constraints.
  *
  * @param dataRDD : input data RDD after partitioning, with type (partitionID, Shape)
- * @param query   : rectangle for querying
+ * @param queryRange   : rectangle for querying
  * @tparam T : the type of input RDD should extend Shape
  */
-class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], query: Rectangle) extends Serializable {
+class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange: Rectangle) extends Serializable {
   /**
-   * default query by scanning each element in datRDD
+   * default query by scanning each element in dataRDD
    *
    * @return : queried RDD
    */
   def query(partitionRange: Map[Int, Rectangle]): RDD[(Int, T)] = {
     val spark = SparkContext.getOrCreate()
-    spark.broadcast(query)
+    spark.broadcast(queryRange)
     dataRDD
       .filter(x =>
-        x._2.intersect(query)
-          && query.referencePoint(x._2).get.inside(partitionRange(x._1))
+        x._2.intersect(queryRange)
+          //&& queryRange.referencePoint(x._2).get.inside(partitionRange(x._1))
       )// filter by reference point
+
   }
 
   /**
@@ -60,9 +61,8 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], query: Rect
         List((pIndex, rtree)).iterator
       })
     indexedRDD
-      .flatMap { case (partitionID, rtree) => rtree.range(query)
-        .filter(x => query.referencePoint(x._1).get
-          .inside(partitionRange(partitionID))) // filter by reference point
+      .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
+        //.filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
         .map(x => (partitionID, x._1.asInstanceOf[T]))
       }
   }

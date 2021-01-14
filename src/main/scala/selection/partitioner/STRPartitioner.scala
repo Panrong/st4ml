@@ -67,6 +67,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
         case f: Float => f
         case d: Double => d
       }
+
       val x_min = df.select(functions.min(column.head)).collect()(0)(0)
       val x_max = df.select(functions.max(column.head)).collect()(0)(0)
       val y_min = df.select(functions.min(column(1))).collect()(0)(0)
@@ -114,7 +115,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
     }
 
     val spark = SparkSession.builder().getOrCreate()
-    val rectangleRDD = dataRDD.sample(withReplacement = false, samplingRate)
+    val rectangleRDD = dataRDD.sample(withReplacement = false, samplingRate, seed = 1)
       .map(x => (x.mbr.center().lon, x.mbr.center().lat))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, List("x", "y"), coverWholeRange = true)
@@ -150,6 +151,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
+
     val pRDD = assignPartition(dataRDD, partitionMap, boundary)
       .partitionBy(partitioner)
     pRDD
@@ -235,12 +237,11 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
               case (_, v) => v.intersect(mbrShrink)
             })
           })
-          .map(x => (x._1, x._2.keys.toArray))
+        rddWithIndex.map(x => (x._1, x._2.keys))
           .flatMapValues(x => x)
           .map {
             case (k, v) => (v, k)
           }
-        rddWithIndex
       }
     }
 

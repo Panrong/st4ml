@@ -30,7 +30,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
     case r: Rectangle => {
       require(low.coordinates.length == r.low.coordinates.length)
       for (i <- low.coordinates.indices)
-        if (low.coordinates(i) >= r.high.coordinates(i) || high.coordinates(i) <= r.low.coordinates(i)) {
+        if (low.coordinates(i) > r.high.coordinates(i) || high.coordinates(i) < r.low.coordinates(i)) {
           return false
         }
       true
@@ -192,7 +192,7 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
 
   /** find the reference point of the overlapping of two rectangles (the left bottom point) */
   def referencePoint(other: Shape): Option[Point] = {
-    if (!this.isOverlap(other.mbr)) None
+    if (!this.intersect(other.mbr)) None
     else {
       val xs = Array(this.xMin, this.xMax, other.mbr.xMin, other.mbr.xMax).sorted
       val ys = Array(this.yMin, this.yMax, other.mbr.yMin, other.mbr.yMax).sorted
