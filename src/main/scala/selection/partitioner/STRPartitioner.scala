@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializable {
+class STRPartitioner(numPartitions: Int, samplingRate: Double) extends SpatialPartitioner with Serializable {
   var partitionRange: Map[Int, Rectangle] = Map()
 
   /**
@@ -147,7 +147,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends Serializa
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
-  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  override def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)

@@ -26,9 +26,8 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange:
     dataRDD
       .filter(x =>
         x._2.intersect(queryRange)
-          //&& queryRange.referencePoint(x._2).get.inside(partitionRange(x._1))
+          && queryRange.referencePoint(x._2).get.inside(partitionRange(x._1))
       )// filter by reference point
-
   }
 
   /**
@@ -62,7 +61,7 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange:
       })
     indexedRDD
       .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
-        //.filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
+        .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
         .map(x => (partitionID, x._1.asInstanceOf[T]))
       }
   }
