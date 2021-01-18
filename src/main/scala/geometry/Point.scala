@@ -100,7 +100,7 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
   }
 
   override def inside(rectangle: Rectangle): Boolean = {
-    if (x >= rectangle.xMin && x <= rectangle.xMax && y >= rectangle.yMin && y <= rectangle.yMax) true
+    if (x >= rectangle.xMin && x < rectangle.xMax && y >= rectangle.yMin && y < rectangle.yMax) true
     else false
   }
 

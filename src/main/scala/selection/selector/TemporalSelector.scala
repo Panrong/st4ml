@@ -12,12 +12,11 @@ import scala.reflect.ClassTag
  * @param query   : (startTime, endTime)
  */
 class TemporalSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], query: (Long, Long)) extends Serializable {
-  def query(): RDD[(Int, T)] = {
+  def query(): RDD[(Int, T)] =
     dataRDD.filter(x => {
       val (ts, te) = x._2.timeStamp
       ts <= query._2 && ts >= query._1 || te <= query._2 && te >= query._1
     })
-  }
 }
 
 /**

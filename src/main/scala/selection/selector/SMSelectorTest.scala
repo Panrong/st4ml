@@ -1,15 +1,15 @@
 package selection.selector
 
-import geometry.Rectangle
+import geometry.{Rectangle, mmTrajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
+import preprocessing.ReadMMTrajFile
 import selection.partitioner.{HashPartitioner, STRPartitioner}
 
 import scala.io.Source
 
-object SelectorTest extends App {
+object SMSelectorTest extends App {
   override def main(args: Array[String]): Unit = {
 
-    import preprocessing.{ReadTrajFile, ReadPointFile}
     import java.lang.System.nanoTime
 
     var t = nanoTime()
@@ -36,16 +36,16 @@ object SelectorTest extends App {
     val samplingRate = args(3).toDouble
     val rtreeCapacity = args(4).toInt
     val dataSize = args(5).toInt
+    val mapFile = args(6)
 
-    /** *************************
-     * test trajectory dataset
-     * ************************ */
+    /** **********************************
+     * test map-matched trajectory dataset
+     * ********************************** */
 
-    val trajDS: Dataset[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
-    val trajRDD = trajDS.rdd.map(x => x.mbr.setTimeStamp((x.points.head.timeStamp._1, x.points.last.timeStamp._2)))
+    val trajDS: Dataset[mmTrajectory] = ReadMMTrajFile(trajectoryFile, mapFile)
+    val trajRDD = trajDS.rdd
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
-    //val tQuery = (1372700000L, 1372750000L)
-    val tQuery = (1399900000L, 1400000000L)
+    val tQuery = (1372630000L, 1372660000L)
 
     println(s"\nOriginal trajectory dataset contains ${trajRDD.count} entries")
     println("\n*-*-*-*-*-*-*-*-*-*-*-*")
@@ -61,10 +61,6 @@ object SelectorTest extends App {
     println(s"*- Full scan ST: ${fullSTRDD.count} -*")
     println("*-*-*-*-*-*-*-*-*-*-*-*")
     println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.\n")
-
-    /**
-     * Usage of spatialSelector (+ indexer + partitioner)
-     */
 
     /** partition */
     println("==== STR ====")
@@ -86,7 +82,6 @@ object SelectorTest extends App {
     val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
-
     /** temporal query by filtering */
     t = nanoTime()
     val temporalSelector = new TemporalSelector(queriedRDD2, tQuery)
@@ -119,41 +114,6 @@ object SelectorTest extends App {
     val queriedRDD3Hash = temporalSelectorH.query()
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
-
-
-    /** *******************
-     * test point dataset
-     * ******************* */
-    val pointRDD = ReadPointFile("datasets/cams.json")
-
-    println(s"\n\nOriginal point dataset contains ${pointRDD.count} entries")
-    val query2 = Rectangle(Array(118.35, 29.183, 120.5, 30.55))
-    //val query2 = Rectangle(Array( 118,29,121, 31))
-
-
-    /**
-     * Usage of spatialSelector (+ indexer + partitioner)
-     */
-
-    /** partition */
-    t = nanoTime()
-    val partitioner2 = new STRPartitioner(numPartitions, samplingRate)
-    val pRDD2 = partitioner2.partition(pointRDD)
-    val partitionRange2 = partitioner2.partitionRange
-    val selector2 = new SpatialSelector(pRDD2, query2)
-    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
-
-    /** sQuery by filtering */
-    t = nanoTime()
-    val queriedRDD1p = selector2.query(partitionRange2) //.map(x => x._2.id.toString).distinct
-    println(s"==== Queried dataset contains ${queriedRDD1p.count} entries (filtering)")
-    println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
-
-    /** sQuery with index */
-    t = nanoTime()
-    val queriedRDD2p = selector2.queryWithRTreeIndex(rtreeCapacity, partitionRange2) //.map(x => x._2.id.toString).distinct
-    println(s"==== Queried dataset contains ${queriedRDD2p.count} entries (RTree)")
-    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
     sc.stop()
   }

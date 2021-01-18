@@ -1,29 +1,38 @@
 package preprocessing
 
-import geometry.{mmTrajectoryS, subTrajectory}
+import geometry.mmTrajectory
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
+import road.RoadGrid
 
-object ReadMMTrajFile extends Serializable{
+object ReadMMTrajFile extends Serializable {
   /**
    *
    * @param filename : path to the dataRDD file
    * @return : Dataset[mmTrajectoryS]
-   * +-------------------+--------+----------+--------------------+
-   * |             tripID|  taxiID| startTime|     subTrajectories|
-   * +-------------------+--------+----------+--------------------+
-   * |1372945809620000443|20000443|1372945816|[[1372945816, 0, ...|
-   * |1373005493620000136|20000136|1373005493|[[1373005493, 0, ...|
-   * |1373009069620000595|20000595|1373009121|[[1373009121, 0, ...|
-   * |1373008468620000039|20000039|1373008468|[[1373008468, 0, ...|
-   * |1373009580620000009|20000009|1373009580|[[1373009580, 0, ...|
-   * +-------------------+--------+----------+--------------------+
+   *         +-------------------+--------+----------+--------------------+
+   *         |             tripID|  taxiID| startTime|     subTrajectories|
+   *         +-------------------+--------+----------+--------------------+
+   *         |1372945809620000443|20000443|1372945816|[[1372945816, 0, ...|
+   *         |1373005493620000136|20000136|1373005493|[[1 3 7 3 0 0 5 4 9 3, 0, ...|
+   *         |1373009069620000595|20000595|1373009121|[[1373009121, 0, ...|
+   *         |1373008468620000039|20000039|1373008468|[[1 3 7 3 0 0 8 4 6 8, 0, ...|
+   *         |1373009580620000009|20000009|1373009580|[[1373009580, 0, ...|
+   *         +-------------------+--------+----------+--------------------+
    *
    */
-  def apply(filename: String): Dataset[mmTrajectoryS] = {
+  def apply(filename: String, mapFile: String): Dataset[mmTrajectory] = {
     val ss = new SparkSessionWrapper("config")
     val spark = ss.spark
     val sc = ss.sc
+    val rGrid = RoadGrid(mapFile)
+    val roadMap = rGrid.id2edge.map {
+      case (id, edge) => {
+        val startCoord = rGrid.id2vertex(edge.from).point
+        val endCoord = rGrid.id2vertex(edge.to).point
+        (id, List(startCoord, endCoord))
+      }
+    }
     val customSchema = StructType(Array(
       StructField("taxiID", LongType, nullable = true),
       StructField("tripID", LongType, nullable = true),
@@ -35,13 +44,12 @@ object ReadMMTrajFile extends Serializable{
     )
     import spark.implicits._
     val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
-    val trajRDD = df.rdd.filter(row => row(3) != "(-1:-1)" && row(3) != "-1") // remove invalid entries
+    val trajRDD = df.rdd.filter(row => row(2) != "(-1:-1)" && row(2) != "-1") // remove invalid entries
     val resRDD = trajRDD.map(row => {
-      val tripID = row(1).toString
-      val taxiID = row(0).toString
-      val roadTime = row(6).toString.replaceAll("[() ]", "").split(",").grouped(2).toArray // Array(Array(roadID, time))
-      val subTrajectories = roadTime.map(x => subTrajectory(x(1).toLong, 0, x(0), 0))
-      mmTrajectoryS(tripID, taxiID, subTrajectories(0).startTime, subTrajectories)
+      val tripID = row(0).toString
+      val roadTime = row(5).toString.replaceAll("[() ]", "").split(",").grouped(2).toArray // Array(Array(roadID, time))
+      val subTrajectories = roadTime.map(x => (x(0), x(1).toLong))
+      mmTrajectory(tripID, subTrajectories).addMBR(roadMap)
     })
     resRDD.toDS
   }
