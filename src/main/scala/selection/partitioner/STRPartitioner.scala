@@ -117,7 +117,6 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
 
     val spark = SparkSession.builder().getOrCreate()
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
-    println(sr)
     val rectangleRDD = dataRDD.sample(withReplacement = false, sr, seed = 1)
       .map(x => (x.mbr.center().lon, x.mbr.center().lat))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
@@ -250,8 +249,8 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
 
   }
 
-  def getSamplingRate[T <: Shape : ClassTag](dataRDD:RDD[T]): Double = {
+  def getSamplingRate[T <: Shape : ClassTag](dataRDD: RDD[T]): Double = {
     val dataSize = dataRDD.count
-    max(min(1000/dataSize.toDouble, 0.5), 1e-3)
+    max(min(1000 / dataSize.toDouble, 0.5), 50 * numPartitions / dataSize.toDouble)
   }
 }
