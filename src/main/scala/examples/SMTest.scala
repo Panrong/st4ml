@@ -1,13 +1,17 @@
-package selection.selector
+package examples
 
 import geometry.{Rectangle, mmTrajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import preprocessing.ReadMMTrajFile
 import selection.partitioner.{HashPartitioner, STRPartitioner}
+import selection.selector.{SpatialSelector, TemporalSelector}
+import convertion.Converter
+import extraction.SMExtractor
+import road.RoadGrid
 
 import scala.io.Source
 
-object SMSelectorTest extends App {
+object SMTest extends App {
   override def main(args: Array[String]): Unit = {
 
     import java.lang.System.nanoTime
@@ -79,13 +83,17 @@ object SMSelectorTest extends App {
 
     /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange)//.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+
+
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
+
     /** temporal query by filtering */
     t = nanoTime()
     val temporalSelector = new TemporalSelector(queriedRDD2, tQuery)
     val queriedRDD3 = temporalSelector.query()
+//    queriedRDD3.take(6).foreach(println(_))
     println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -115,6 +123,21 @@ object SMSelectorTest extends App {
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
+    /** add speed info */
+    val roadGrid = RoadGrid(mapFile)
+    val speedRDD = queriedRDD3.map(x => (x._1, x._2.getRoadSpeed(roadGrid)))
+
+    /** test conversion */
+    val converter = new Converter
+    val convertedRDD = converter.trajSpeed2SpatialMap(speedRDD)
+
+    /** test extraction */
+    val extractor = new SMExtractor
+    val avgSpeed = extractor.extractRoadSpeed(convertedRDD)
+    println("\n=== Average Speed === :")
+    for (i <- avgSpeed.take(5)) {
+      println(s"Road ID: ${i._1} --- Average speed ${i._2.formatted("%.3f")} km/h")
+    }
     sc.stop()
   }
 }

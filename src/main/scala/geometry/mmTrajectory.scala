@@ -1,5 +1,7 @@
 package geometry
 
+import road.RoadGrid
+
 case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Shape with Serializable {
   override def coordinates: Array[Double] = Array.empty
 
@@ -11,7 +13,7 @@ case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Sh
     }
   }
 
-  var mbr: Rectangle = Rectangle(Array(0,0,0,0))
+  var mbr: Rectangle = Rectangle(Array(0, 0, 0, 0))
 
   override def center(): Point = mbr.center()
 
@@ -34,6 +36,7 @@ case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Sh
   override def inside(rectangle: Rectangle): Boolean = {
     this.mbr.inside(rectangle)
   }
+
   override var id: Long = tripID.toLong
 
   override var timeStamp: (Long, Long) = (roads.head._2, roads.last._2)
@@ -45,6 +48,19 @@ case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Sh
     val yMin = points.map(p => p.y).min
     val yMax = points.map(p => p.y).max
     this.mbr = Rectangle(Array(xMin, yMin, xMax, yMax)).setTimeStamp(timeStamp)
+    this
+  }
+
+  var speed: Array[(String, Double)] = Array.empty
+
+  def getRoadSpeed(rg: RoadGrid): mmTrajectory = {
+    val middleSpeed = roads.sliding(3).map(x =>
+      (rg.id2edge(x(0)._1).length * 0.5 +
+        rg.id2edge(x(1)._1).length +
+        rg.id2edge(x(2)._1).length * 0.5)
+        / (x(2)._2 - x(0)._2) * 3.6).toArray
+    val speed = middleSpeed.head +: middleSpeed :+ middleSpeed.last
+    this.speed = roads.map(_._1) zip speed
     this
   }
 }

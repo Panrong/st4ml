@@ -42,8 +42,8 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange:
       .map(x => x._2)
       .mapPartitionsWithIndex {
         (index, partitionIterator) => {
-          val partitionsMap = scala.collection.mutable.Map[Int, List[Shape]]()
-          var partitionList = List[Shape]()
+          val partitionsMap = scala.collection.mutable.Map[Int, List[T]]()
+          var partitionList = List[T]()
           while (partitionIterator.hasNext) {
             partitionList = partitionIterator.next() :: partitionList
           }
@@ -54,7 +54,7 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange:
     val indexedRDD = dataRDDWithIndex
       .mapPartitions(x => {
         val (pIndex, contents) = x.next
-        val entries = contents.map(x => (x.mbr, x.id))
+        val entries = contents.map(x => (x, x.id))
           .zipWithIndex.toArray.map(x => (x._1._1, x._1._2.toInt, x._2))
         val rtree = RTree(entries, capacity)
         List((pIndex, rtree)).iterator
@@ -62,7 +62,7 @@ class SpatialSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)], queryRange:
     indexedRDD
       .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
         .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
-        .map(x => (partitionID, x._1.asInstanceOf[T]))
+        .map(x => (partitionID, x._1))
       }
   }
 }
