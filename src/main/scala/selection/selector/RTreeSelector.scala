@@ -18,6 +18,7 @@ class RTreeSelector[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)],
       val dataSize = dataRDD.count
       max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
     }) // rule for capacity calculation if not given
+    println(c)
     val dataRDDWithIndex = dataRDD
       .map(x => x._2)
       .mapPartitionsWithIndex {
