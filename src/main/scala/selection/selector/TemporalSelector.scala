@@ -11,8 +11,8 @@ import scala.reflect.ClassTag
  * @param dataRDD : input data set
  * @param query   : (startTime, endTime)
  */
-class TemporalSelector[T <: Shape : ClassTag](query: (Long, Long))(dataRDD: RDD[(Int, T)]) extends Serializable {
-  def query(): RDD[(Int, T)] =
+class TemporalSelector(query: (Long, Long)) extends Serializable {
+  def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] =
     dataRDD.filter(x => {
       val (ts, te) = x._2.timeStamp
       ts <= query._2 && ts >= query._1 || te <= query._2 && te >= query._1
@@ -25,8 +25,8 @@ class TemporalSelector[T <: Shape : ClassTag](query: (Long, Long))(dataRDD: RDD[
  * @param dataRDD : input data set
  * @param query   : Array of (startTime, endTime)
  */
-class TemporalBatchSelector[T <: Shape : ClassTag](query: Array[(Long, Long)])(dataRDD: RDD[(Int, T)]) extends Serializable {
-  def query(): RDD[(Int, T, Int)] = {
+class TemporalBatchSelector(query: Array[(Long, Long)]) extends Serializable {
+  def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T, Int)] = {
     dataRDD.map(x =>
       (x, query
         .zipWithIndex

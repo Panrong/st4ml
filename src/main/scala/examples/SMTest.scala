@@ -69,20 +69,20 @@ object SMTest extends App {
     val partitioner = new STRPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val filterSelector = new FilterSelector(pRDD, sQuery, partitionRange)
-    val rtreeSelector = new RTreeSelector(pRDD, sQuery, partitionRange)
+    val filterSelector = new FilterSelector(sQuery, partitionRange)
+    val rtreeSelector = new RTreeSelector(sQuery, partitionRange)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query by filtering */
     t = nanoTime()
-    val queriedRDD1 = filterSelector.query() //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD1 = filterSelector.query(pRDD) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD1.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = rtreeSelector.query()//.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD2 = rtreeSelector.query(pRDD) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
 
 
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
@@ -90,9 +90,9 @@ object SMTest extends App {
 
     /** temporal query by filtering */
     t = nanoTime()
-    val temporalSelector = new TemporalSelector(queriedRDD2, tQuery)
-    val queriedRDD3 = temporalSelector.query()
-//    queriedRDD3.take(6).foreach(println(_))
+    val temporalSelector = new TemporalSelector(tQuery)
+    val queriedRDD3 = temporalSelector.query(queriedRDD2)
+    //    queriedRDD3.take(6).foreach(println(_))
     println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -103,24 +103,24 @@ object SMTest extends App {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new FilterSelector(pRDDHash, sQuery, partitionRangeHash)
-    val rtreeselectorHash = new FilterSelector(pRDDHash, sQuery, partitionRangeHash)
+    val selectorHash = new FilterSelector(sQuery, partitionRangeHash)
+    val rtreeselectorHash = new FilterSelector(sQuery, partitionRangeHash)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD1Hash = selectorHash.query()
+    val queriedRDD1Hash = selectorHash.query(pRDDHash)
     println(s"==== Queried dataset contains ${queriedRDD1Hash.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = rtreeselectorHash.query()
+    val queriedRDD2Hash = rtreeselectorHash.query(pRDDHash)
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(queriedRDD2Hash, tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query()
+    val temporalSelectorH = new TemporalSelector(tQuery)
+    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -139,6 +139,68 @@ object SMTest extends App {
     for (i <- avgSpeed.take(5)) {
       println(s"Road ID: ${i._1} --- Average speed ${i._2.formatted("%.3f")} km/h")
     }
+    sc.stop()
+  }
+}
+
+object SimpleTest extends App {
+
+  override def main(args: Array[String]): Unit = {
+    /** set up Spark environment and prepare data */
+    var config: Map[String, String] = Map()
+    val f = Source.fromFile("config")
+    f.getLines
+      .filterNot(_.startsWith("//"))
+      .filterNot(_.startsWith("\n"))
+      .foreach(l => {
+        val p = l.split(" ")
+        config = config + (p(0) -> p(1))
+      })
+    f.close()
+    val spark = SparkSession
+      .builder()
+      .master(config("master"))
+      .appName(config("appName"))
+      .getOrCreate()
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    val numPartitions = args(0).toInt
+    val trajectoryFile = args(1)
+    val mapFile = args(2)
+
+    val trajDS: Dataset[mmTrajectory] = ReadMMTrajFile(trajectoryFile, mapFile)
+    val trajRDD = trajDS.rdd
+    val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
+    val tQuery = (1372630000L, 1372660000L)
+
+    /** initialise operators */
+
+    val partitioner = new STRPartitioner(numPartitions)
+    val pRDD = partitioner.partition(trajRDD)
+    val partitionRange = partitioner.partitionRange
+    val spatialSelector = new RTreeSelector(sQuery, partitionRange)
+    val temporalSelector = new TemporalSelector(tQuery)
+    val converter = new Converter
+    val extractor = new SMExtractor
+
+    /** step 1: selection */
+
+    val sRDD = spatialSelector.query(pRDD)
+    val stRDD = temporalSelector.query(sRDD)
+
+    /** step 2: conversion */
+
+    val roadGrid = RoadGrid(mapFile)
+    val speedRDD = stRDD.map(x => (x._1, x._2.getRoadSpeed(roadGrid)))
+    val convertedRDD = converter.trajSpeed2SpatialMap(speedRDD)
+
+    /** step 3: extraction */
+
+    val avgSpeed = extractor.extractRoadSpeed(convertedRDD)
+    for (i <- avgSpeed.take(5)) {
+      println(s"Road ID: ${i._1} --- Average speed ${i._2.formatted("%.3f")} km/h")
+    }
+
     sc.stop()
   }
 }

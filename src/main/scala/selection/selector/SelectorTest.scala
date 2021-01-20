@@ -89,8 +89,8 @@ object SelectorTest extends App {
 
     /** temporal query by filtering */
     t = nanoTime()
-    val temporalSelector = new TemporalSelector(tQuery)(queriedRDD2)
-    val queriedRDD3 = temporalSelector.query()
+    val temporalSelector = new TemporalSelector(tQuery)
+    val queriedRDD3 = temporalSelector.query(queriedRDD2)
     println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
