@@ -4,7 +4,7 @@ import geometry.{Rectangle, mmTrajectory}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import preprocessing.ReadMMTrajFile
 import selection.partitioner.{HashPartitioner, STRPartitioner}
-import selection.selector.{SpatialSelector, TemporalSelector}
+import selection.selector.{FilterSelector, RTreeSelector, TemporalSelector}
 import convertion.Converter
 import extraction.SMExtractor
 import road.RoadGrid
@@ -35,12 +35,9 @@ object SMTest extends App {
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajectoryFile = args(0)
-    val numPartitions = args(2).toInt
-    val samplingRate = args(3).toDouble
-    val rtreeCapacity = args(4).toInt
-    val dataSize = args(5).toInt
-    val mapFile = args(6)
+    val numPartitions = args(0).toInt
+    val trajectoryFile = args(1)
+    val mapFile = args(2)
 
     /** **********************************
      * test map-matched trajectory dataset
@@ -69,21 +66,23 @@ object SMTest extends App {
     /** partition */
     println("==== STR ====")
     t = nanoTime()
-    val partitioner = new STRPartitioner(numPartitions, samplingRate)
+    val partitioner = new STRPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = new SpatialSelector(pRDD, sQuery)
+    val filterSelector = new FilterSelector(pRDD, sQuery, partitionRange)
+    val rtreeSelector = new RTreeSelector(pRDD, sQuery, partitionRange)
+
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query by filtering */
     t = nanoTime()
-    val queriedRDD1 = spatialSelector.query(partitionRange) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD1 = filterSelector.query() //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD1.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = spatialSelector.queryWithRTreeIndex(rtreeCapacity, partitionRange)//.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD2 = rtreeSelector.query()//.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
 
 
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
@@ -104,16 +103,18 @@ object SMTest extends App {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new SpatialSelector(pRDDHash, sQuery)
+    val selectorHash = new FilterSelector(pRDDHash, sQuery, partitionRangeHash)
+    val rtreeselectorHash = new FilterSelector(pRDDHash, sQuery, partitionRangeHash)
+
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD1Hash = selectorHash.query(partitionRangeHash)
+    val queriedRDD1Hash = selectorHash.query()
     println(s"==== Queried dataset contains ${queriedRDD1Hash.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = selectorHash.queryWithRTreeIndex(rtreeCapacity, partitionRangeHash)
+    val queriedRDD2Hash = rtreeselectorHash.query()
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 

@@ -56,7 +56,7 @@ object KeyPartitionerTest extends App {
     t = nanoTime
     // partition
     println("\n=== Test querying with partitioning ===")
-    val partitioner = new STRPartitioner(numPartitions, samplingRate)
+    val partitioner = new STRPartitioner(numPartitions, Some(samplingRate))
     val (pRDD, pQueryRDD) = partitioner.copartition(trajRDD, queryRDD)
     val partitionRange = partitioner.partitionRange
 

@@ -7,7 +7,8 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int, samplingRate: Double) extends SpatialPartitioner with Serializable {
+class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None)
+  extends SpatialPartitioner with Serializable {
   var partitionRange: Map[Int, Rectangle] = Map()
 
   /**
@@ -115,7 +116,7 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends SpatialPa
     }
 
     val spark = SparkSession.builder().getOrCreate()
-    val rectangleRDD = dataRDD.sample(withReplacement = false, samplingRate, seed = 1)
+    val rectangleRDD = dataRDD.sample(withReplacement = false, samplingRate.getOrElse(getSamplingRate(dataRDD)), seed = 1)
       .map(x => (x.mbr.center().lon, x.mbr.center().lat))
     val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
     val res = STR(df, List("x", "y"), coverWholeRange = true)
@@ -247,4 +248,8 @@ class STRPartitioner(numPartitions: Int, samplingRate: Double) extends SpatialPa
 
   }
 
+  def getSamplingRate[T <: Shape : ClassTag](dataRDD:RDD[T]): Double = {
+    val dataSize = dataRDD.count
+    max(min(1000/dataSize.toDouble, 0.5), 1e-4)
+  }
 }

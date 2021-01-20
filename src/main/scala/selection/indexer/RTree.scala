@@ -63,7 +63,7 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
         }
       } else {
         now.m_child.foreach {
-          case RTreeLeafEntry(shape:T, m_data, _) =>
+          case RTreeLeafEntry(shape: T, m_data, _) =>
             if (query.intersect(shape.mbr)) ans += ((shape, m_data))
         }
       }
@@ -85,7 +85,7 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
         val cur_level = now._2
         if (cur_node.isLeaf) {
           cur_node.m_child.foreach {
-            case RTreeLeafEntry(shape:T, m_data, _) =>
+            case RTreeLeafEntry(shape: T, m_data, _) =>
               if (query.intersect(shape.mbr)) ans += ((shape, m_data))
           }
         } else if (cur_level < level_limit) {
@@ -110,7 +110,7 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
       val cur_level = now._2
       if (cur_node.isLeaf) {
         cur_node.m_child.foreach {
-          case RTreeLeafEntry(shape:T, m_data, _) =>
+          case RTreeLeafEntry(shape: T, m_data, _) =>
             if (query.intersect(shape.mbr)) ans += ((shape, m_data))
         }
       } else {

@@ -72,7 +72,7 @@
 //    val partitioner = new STRPartitioner(numPartitions, samplingRate)
 //    val pRDD = partitioner.partition(trajRDD)
 //    val partitionRange = partitioner.partitionRange
-//    val spatialSelector = new SpatialSelector(pRDD, sQuery)
+//    val spatialSelector = new FilterSelector(pRDD, sQuery)
 //    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 //
 //    /** spatial query by filtering */
@@ -101,7 +101,7 @@
 //    val hashPartitioner = new HashPartitioner(numPartitions)
 //    val pRDDHash = hashPartitioner.partition(trajRDD)
 //    val partitionRangeHash = hashPartitioner.partitionRange
-//    val selectorHash = new SpatialSelector(pRDDHash, sQuery)
+//    val selectorHash = new FilterSelector(pRDDHash, sQuery)
 //    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 //
 //    t = nanoTime()
@@ -140,7 +140,7 @@
 //    val partitioner2 = new STRPartitioner(numPartitions, samplingRate)
 //    val pRDD2 = partitioner2.partition(pointRDD)
 //    val partitionRange2 = partitioner2.partitionRange
-//    val selector2 = new SpatialSelector(pRDD2, query2)
+//    val selector2 = new FilterSelector(pRDD2, query2)
 //    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 //
 //    /** sQuery by filtering */

@@ -7,6 +7,6 @@ import scala.reflect.ClassTag
 
 abstract class SpatialPartitioner {
   var partitionRange: Map[Int, Rectangle]
-
+  var samplingRate: Option[Double]
   def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)]
 }

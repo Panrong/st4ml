@@ -6,6 +6,8 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 
 class HashPartitioner(numPartitions: Int) extends SpatialPartitioner with Serializable {
+  override var samplingRate: Option[Double] = None
+
   override def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val partitioner = new KeyPartitioner(numPartitions)
     val pRDD = dataRDD.map(x => (x.id.hashCode.abs % numPartitions, x))
