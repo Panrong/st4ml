@@ -251,6 +251,6 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
 
   def getSamplingRate[T <: Shape : ClassTag](dataRDD: RDD[T]): Double = {
     val dataSize = dataRDD.count
-    max(min(1000 / dataSize.toDouble, 0.5), 50 * numPartitions / dataSize.toDouble)
+    max(min(1000 / dataSize.toDouble, 0.5), 100 * numPartitions / dataSize.toDouble)
   }
 }
