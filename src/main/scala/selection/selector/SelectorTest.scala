@@ -4,6 +4,7 @@ import geometry.Rectangle
 import org.apache.spark.sql.{Dataset, SparkSession}
 import selection.partitioner.{HashPartitioner, STRPartitioner}
 
+import java.io.{BufferedWriter, File, FileWriter}
 import scala.io.Source
 
 object SelectorTest extends App {
@@ -54,10 +55,32 @@ object SelectorTest extends App {
     t = nanoTime()
     val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
     println(s"*- Full scan S: ${fullSRDD.count} -*")
-    val fullSRDDStrict1 = trajRDD.filter(x => x.points.map(p => p.intersect(sQuery)).contains(true))
+    val fullSRDDStrict1 = trajRDD.filter(x => x.points.exists(p => p.intersect(sQuery)))
     val fullSRDDStrict2 = trajRDD.filter(x => x.strictIntersect(sQuery))
     println(s"*- Full scan S strict 1 : ${fullSRDDStrict1.count} -*")
     println(s"*- Full scan S strict 2 : ${fullSRDDStrict2.count} -*")
+
+    var file = new File("queriedTrajs_mbr.txt")
+    var bw = new BufferedWriter(new FileWriter(file))
+      fullSRDD.collect.foreach(x => {
+      bw.write(s"${x.tripID}\n")
+    })
+    bw.close()
+
+     file = new File("queriedTrajs_linestring.txt")
+     bw = new BufferedWriter(new FileWriter(file))
+    fullSRDDStrict2.collect.foreach(x => {
+      bw.write(s"${x.tripID}\n")
+    })
+
+    bw.close()
+     file = new File("queriedTrajs_point.txt")
+     bw = new BufferedWriter(new FileWriter(file))
+    fullSRDDStrict1.collect.foreach(x => {
+      bw.write(s"${x.tripID}\n")
+    })
+    bw.close()
+
     val fullSTRDD = fullSRDD.filter(x => {
       val (ts, te) = x.timeStamp
       (ts <= tQuery._2 && ts >= tQuery._1) || (te <= tQuery._2 && te >= tQuery._1)
