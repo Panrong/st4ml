@@ -55,31 +55,15 @@ object SelectorTest extends App {
     t = nanoTime()
     val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
     println(s"*- Full scan S: ${fullSRDD.count} -*")
-    val fullSRDDStrict1 = trajRDD.filter(x => x.points.exists(p => p.intersect(sQuery)))
-    val fullSRDDStrict2 = trajRDD.filter(x => x.strictIntersect(sQuery))
-    println(s"*- Full scan S strict 1 : ${fullSRDDStrict1.count} -*")
-    println(s"*- Full scan S strict 2 : ${fullSRDDStrict2.count} -*")
+//    val fullSRDDStrict1 = trajRDD.filter(x => x.points.exists(p => p.intersect(sQuery)))
+//    val fullSRDDStrict2 = trajRDD.filter(x => x.strictIntersect(sQuery))
+//    println(s"*- Full scan S strict 1 : ${fullSRDDStrict1.count} -*")
+//    println(s"*- Full scan S strict 2 : ${fullSRDDStrict2.count} -*")
 
-    var file = new File("queriedTrajs_mbr.txt")
-    var bw = new BufferedWriter(new FileWriter(file))
-      fullSRDD.collect.foreach(x => {
-      bw.write(s"${x.tripID}\n")
-    })
-    bw.close()
+//    fullSRDD.map(_.tripID).saveAsTextFile("queriedTrajs_mbr")
+//    fullSRDDStrict1.map(_.tripID).saveAsTextFile("queriedTrajs_point")
+//    fullSRDDStrict2.map(_.tripID).saveAsTextFile("queriedTrajs_linestring")
 
-     file = new File("queriedTrajs_linestring.txt")
-     bw = new BufferedWriter(new FileWriter(file))
-    fullSRDDStrict2.collect.foreach(x => {
-      bw.write(s"${x.tripID}\n")
-    })
-
-    bw.close()
-     file = new File("queriedTrajs_point.txt")
-     bw = new BufferedWriter(new FileWriter(file))
-    fullSRDDStrict1.collect.foreach(x => {
-      bw.write(s"${x.tripID}\n")
-    })
-    bw.close()
 
     val fullSTRDD = fullSRDD.filter(x => {
       val (ts, te) = x.timeStamp
@@ -127,6 +111,7 @@ object SelectorTest extends App {
     t = nanoTime()
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
+    pRDDHash.collect
     val partitionRangeHash = hashPartitioner.partitionRange
     val selectorHash = new RTreeSelector(sQuery, partitionRangeHash)
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")

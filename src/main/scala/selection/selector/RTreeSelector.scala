@@ -14,7 +14,7 @@ class RTreeSelector(override val queryRange: Rectangle,
    override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
     val c = capacity.getOrElse({
       val dataSize = dataRDD.count
-      max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
+      max((dataSize / dataRDD.getNumPartitions / 100).toInt, 1000)
     }) // rule for capacity calculation if not given
     val dataRDDWithIndex = dataRDD
       .map(x => x._2)
