@@ -4,7 +4,7 @@ import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 import selection.indexer.RTree
 
-import scala.math.max
+import scala.math.{max, sqrt}
 import scala.reflect.ClassTag
 
 class RTreeSelector(override val queryRange: Rectangle,
@@ -14,7 +14,7 @@ class RTreeSelector(override val queryRange: Rectangle,
    override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
     val c = capacity.getOrElse({
       val dataSize = dataRDD.count
-      max((dataSize / dataRDD.getNumPartitions / 100).toInt, 1000)
+      sqrt(dataSize / dataRDD.getNumPartitions)
     }) // rule for capacity calculation if not given
     val dataRDDWithIndex = dataRDD
       .map(x => x._2)
