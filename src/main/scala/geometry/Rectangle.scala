@@ -1,6 +1,6 @@
 package geometry
 
-import scala.math.{max, min}
+import scala.math.{max, min, cos}
 
 case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
   require(coordinates.length == 4,
@@ -84,16 +84,16 @@ case class Rectangle(coordinates: Array[Double], ID: Long = 0) extends Shape wit
     this
   }
 
-  //  def dilate(d: Double): Rectangle = {
-  //    // dilate the rectangle with d meter
-  //    //approx 1 latitude degree = 111km
-  //    // approx 1 longitude degree =111.413*cos(phi)-0.094*cos(3*phi) where phi is latitude
-  //    val newLatMin = bottomLeft.lat - d / 111000
-  //    val newLatMax = topRight.lat + d / 111000
-  //    val newLongMin = bottomLeft.lon - (111413 * cos(bottomLeft.lat.toRadians) - 94 * cos(3 * bottomLeft.lat.toRadians))
-  //    val newLongMax = topRight.lon - (111.413 * cos(topRight.lat.toRadians) - 0.094 * cos(3 * topRight.lat.toRadians))
-  //    Rectangle(Point(newLongMin, newLatMin), Point(newLongMax, newLatMax))
-  //  }
+    def dilate(d: Double): Rectangle = {
+      // dilate the rectangle with d meter
+      //approx 1 latitude degree = 111km
+      // approx 1 longitude degree =111.413*cos(phi)-0.094*cos(3*phi) where phi is latitude
+      val newLatMin = yMin - d / 111000
+      val newLatMax = yMax + d / 111000
+      val newLonMin = xMin - d / (111413 * cos(yMin.toRadians) - 94 * cos(3 * yMin.toRadians))
+      val newLonMax = xMax + d / (111413 * cos(yMax.toRadians) - 94 * cos(3 * yMax.toRadians))
+      Rectangle(Array(newLonMin, newLatMin, newLonMax, newLatMax))
+    }
 
   def overlappingArea(r: Rectangle): Double = {
     val overlapX = max((xMax - xMin) + (r.xMax - r.xMin) - (max(xMax, r.xMax) - min(xMin, r.xMin)), 0)

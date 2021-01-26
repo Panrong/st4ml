@@ -7,8 +7,8 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None)
-  extends SpatialPartitioner with Serializable {
+class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None, threshold: Double = 0)
+  extends SpatialPartitioner {
   var partitionRange: Map[Int, Rectangle] = Map()
 
   /**
@@ -139,7 +139,8 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
       partitionRange.values.map(_.yMax).max)).area.formatted("%.5f")
     assert(areaSum == rangeArea,
       s"Range boundary error, whole range area $rangeArea, area sum $areaSum")
-    boxesWIthID
+    if (threshold != 0) boxesWIthID.mapValues(rectangle => rectangle.dilate(threshold)).map(identity)
+    else boxesWIthID
   }
 
   /**
@@ -209,7 +210,6 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
                                              boundary: List[Double]): RDD[(Int, T)] = {
     dataRDD.take(1).head match {
       case p: Point => {
-        println("... Dealing with point data")
         val rddWithIndex = dataRDD
           .map(x => {
             val pointShrink = Point(Array(
@@ -218,9 +218,10 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
             ))
             (x, partitionMap.filter {
               case (_, v) => pointShrink.inside(v)
-            }.head)
+            })
           })
-          .map(x => (x._1, x._2._1))
+          .map(x => (x._1, x._2.keys))
+          .flatMapValues(x => x)
           .map {
             case (k, v) => (v, k)
           }

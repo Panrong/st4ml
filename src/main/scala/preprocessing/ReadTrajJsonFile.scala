@@ -28,7 +28,7 @@ object ReadTrajJsonFile {
    * @param auxiliary : read full information or not
    * @return : RDD of geometry.Trajectory
    */
-  def apply(fileName: String, num: Int, auxiliary: Boolean = false): RDD[geometry.Trajectory] = {
+  def apply(fileName: String, num: Int = Double.PositiveInfinity.toInt, auxiliary: Boolean = false): RDD[geometry.Trajectory] = {
     val spark = SparkSession.builder().getOrCreate()
     val samplingRate = 15
     val inputDF = spark.read.json(fileName).limit(num)
