@@ -33,10 +33,8 @@ object CompanionTest extends App {
   val sc = spark.sparkContext
   sc.setLogLevel("ERROR")
   val trajectoryFile = args(0)
-  val numPartitions = args(2).toInt
-  val samplingRate = args(3).toDouble
-  val rtreeCapacity = args(4).toInt
-  val dataSize = args(5).toInt
+  val numPartitions = args(1).toInt
+  val dataSize = args(2).toInt
 
 
   val trajDS: Dataset[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
