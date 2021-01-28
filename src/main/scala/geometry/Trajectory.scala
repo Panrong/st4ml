@@ -6,7 +6,7 @@ import geometry.Distances.greatCircleDistance
 case class Trajectory(tripID: Long,
                       startTime: Long,
                       points: Array[Point],
-                      attributes: Map[String, String] = Map()) extends Serializable {
+                      attributes: Map[String, String] = Map()) extends Shape with Serializable {
 
   def mbr: Rectangle = Rectangle(Array(
     points.map(p => p.coordinates(0)).min,
@@ -14,15 +14,6 @@ case class Trajectory(tripID: Long,
     points.map(p => p.coordinates(0)).max,
     points.map(p => p.coordinates(1)).max
   ), ID = tripID)
-
-  def intersect(r: Rectangle): Boolean = {
-    for (p <- this.points) {
-      if (p.inside(r)) {
-        return true
-      }
-    }
-    false
-  }
 
   def calSpeed(): Array[Double] = {
     // return speed for each gps points interval
@@ -54,15 +45,30 @@ case class Trajectory(tripID: Long,
     dist / time
   }
 
-  val endTime:(Long, Long) = points.last.timeStamp
-}
-/*
-case class mmTrajectory(tripID: String, taxiID: String, startTime: Long = 0, points: Array[String]) extends Serializable {
-}
+  val endTime: (Long, Long) = points.last.timeStamp
 
-case class subTrajectory(startTime: Long, endTime: Long, roadEdgeID: String, speed: Double) extends Serializable {
-}
+  val lines: Array[Line] = points.sliding(2).map(x => Line(x(0), x(1))).toArray
 
-case class mmTrajectoryS(tripID: String, taxiID: String, startTime: Long = 0, subTrajectories: Array[subTrajectory]) extends Serializable {
+  def strictIntersect(r: Rectangle): Boolean = {
+    for (i <- lines) {
+      if (i.intersect(r)) return true
+    }
+    false
+  }
+
+  override def coordinates: Array[Double] = mbr.coordinates
+
+  override def intersect(other: Shape): Boolean = this.mbr.intersect(other)
+
+  override def center(): Point = mbr.center()
+
+  override def geoDistance(other: Shape): Double = this.mbr.geoDistance(other)
+
+  override def minDist(other: Shape): Double = this.mbr.minDist(other)
+
+  override def inside(rectangle: Rectangle): Boolean = this.mbr.inside(rectangle)
+
+  override var id: Long = tripID
+
+  override var timeStamp: (Long, Long) = (points.head.timeStamp._1, points.last.timeStamp._2)
 }
-*/
