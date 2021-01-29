@@ -5,6 +5,7 @@ import org.apache.spark.sql.{Dataset, SparkSession}
 import selection.partitioner.{HashPartitioner, STRPartitioner}
 
 import scala.io.Source
+import scala.math.{max, sqrt}
 
 object SelectorTest extends App {
   override def main(args: Array[String]): Unit = {
@@ -44,8 +45,8 @@ object SelectorTest extends App {
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     //val tQuery = (1372700000L, 1372750000L)
     val tQuery = (1399900000L, 1400000000L)
+    val rTreeCapacity = max(sqrt(dataSize / numPartitions).toInt, 100)
 
-    println(s"\nOriginal trajectory dataset contains ${trajRDD.count} entries")
     println("\n*-*-*-*-*-*-*-*-*-*-*-*")
 
     /** benchmark */
@@ -99,7 +100,7 @@ object SelectorTest extends App {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new RTreeSelector(sQuery,partitionRangeHash)
+    val selectorHash = new RTreeSelector(sQuery,partitionRangeHash, Some(rTreeCapacity))
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
