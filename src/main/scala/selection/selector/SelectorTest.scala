@@ -51,11 +51,11 @@ object SelectorTest extends App {
 
     /** benchmark */
     t = nanoTime()
-    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
+    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery)).cache()
     println(s"*- Full scan S: ${fullSRDD.count} -*")
     val fullSTRDD = fullSRDD.filter(x => {
       val (ts, te) = x.timeStamp
-      x.intersect(sQuery) && (ts <= tQuery._2 && ts >= tQuery._1 || te <= tQuery._2 && te >= tQuery._1)
+      ts <= tQuery._2 && ts >= tQuery._1 || te <= tQuery._2 && te >= tQuery._1
     })
     println(s"*- Full scan ST: ${fullSTRDD.count} -*")
     println("*-*-*-*-*-*-*-*-*-*-*-*")
