@@ -40,7 +40,7 @@ object SelectorTest extends App {
      * test trajectory dataset
      * ************************ */
 
-    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions).map(_.mbr)
+    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions).map(_.mbr).cache()
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     //val tQuery = (1372700000L, 1372750000L)
     val tQuery = (1399900000L, 1400000000L)
@@ -50,7 +50,7 @@ object SelectorTest extends App {
 
     /** benchmark */
     t = nanoTime()
-    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery)).cache()
+    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
     println(s"*- Full scan S: ${fullSRDD.count} -*")
     val fullSTRDD = fullSRDD.filter(x => {
       val (ts, te) = x.timeStamp
@@ -97,8 +97,14 @@ object SelectorTest extends App {
 
     t = nanoTime()
     val hashPartitioner = new HashPartitioner(numPartitions)
-    val pRDDHash = hashPartitioner.partition(trajRDD)
-    val partitionRangeHash = hashPartitioner.partitionRange
+    //    val pRDDHash = hashPartitioner.partition(trajRDD)
+    //val partitionRangeHash = hashPartitioner.partitionRange
+
+    val pRDDHash = trajRDD.repartition(numPartitions).map(x => (0, x))
+    var partitionRangeHash=
+      (0 until numPartitions)
+        .zipAll(List(Rectangle(Array(-180, -90, 180, 90))), 0, Rectangle(Array(-180, -90, 180, 90)))
+        .toMap
     val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
