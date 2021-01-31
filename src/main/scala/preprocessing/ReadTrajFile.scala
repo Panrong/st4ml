@@ -29,15 +29,19 @@ object ReadTrajFile {
    */
   val timeCount = true
 
-  def apply(filename: String, num: Int, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
-  Dataset[geometry.Trajectory] = {
+  def apply(filename: String, num: Int, numPartitions:Int = 8, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
+  RDD[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     val t = nanoTime
     import spark.implicits._
-    val df = spark.read.option("header", "true").csv(filename).limit(num)
+    val df = spark.read.option("header", "true")
+      .option("numPartitions", numPartitions)
+      .csv(filename).limit(num)
     val samplingRate = 15
-    val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
+    val trajRDD = df.rdd
+      //.repartition(numPartitions)
+    .filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
     val resRDD = trajRDD.map(row => {
       val tripID = row(0).toString.toLong
       val taxiID = row(4).toString.toLong
@@ -55,8 +59,8 @@ object ReadTrajFile {
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
     if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
-    if (clean) checkMapCoverage(removeRedundancy(trajBreak(resRDD)), mapRange).toDS
-    else resRDD.toDS
+    if (clean) checkMapCoverage(removeRedundancy(trajBreak(resRDD)), mapRange)
+    else resRDD
   }
 
   def splitTraj(trajectory: geometry.Trajectory, splitPoints: Array[Int]): Array[geometry.Trajectory] = {
@@ -134,7 +138,7 @@ object readTrajTest extends App {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     /** set up Spark */
-    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000).rdd
+    val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000)
     trajRDD.take(5).foreach(println(_))
     sc.stop()
   }

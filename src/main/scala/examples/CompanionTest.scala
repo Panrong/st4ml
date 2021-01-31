@@ -2,12 +2,14 @@ package examples
 
 import extraction.PointCompanionExtractor
 import geometry.Rectangle
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 import selection.partitioner.HashPartitioner
 import selection.selector.{RTreeSelector, TemporalSelector}
 
 import scala.io.Source
 import preprocessing.ReadTrajFile
+
 import java.lang.System.nanoTime
 
 object CompanionTest extends App {
@@ -37,8 +39,7 @@ object CompanionTest extends App {
   val dataSize = args(2).toInt
 
 
-  val trajDS: Dataset[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
-  val trajRDD = trajDS.rdd
+  val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
 
   val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
   val tQuery = (0L, 1500000000L)

@@ -1,6 +1,7 @@
 package selection.partitioner
 
 import geometry.Shape
+import org.apache.spark.rdd.RDD
 import selection.indexer.RTree
 import org.apache.spark.sql.{Dataset, SparkSession}
 import preprocessing.{ReadQueryFile, ReadTrajFile}
@@ -36,9 +37,8 @@ object KeyPartitionerTest extends App {
     val samplingRate = args(3).toDouble
     val rtreeCapacity = args(4).toInt
     val dataSize = args(5).toInt
-    val trajDS: Dataset[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
-    val trajRDD = trajDS.rdd.map(x => x.mbr)
-    val queryRDD = ReadQueryFile(queryFile).rdd
+    val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
+    val queryRDD = ReadQueryFile(queryFile).rdd.map(_.mbr)
 
     /** full scan */
     println("\n=== Test full scan ===")
@@ -139,7 +139,7 @@ object KeyPartitionerTest extends App {
     /** test sub-trajectory */
 
     println("\n=== Test querying with sub-trajectory ===")
-    val subTrajRDD = trajDS.rdd.flatMap(x => x.genLineSeg().map(line => line.mbr().assignID(x.tripID)))
+    val subTrajRDD = trajRDD.flatMap(x => x.genLineSeg().map(line => line.mbr().assignID(x.tripID)))
 
 //    /** full scan */
 //    println("\n=== Test full scan on sub-trajectory ===")
