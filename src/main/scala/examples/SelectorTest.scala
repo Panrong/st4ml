@@ -1,10 +1,12 @@
-package selection.selector
+package examples
 
 import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
-import selection.partitioner.HashPartitioner
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajFile
+import selection.partitioner.HashPartitioner
+import selection.selector.{RTreeSelector, TemporalSelector}
+
 import java.lang.System.nanoTime
 import scala.io.Source
 import scala.math.{max, sqrt}
