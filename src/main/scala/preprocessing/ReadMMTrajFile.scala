@@ -1,7 +1,7 @@
 package preprocessing
 
 import geometry.mmTrajectory
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import road.RoadGrid
 
@@ -21,10 +21,9 @@ object ReadMMTrajFile extends Serializable {
    *         +-------------------+--------+----------+--------------------+
    *
    */
-  def apply(filename: String, mapFile: String): Dataset[mmTrajectory] = {
+  def apply(filename: String, mapFile: String): RDD[mmTrajectory] = {
     val ss = new SparkSessionWrapper("config")
     val spark = ss.spark
-    val sc = ss.sc
     val rGrid = RoadGrid(mapFile)
     val roadMap = rGrid.id2edge.map {
       case (id, edge) => {
@@ -42,7 +41,6 @@ object ReadMMTrajFile extends Serializable {
       StructField("pointRoadPair", StringType, nullable = true),
       StructField("RoadTime", StringType, nullable = true))
     )
-    import spark.implicits._
     val df = spark.read.option("header", "true").schema(customSchema).csv(filename)
     val trajRDD = df.rdd.filter(row => row(2) != "(-1:-1)" && row(2) != "-1") // remove invalid entries
     val resRDD = trajRDD.map(row => {
@@ -51,13 +49,6 @@ object ReadMMTrajFile extends Serializable {
       val subTrajectories = roadTime.map(x => (x(0), x(1).toLong))
       mmTrajectory(tripID, subTrajectories).addMBR(roadMap)
     })
-    resRDD.toDS
+    resRDD
   }
 }
-
-//object readMMTrajTest extends App {
-//  override def main(args: Array[String]): Unit = {
-//    /** set up Spark */
-//    readMMTrajFile("datasets/mm100000.csv").show(5)
-//  }
-//}
