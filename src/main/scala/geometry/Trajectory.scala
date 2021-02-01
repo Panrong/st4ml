@@ -8,12 +8,14 @@ case class Trajectory(tripID: Long,
                       points: Array[Point],
                       attributes: Map[String, String] = Map()) extends Shape with Serializable {
 
-  def mbr: Rectangle = Rectangle(Array(
+  override var timeStamp: (Long, Long) = (points.head.timeStamp._1, points.last.timeStamp._2)
+
+  val mbr: Rectangle = Rectangle(Array(
     points.map(p => p.coordinates(0)).min,
     points.map(p => p.coordinates(1)).min,
     points.map(p => p.coordinates(0)).max,
     points.map(p => p.coordinates(1)).max
-  ), ID = tripID)
+  ), ID = tripID, timeStamp = timeStamp)
 
   def calSpeed(): Array[Double] = {
     // return speed for each gps points interval
@@ -70,5 +72,4 @@ case class Trajectory(tripID: Long,
 
   override var id: Long = tripID
 
-  override var timeStamp: (Long, Long) = (points.head.timeStamp._1, points.last.timeStamp._2)
 }

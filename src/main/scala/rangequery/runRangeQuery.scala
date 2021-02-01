@@ -54,7 +54,7 @@
 //    println(dataRDD.count)
 //    println("... Repartition time: " + (nanoTime - t) / 1e9d + "s")
 //    t = nanoTime
-//    val mbrRDD = dataRDD.map(traj => traj.mbr.assignID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
+//    val mbrRDD = dataRDD.map(traj => traj.mbr.setID(traj.tripID).addPointAttr(traj.points).addTrajAttr(traj))
 //    for (i <- mbrRDD.take(2)) println(i)
 //    /** generate RTree for each partition */
 //    val RTreeRDD = mbrRDD.mapPartitionsWithIndex((selection.indexer, iter) => {

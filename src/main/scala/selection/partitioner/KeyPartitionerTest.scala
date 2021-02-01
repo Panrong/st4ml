@@ -139,7 +139,7 @@ object KeyPartitionerTest extends App {
     /** test sub-trajectory */
 
     println("\n=== Test querying with sub-trajectory ===")
-    val subTrajRDD = trajRDD.flatMap(x => x.genLineSeg().map(line => line.mbr().assignID(x.tripID)))
+    val subTrajRDD = trajRDD.flatMap(x => x.genLineSeg().map(line => line.mbr().setID(x.tripID)))
 
 //    /** full scan */
 //    println("\n=== Test full scan on sub-trajectory ===")

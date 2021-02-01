@@ -247,7 +247,7 @@
 //      childParent += (i -> -1)
 //    }
 //
-//    def assignID(parent: Node, RTreeMap: Map[Int, Node], parentChild: Map[Int, Int] = Map()): (Map[Int, Node], Map[Int, Int]) = {
+//    def setID(parent: Node, RTreeMap: Map[Int, Node], parentChild: Map[Int, Int] = Map()): (Map[Int, Node], Map[Int, Int]) = {
 //      var r = RTreeMap
 //      var pc = childParent
 //      val parentKey = RTreeMap.filter(_._2 == parent).map(_._1).min
@@ -256,7 +256,7 @@
 //        r += ((i + (parentKey + 1) * m) -> child)
 //        pc += ((i + (parentKey + 1) * m) -> parentKey)
 //        if (!child.leaf) {
-//          val res = assignID(child, r, pc)
+//          val res = setID(child, r, pc)
 //          r = r.++(res._1)
 //          pc = pc.++(res._2)
 //        }
@@ -265,7 +265,7 @@
 //    }
 //
 //    for (parent <- root.child) {
-//      val r = assignID(parent, RTreeMap, childParent)
+//      val r = setID(parent, RTreeMap, childParent)
 //      RTreeMap = RTreeMap.++(r._1)
 //      childParent = childParent.++(r._2)
 //

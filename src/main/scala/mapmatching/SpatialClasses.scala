@@ -23,7 +23,7 @@
 //  val x: Double = long
 //  val y: Double = lat
 //  override var id:Long = ID
-//  def assignID(i:Long):Point = {
+//  def setID(i:Long):Point = {
 //    id = i
 //    this
 //  }
@@ -46,7 +46,7 @@
 //case class Rectangle(bottomLeft: Point, topRight: Point, ID:Long = 0) extends Shape with Serializable {
 //  override def center(): Point = Point((bottomLeft.lat + topRight.lat) / 2, (bottomLeft.long + topRight.long) / 2)
 //  override var id:Long = ID
-//  def assignID(i:Long) :Rectangle= {
+//  def setID(i:Long) :Rectangle= {
 //    id = i
 //    this
 //  }
@@ -141,7 +141,7 @@
 //case class Rectangle(bottomLeft: Point, topRight: Point, ID: Long = 0) extends Shape with Serializable {
 //  override def center(): Point = Point((bottomLeft.long + topRight.long) / 2, (bottomLeft.lat + topRight.lat) / 2)
 //  override var id: Long = ID
-//  def assignID(i: Long): Rectangle = {
+//  def setID(i: Long): Rectangle = {
 //    id = i
 //    this
 //  }
