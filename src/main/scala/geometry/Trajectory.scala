@@ -17,6 +17,10 @@ case class Trajectory(tripID: Long,
     points.map(p => p.coordinates(1)).max
   ), ID = tripID, timeStamp = timeStamp)
 
+  val endTime: (Long, Long) = points.last.timeStamp
+
+  override var id: Long = tripID
+
   def calSpeed(): Array[Double] = {
     // return speed for each gps points interval
     var s = new Array[Double](0)
@@ -47,9 +51,8 @@ case class Trajectory(tripID: Long,
     dist / time
   }
 
-  val endTime: (Long, Long) = points.last.timeStamp
 
-  val lines: Array[Line] = points.sliding(2).map(x => Line(x(0), x(1))).toArray
+  def lines: Array[Line] = points.sliding(2).map(x => Line(x(0), x(1))).toArray
 
   def strictIntersect(r: Rectangle): Boolean = {
     for (i <- lines) {
@@ -69,7 +72,5 @@ case class Trajectory(tripID: Long,
   override def minDist(other: Shape): Double = this.mbr.minDist(other)
 
   override def inside(rectangle: Rectangle): Boolean = this.mbr.inside(rectangle)
-
-  override var id: Long = tripID
 
 }

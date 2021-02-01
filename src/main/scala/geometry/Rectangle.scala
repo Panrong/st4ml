@@ -6,25 +6,25 @@ case class Rectangle(coordinates: Array[Double],
                      ID: Long = 0,
                      override var timeStamp: (Long, Long) = (0L, 0L))
   extends Shape with Serializable {
-  require(coordinates.length == 4,
-    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
-      s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
-
-  val xMin: Double = coordinates(0)
-  val xMax: Double = coordinates(2)
-  val yMin: Double = coordinates(1)
-  val yMax: Double = coordinates(3)
-
-  val low: Point = Point(Array(xMin, yMin))
-  val high: Point = Point(Array(xMax, yMax))
-
-  require(xMin <= xMax && yMin <= yMax, s"The order should be (xMin, yMin, xMax, yMax). Input($xMin, $yMin, $xMax, $yMax)")
-
-  val area: Double = (xMax - xMin) * (yMax - yMin)
-
-  override def center(): Point = Point(Array((xMax + xMin) / 2, (yMax + yMin) / 2))
+//  require(coordinates.length == 4,
+//    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
+//      s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
 
   override var id: Long = ID
+
+  def xMin: Double = coordinates(0)
+  def xMax: Double = coordinates(2)
+  def yMin: Double = coordinates(1)
+  def yMax: Double = coordinates(3)
+
+  def low: Point = Point(Array(xMin, yMin))
+  def high: Point = Point(Array(xMax, yMax))
+
+  //require(xMin <= xMax && yMin <= yMax, s"The order should be (xMin, yMin, xMax, yMax). Input($xMin, $yMin, $xMax, $yMax)")
+
+  def area: Double = (xMax - xMin) * (yMax - yMin)
+
+  override def center(): Point = Point(Array((xMax + xMin) / 2, (yMax + yMin) / 2))
 
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
@@ -126,9 +126,9 @@ case class Rectangle(coordinates: Array[Double],
 
   override val mbr: Rectangle = this
 
-  val vertices: Array[Point] = Array(Point(Array(xMin, yMin)), Point(Array(xMin, yMax)), Point(Array(xMax, yMax)), Point(Array(xMax, yMin)))
-  val edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
-  val diagonals: Array[Line] = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
+  def vertices: Array[Point] = Array(Point(Array(xMin, yMin)), Point(Array(xMin, yMax)), Point(Array(xMax, yMax)), Point(Array(xMax, yMin)))
+  def edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))
+  def diagonals: Array[Line] = Array(Line(vertices(0), vertices(2)), Line(vertices(1), vertices(3)))
 
   def setTimeStamp(t: (Long, Long)): Rectangle = Rectangle(this.coordinates, this.id, t)
 
