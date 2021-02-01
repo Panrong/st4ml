@@ -109,7 +109,7 @@ object SelectorTest extends App {
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = selectorHash.query(pRDDHash)
+    val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
