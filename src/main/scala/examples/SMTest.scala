@@ -174,7 +174,7 @@ object SimpleTest extends App {
     println(s"... Read input file done. Total ${trajRDD.count} trajectories.")
     println(s".... Time used: ${(nanoTime() - t) * 1e-9} s.")
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
-    val tQuery = (1372630000L, 1372660000L)
+    val tQuery = (1372700000L, 1372750000L)
 
     /** initialise operators */
 
@@ -198,7 +198,7 @@ object SimpleTest extends App {
     val roadGrid = RoadGrid(mapFile)
     val speedRDD = stRDD.map(x => (x._1, x._2.getRoadSpeed(roadGrid)))
     val convertedRDD = converter.trajSpeed2SpatialMap(speedRDD).cache()
-    println(s"... Step 2 CONVERSION done. Total ${convertedRDD.count} trajectories converted.")
+    println(s"... Step 2 CONVERSION done. Total ${convertedRDD.count} road segments.")
     println(s".... Time used: ${(nanoTime() - t) * 1e-9} s.")
 
     /** step 3: extraction */
