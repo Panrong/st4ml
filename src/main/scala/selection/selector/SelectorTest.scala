@@ -3,7 +3,7 @@ package selection.selector
 import geometry.Rectangle
 import org.apache.spark.sql.{Dataset, SparkSession}
 import selection.partitioner.{HashPartitioner, STRPartitioner}
-
+import org.apache.spark.storage.StorageLevel
 import scala.io.Source
 import scala.math.{max, sqrt}
 
@@ -40,7 +40,9 @@ object SelectorTest extends App {
      * test trajectory dataset
      * ************************ */
 
-    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions).map(_.mbr).cache()
+    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions)
+    //.map(_.mbr)
+    //.persist(StorageLevel.MEMORY_AND_DISK)
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     //val tQuery = (1372700000L, 1372750000L)
     val tQuery = (1399900000L, 1400000000L)
