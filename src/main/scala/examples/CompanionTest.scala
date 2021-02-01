@@ -39,13 +39,13 @@ object CompanionTest extends App {
   val dataSize = args(2).toInt
 
 
-  val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize)
+  val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize).repartition(numPartitions)
 
   val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
   val tQuery = (0L, 1500000000L)
 
   val pointRDD = trajRDD.flatMap(traj => {
-    traj.points.zipWithIndex.map(x => x._1.setID((traj.id.hashCode().abs + x._2.toString).toLong))
+    traj.points.zipWithIndex.map(x => x._1.setID((traj.hashCode().abs + x._2.toString).toLong))
   })
 
   /** initialise operators */

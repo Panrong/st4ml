@@ -119,7 +119,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
     val rectangleRDD = dataRDD.sample(withReplacement = false, sr, seed = 1)
       .map(x => (x.mbr.center().lon, x.mbr.center().lat))
-    val df = spark.createDataFrame(rectangleRDD).toDF("x", "y")
+    val df = spark.createDataFrame(rectangleRDD).toDF("x", "y").cache()
     val res = STR(df, List("x", "y"), coverWholeRange = true)
     val boxes = res._1
     var boxesWIthID: Map[Int, Rectangle] = Map()

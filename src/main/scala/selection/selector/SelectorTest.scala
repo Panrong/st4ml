@@ -4,6 +4,8 @@ import geometry.Rectangle
 import org.apache.spark.sql.{Dataset, SparkSession}
 import selection.partitioner.{HashPartitioner, STRPartitioner}
 import org.apache.spark.storage.StorageLevel
+import preprocessing.ReadTrajJsonFile
+
 import scala.io.Source
 import scala.math.{max, sqrt}
 
@@ -41,8 +43,9 @@ object SelectorTest extends App {
      * ************************ */
 
     val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions)
+    //val trajRDD = ReadTrajJsonFile("C:\\Users\\kaiqi001\\Desktop\\data\\porto_taxi.geojson", num = dataSize)
       .map(_.mbr)
-    //.persist(StorageLevel.MEMORY_AND_DISK)
+      .persist(StorageLevel.MEMORY_AND_DISK)
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     val tQuery = (1372700000L, 1372750000L)
     //val tQuery = (1399900000L, 1400000000L)
