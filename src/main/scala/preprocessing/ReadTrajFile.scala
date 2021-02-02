@@ -1,40 +1,27 @@
 package preprocessing
 
 import geometry.Distances.greatCircleDistance
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import java.lang.System.nanoTime
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Dataset, SparkSession}
-
 import scala.util.control.Breaks
 
 object ReadTrajFile {
+  val timeCount = true
 
   /**
    *
    * @param filename : path to the dataRDD file
    * @param num      : number of trajectories to read
-   * @clean validate : validate the trajectories
-   * @return : Dataset[Trajectory]
-   *         +-------------------+--------+----------+--------------------+
-   *         |             tripID|  taxiID| startTime|              points|
-   *         +-------------------+--------+----------+--------------------+
-   *         |1372636858620000589|20000589|1372636858|[[-8.618643, 41.1...|
-   *         |1372637303620000596|20000596|1372637303|[[- 8.6 3 9 8 4 7, 41.1...|
-   *         |1372636951620000320|20000320|1372636951|[[-8.612964, 41.1...|
-   *         |1372636854620000520|20000520|1372636854|[[- 8.5 7 4 6 7 8, 41.1...|
-   *         |1372637091620000337|20000337|1372637091|[[-8.645994, 41.1...|
-   *         +-------------------+--------+----------+--------------------+
-   *
+   * @param clean : clean the trajectories
+   * @return : RDD[Trajectory]
    */
-  val timeCount = true
-
   def apply(filename: String, num: Int, numPartitions:Int = 8, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
   RDD[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     val t = nanoTime
-    import spark.implicits._
     val df = spark.read.option("header", "true")
       .option("numPartitions", numPartitions)
       .csv(filename).limit(num)
@@ -133,7 +120,6 @@ object ReadTrajFile {
 }
 
 object readTrajTest extends App {
-  override def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().master("local").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -141,5 +127,4 @@ object readTrajTest extends App {
     val trajRDD = ReadTrajFile("C:\\Users\\kaiqi001\\Desktop\\dataRDD\\porto_traj.csv", 1000)
     trajRDD.take(5).foreach(println(_))
     sc.stop()
-  }
 }

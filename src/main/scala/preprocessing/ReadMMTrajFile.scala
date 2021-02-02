@@ -3,7 +3,8 @@ package preprocessing
 import geometry.mmTrajectory
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-import road.RoadGrid
+import geometry.road.RoadGrid
+import org.apache.spark.sql.SparkSession
 
 object ReadMMTrajFile extends Serializable {
   /**
@@ -22,15 +23,13 @@ object ReadMMTrajFile extends Serializable {
    *
    */
   def apply(filename: String, mapFile: String): RDD[mmTrajectory] = {
-    val ss = new SparkSessionWrapper("config")
-    val spark = ss.spark
+    val spark = SparkSession.builder().getOrCreate()
     val rGrid = RoadGrid(mapFile)
     val roadMap = rGrid.id2edge.map {
-      case (id, edge) => {
+      case (id, edge) =>
         val startCoord = rGrid.id2vertex(edge.from).point
         val endCoord = rGrid.id2vertex(edge.to).point
         (id, List(startCoord, endCoord))
-      }
     }
     val customSchema = StructType(Array(
       StructField("taxiID", LongType, nullable = true),

@@ -8,7 +8,6 @@ import scala.reflect.ClassTag
 /**
  * Select data within a temporal range
  *
- * @param dataRDD : input data set
  * @param query   : (startTime, endTime)
  */
 class TemporalSelector(query: (Long, Long)) extends Serializable {
@@ -22,7 +21,6 @@ class TemporalSelector(query: (Long, Long)) extends Serializable {
 /**
  * Select data within a batch of temporal ranges, return selected data with query id attached
  *
- * @param dataRDD : input data set
  * @param query   : Array of (startTime, endTime)
  */
 class TemporalBatchSelector(query: Array[(Long, Long)]) extends Serializable {

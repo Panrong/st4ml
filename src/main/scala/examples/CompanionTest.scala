@@ -3,14 +3,13 @@ package examples
 import extraction.PointCompanionExtractor
 import geometry.Rectangle
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.SparkSession
+import preprocessing.ReadTrajFile
 import selection.partitioner.HashPartitioner
 import selection.selector.{RTreeSelector, TemporalSelector}
 
-import scala.io.Source
-import preprocessing.ReadTrajFile
-
 import java.lang.System.nanoTime
+import scala.io.Source
 
 object CompanionTest extends App {
 

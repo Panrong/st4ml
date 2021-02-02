@@ -1,6 +1,6 @@
 //package geometry
 //
-//import road.SimpleGraph
+//import geometry.road.SimpleGraph
 //import org.scalacheck.Gen
 //
 //object DijkstraPriorityMapTest extends App {

@@ -75,7 +75,6 @@ object ReadTrajJsonFile {
 }
 
 object ReadTrajJsonFileTest extends App {
-  override def main(args: Array[String]): Unit = {
     import java.lang.System.nanoTime
     val t = nanoTime
 
@@ -92,5 +91,4 @@ object ReadTrajJsonFileTest extends App {
     //    trajAuxiRDD.take(5).foreach(println(_))
 
     spark.stop()
-  }
 }
