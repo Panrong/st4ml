@@ -35,9 +35,7 @@ object SelectorTest extends App {
   val numPartitions = args(1).toInt
   val dataSize = args(2).toInt
 
-
   val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions)
-    .map(_.mbr)
     .persist(StorageLevel.MEMORY_AND_DISK)
   val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
   val tQuery = (1372700000L, 1372750000L)

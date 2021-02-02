@@ -41,7 +41,7 @@ object ReadTrajFile {
         points = points :+ geometry.Point(Array(pointsCoord(i), pointsCoord(i + 1)), startTime + samplingRate * i / 2)
       }
       geometry.Trajectory(tripID, startTime, points, Map("taxiID" -> taxiID.toString))
-    }).cache()
+    })
     println("==== Read CSV Done")
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
