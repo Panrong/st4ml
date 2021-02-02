@@ -2,3 +2,5 @@ out/
 .idea/
 project/
 target/
+sttool-doc/
+README.md
