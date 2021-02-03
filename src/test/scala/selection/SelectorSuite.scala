@@ -15,10 +15,10 @@ import scala.math.{max, sqrt}
 
 class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
 
-  var spark : SparkSession = _
+  var spark: SparkSession = _
   var sc: SparkContext = _
 
-   def beforeEach() {
+  def beforeEach() {
     var config: Map[String, String] = Map()
     val f = Source.fromFile("config")
     f.getLines
@@ -41,7 +41,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   /**
    * test if partition and indexing gives the same results as full scanning
    */
-  test("test hash partitioner + rtree"){
+  test("test hash partitioner + rtree") {
     var config: Map[String, String] = Map()
     val f = Source.fromFile("config")
     f.getLines
@@ -92,7 +92,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     assert(queriedRDDHashST.count == fullSTRDD.count)
   }
 
-  test("test STR partitioner + rtree"){
+  test("test STR partitioner + rtree") {
     var config: Map[String, String] = Map()
     val f = Source.fromFile("config")
     f.getLines
@@ -144,7 +144,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
 
   }
 
-   def afterEach() {
+  def afterEach() {
     spark.stop()
   }
 
