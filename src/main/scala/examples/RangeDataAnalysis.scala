@@ -34,10 +34,11 @@ object RangeDataAnalysis {
     sc.setLogLevel("ERROR")
     val pointFile = args(0)
     val numPartitions = args(1).toInt
+    val numPoints = args(2).toInt
 
     /** read point data file */
-    //    val pointRDD = ReadPointFile(pointFile)
-    val pointRDD = GenFakePoints(100000)
+    //    val pointRDD = ReadPointFile(pointFile, numPoints)
+    val pointRDD = GenFakePoints(numPoints)
     println(s"... Prepare datasets takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** step 1: Selection */
