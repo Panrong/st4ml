@@ -73,22 +73,3 @@ object ReadTrajJsonFile {
 
   }
 }
-
-object ReadTrajJsonFileTest extends App {
-    import java.lang.System.nanoTime
-    val t = nanoTime
-
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("FATAL")
-
-    val jsonFile = args(0)
-    val trajRDD = ReadTrajJsonFile(jsonFile, 100)
-    trajRDD.take(5).foreach(println(_))
-    println(s"--- Total ${trajRDD.count} trajectories")
-    println(s"--- Time used ${(nanoTime - t) * 1e-9} s.")
-    //    val trajAuxiRDD = ReadTrajJsonFile(jsonFile, 100, auxiliary = true)
-    //    trajAuxiRDD.take(5).foreach(println(_))
-
-    spark.stop()
-}

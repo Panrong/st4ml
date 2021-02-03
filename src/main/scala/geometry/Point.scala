@@ -2,7 +2,10 @@ package geometry
 
 import geometry.Distances.greatCircleDistance
 
-case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with Serializable {
+case class Point(coordinates: Array[Double],
+                 var id: Long = 0L,
+                 var t: Long = 0)
+  extends Shape with Serializable {
 
   //  require(coordinates.length == 2, s"Point should have 2 dimensions while " +
   //    s"${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
@@ -10,7 +13,6 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
   def hasTimestamp: Boolean = t != 0L
 
   var timeStamp: (Long, Long) = (t, t)
-  var id = 0L
 
   def dimensions: Int = {
     if (hasTimestamp) 3
@@ -110,5 +112,5 @@ case class Point(coordinates: Array[Double], var t: Long = 0) extends Shape with
 
   override def center(): Point = this
 
-  override def toString = s"Point($x,$y,$t,id=$id)"
+  override def toString = s"Point($x,$y,$timeStamp,id=$id)"
 }
