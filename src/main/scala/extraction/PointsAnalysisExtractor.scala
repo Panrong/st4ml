@@ -7,7 +7,7 @@ class PointsAnalysisExtractor extends Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
     pRDD.map(point => (point.id.toString, 1))
       .reduceByKey(_ + _)
-      .sortBy(_._2, false)
+      .sortBy(_._2, ascending = false)
       .take(n)
   }
 

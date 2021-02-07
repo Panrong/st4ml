@@ -50,6 +50,13 @@ class NNOrdering() extends Ordering[(_, Double)] {
 }
 
 case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
+  var numEntries: Int = 0
+
+  def setNumEntries(n: Int): RTree[T] = {
+    numEntries = n
+    this
+  }
+
   def range(query: Rectangle): Array[(T, Int)] = {
     val ans = mutable.ArrayBuffer[(T, Int)]()
     val st = new mutable.Stack[RTreeNode]()
@@ -393,8 +400,12 @@ object RTree {
   //  }
 
   def apply[T <: Shape : ClassTag](entries: Array[(T, Int, Int)], max_entries_per_node: Int): RTree[T] = {
-    val dimension = entries(0)._1.mbr.low.coordinates.length
     val entries_len = entries.length.toDouble
+
+    val dimension = entries.length match {
+      case 0 => 2
+      case _ => entries(0)._1.mbr.low.coordinates.length
+    }
     val dim = new Array[Int](dimension)
     var remaining = entries_len / max_entries_per_node
     for (i <- 0 until dimension) {
@@ -492,6 +503,6 @@ object RTree {
 
     val mbr = Rectangle(min ++ max)
     val root = RTreeNode(mbr, cur_rtree_nodes)
-    new RTree(root)
+    new RTree(root).setNumEntries(entries_len.toInt)
   }
 }

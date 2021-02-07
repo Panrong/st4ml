@@ -1,6 +1,6 @@
 package selection.selector
 
-import geometry.{Rectangle, Shape}
+import geometry.{Point, Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 import selection.indexer.RTree
 
@@ -8,10 +8,10 @@ import scala.math.max
 import scala.reflect.ClassTag
 
 class RTreeSelector(override val queryRange: Rectangle,
-                                           override val partitionRange: Map[Int, Rectangle],
-                                           var capacity: Option[Int] = None) extends SpatialSelector {
+                    override val partitionRange: Map[Int, Rectangle],
+                    var capacity: Option[Int] = None) extends SpatialSelector {
 
-   override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
+  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
     val c = capacity.getOrElse({
       val dataSize = dataRDD.count
       max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
@@ -34,10 +34,16 @@ class RTreeSelector(override val queryRange: Rectangle,
         val (pIndex, contents) = x.next
         val entries = contents.map(x => (x, x.id))
           .zipWithIndex.toArray.map(x => (x._1._1, x._1._2.toInt, x._2))
-        val rtree = RTree(entries, c)
+        val rtree = entries.length match {
+          case 0 => RTree(entries, 0)
+          case _ => RTree(entries, c)
+        }
         List((pIndex, rtree)).iterator
       })
     indexedRDD
+      .filter {
+        case (_, rtree) => rtree.numEntries != 0
+      }
       .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
         .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
         .map(x => (partitionID, x._1))

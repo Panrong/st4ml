@@ -165,7 +165,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
    *
    * @param dataRDD  : data RDD
    * @param queryRDD : query RDD
-   * @tparam T : type pf spatial dataRDD, extending geometry.Shape
+   * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
   def copartition[T <: geometry.Shape : ClassTag]
@@ -209,7 +209,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
     dataRDD.take(1).head match {
-      case p: Point => {
+      case _: Point =>
         val rddWithIndex = dataRDD
           .map(x => {
             val pointShrink = Point(Array(
@@ -226,8 +226,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
             case (k, v) => (v, k)
           }
         rddWithIndex
-      }
-      case _ => {
+      case _ =>
         val rddWithIndex = dataRDD
           .map(x => {
             val mbr = x.mbr
@@ -245,7 +244,6 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
           .map {
             case (k, v) => (v, k)
           }
-      }
     }
 
   }
