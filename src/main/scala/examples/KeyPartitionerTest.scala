@@ -100,7 +100,7 @@ object KeyPartitionerTest extends App {
   }
   val indexedRDD1 = pRDDWithIndex1.mapPartitions(x => {
     val (pIndex, contents) = x.toArray.head
-    val entries = contents.map(x => (x.mbr, x.id)).zipWithIndex.toArray.map(x => (x._1._1, x._1._2.toInt, x._2))
+    val entries = contents.map(x => (x.mbr, x.id)).zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
     val rtree = RTree(entries, rtreeCapacity)
     List((pIndex, rtree)).iterator
   })
@@ -186,7 +186,7 @@ object KeyPartitionerTest extends App {
   }
   val indexedRDD = pRDDWithIndex.mapPartitions(x => {
     val (pIndex, contents) = x.toArray.head
-    val entries = contents.map(x => (x.mbr, x.id)).zipWithIndex.toArray.map(x => (x._1._1, x._1._2.toInt, x._2))
+    val entries = contents.map(x => (x.mbr, x.id)).zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
     val rtree = RTree(entries, rtreeCapacity)
     List((pIndex, rtree)).iterator
   })

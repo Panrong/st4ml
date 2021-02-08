@@ -12,7 +12,7 @@ abstract class RTreeEntry {
   def intersect(x: Shape): Boolean
 }
 
-case class RTreeLeafEntry[T <: Shape : ClassTag](shape: T, m_data: Int, size: Int) extends RTreeEntry {
+case class RTreeLeafEntry[T <: Shape : ClassTag](shape: T, m_data: String, size: Int) extends RTreeEntry {
   override def minDist(x: Shape): Double = shape.minDist(x)
 
   override def intersect(x: Shape): Boolean = x.intersect(shape)
@@ -36,11 +36,11 @@ object RTreeNode {
     RTreeNode(m_mbr, children.map(x => RTreeInternalEntry(x._1, x._2)), isLeaf = false)
   }
 
-  def apply[T <: Shape : ClassTag](m_mbr: Rectangle, children: => Array[(T, Int)]): RTreeNode = {
+  def apply[T <: Shape : ClassTag](m_mbr: Rectangle, children: => Array[(T, String)]): RTreeNode = {
     RTreeNode(m_mbr, children.map(x => RTreeLeafEntry(x._1, x._2, 1)), isLeaf = true)
   }
 
-  def apply[T <: Shape : ClassTag](m_mbr: Rectangle, children: Array[(T, Int, Int)]): RTreeNode = {
+  def apply[T <: Shape : ClassTag](m_mbr: Rectangle, children: Array[(T, String, Int)]): RTreeNode = {
     RTreeNode(m_mbr, children.map(x => RTreeLeafEntry(x._1, x._2, x._3)), isLeaf = true)
   }
 }
@@ -57,8 +57,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
     this
   }
 
-  def range(query: Rectangle): Array[(T, Int)] = {
-    val ans = mutable.ArrayBuffer[(T, Int)]()
+  def range(query: Rectangle): Array[(T, String)] = {
+    val ans = mutable.ArrayBuffer[(T, String)]()
     val st = new mutable.Stack[RTreeNode]()
     if (root.m_mbr.intersect(query) && root.m_child.nonEmpty) st.push(root)
     while (st.nonEmpty) {
@@ -78,8 +78,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
     ans.toArray
   }
 
-  def range(query: Rectangle, level_limit: Int, s_threshold: Double): Option[Array[(T, Int)]] = {
-    val ans = mutable.ArrayBuffer[(T, Int)]()
+  def range(query: Rectangle, level_limit: Int, s_threshold: Double): Option[Array[(T, String)]] = {
+    val ans = mutable.ArrayBuffer[(T, String)]()
     val q = new mutable.Queue[(RTreeNode, Int)]()
     if (root.m_mbr.intersect(query) && root.m_child.nonEmpty) q.enqueue((root, 1))
     var estimate: Double = 0
@@ -131,8 +131,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
   }
 
   //TODO circle ranges are not modified
-  def circleRange(origin: Shape, r: Double): Array[(Shape, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int)]()
+  def circleRange(origin: Shape, r: Double): Array[(Shape, String)] = {
+    val ans = mutable.ArrayBuffer[(Shape, String)]()
     val st = new mutable.Stack[RTreeNode]()
     if (root.m_mbr.minDist(origin) <= r && root.m_child.nonEmpty) st.push(root)
     while (st.nonEmpty) {
@@ -152,8 +152,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
     ans.toArray
   }
 
-  def circleRangeCnt(origin: Shape, r: Double): Array[(Shape, Int, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int, Int)]()
+  def circleRangeCnt(origin: Shape, r: Double): Array[(Shape, String, Int)] = {
+    val ans = mutable.ArrayBuffer[(Shape, String, Int)]()
     val st = new mutable.Stack[RTreeNode]()
     if (root.m_mbr.minDist(origin) <= r && root.m_child.nonEmpty) st.push(root)
     while (st.nonEmpty) {
@@ -173,8 +173,9 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
     ans.toArray
   }
 
-  def circleRangeConj(queries: Array[(Point, Double)]): Array[(Shape, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int)]()
+  def circleRangeConj(queries: Array[(Point, Double)]): Array[(Shape, String)] = {
+
+    val ans = mutable.ArrayBuffer[(Shape, String)]()
     val st = new mutable.Stack[RTreeNode]()
 
     def check(now: Shape): Boolean = {
@@ -199,8 +200,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
     ans.toArray
   }
 
-  def kNN(query: Point, k: Int, keepSame: Boolean = false): Array[(Shape, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int)]()
+  def kNN(query: Point, k: Int, keepSame: Boolean = false): Array[(Shape, String)] = {
+    val ans = mutable.ArrayBuffer[(Shape, String)]()
     val pq = new mutable.PriorityQueue[(_, Double)]()(new NNOrdering())
     var cnt = 0
     var kNN_dis = 0.0
@@ -232,8 +233,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
 
   // TODO kNN not modified
   def kNN(query: Point, distFunc: (Point, Rectangle) => Double,
-          k: Int, keepSame: Boolean): Array[(Shape, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int)]()
+          k: Int, keepSame: Boolean): Array[(Shape, String)] = {
+    val ans = mutable.ArrayBuffer[(Shape, String)]()
     val pq = new mutable.PriorityQueue[(_, Double)]()(new NNOrdering())
     var cnt = 0
     var kNN_dis = 0.0
@@ -267,8 +268,8 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
   }
 
   def kNN(query: Rectangle, distFunc: (Rectangle, Rectangle) => Double,
-          k: Int, keepSame: Boolean): Array[(Shape, Int)] = {
-    val ans = mutable.ArrayBuffer[(Shape, Int)]()
+          k: Int, keepSame: Boolean): Array[(Shape, String)] = {
+    val ans = mutable.ArrayBuffer[(Shape, String)]()
     val pq = new mutable.PriorityQueue[(_, Double)]()(new NNOrdering())
     var cnt = 0
     var kNN_dis = 0.0
@@ -399,7 +400,7 @@ object RTree {
   //    new RTree(root)
   //  }
 
-  def apply[T <: Shape : ClassTag](entries: Array[(T, Int, Int)], max_entries_per_node: Int): RTree[T] = {
+  def apply[T <: Shape : ClassTag](entries: Array[(T, String, Int)], max_entries_per_node: Int): RTree[T] = {
     val entries_len = entries.length.toDouble
 
     val dimension = entries.length match {
@@ -413,14 +414,15 @@ object RTree {
       remaining /= dim(i)
     }
 
-    def compMBR(dim: Int)(left: (T, Int, Int), right: (T, Int, Int)): Boolean = {
+    def compMBR(dim: Int)(left: (T, String, Int), right: (T, String, Int)): Boolean = {
       val left_center = left._1.mbr.low.coordinates(dim) + left._1.mbr.high.coordinates(dim)
       val right_center = right._1.mbr.low.coordinates(dim) + right._1.mbr.high.coordinates(dim)
       left_center < right_center
     }
 
-    def recursiveGroupMBR(entries: Array[(T, Int, Int)], cur_dim: Int, until_dim: Int)
-    : Array[Array[(T, Int, Int)]] = {
+    def recursiveGroupMBR(entries: Array[(T, String, Int)], cur_dim: Int, until_dim: Int)
+    : Array[Array[(T, String, Int)]] = {
+      //println(entries.deep)
       val len = entries.length.toDouble
       val grouped = entries.sortWith(compMBR(cur_dim))
         .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray

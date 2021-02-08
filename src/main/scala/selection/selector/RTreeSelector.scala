@@ -33,7 +33,7 @@ class RTreeSelector(override val queryRange: Rectangle,
       .mapPartitions(x => {
         val (pIndex, contents) = x.next
         val entries = contents.map(x => (x, x.id))
-          .zipWithIndex.toArray.map(x => (x._1._1, x._1._2.toInt, x._2))
+          .zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
         val rtree = entries.length match {
           case 0 => RTree(entries, 0)
           case _ => RTree(entries, c)
