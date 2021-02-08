@@ -14,7 +14,7 @@ object ReadQueryFile extends Serializable {
     var queries = new Array[Rectangle](0)
     for ((line, i) <- (Source.fromFile(f).getLines).zipWithIndex) {
       val r = line.split(" ")
-      queries = queries :+ Rectangle((r(0).toDouble, r(1).toDouble, r(2).toDouble, r(3).toDouble), i)
+      queries = queries :+ Rectangle((r(0).toDouble, r(1).toDouble, r(2).toDouble, r(3).toDouble), i.toString)
     }
     val spark = SparkSession.builder.getOrCreate()
     import spark.implicits._

@@ -44,7 +44,7 @@ object CompanionTest extends App {
   val tQuery = (0L, 1500000000L)
 
   val pointRDD = trajRDD.flatMap(traj => {
-    traj.points.zipWithIndex.map(x => x._1.setID((traj.hashCode().abs + x._2.toString).toLong))
+    traj.points.zipWithIndex.map(x => x._1.setID((traj.hashCode().abs + x._2.toString)))
   })
 
   /** initialise operators */

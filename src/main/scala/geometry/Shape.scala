@@ -18,7 +18,7 @@ abstract class Shape() extends Serializable {
 
   def inside(rectangle: Rectangle): Boolean
 
-  var id: Long
+  var id: String
 
   var timeStamp: (Long, Long)
 

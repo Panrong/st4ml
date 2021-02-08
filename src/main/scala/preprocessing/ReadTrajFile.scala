@@ -30,7 +30,7 @@ object ReadTrajFile {
     .repartition(numPartitions)
     .filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
     val resRDD = trajRDD.map(row => {
-      val tripID = row(0).toString.toLong
+      val tripID = row(0).toString
       val taxiID = row(4).toString.toLong
       val startTime = row(5).toString.toLong
       val pointsString = row(8).toString

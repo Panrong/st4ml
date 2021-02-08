@@ -2,7 +2,7 @@ package geometry
 
 import scala.math.{max, min}
 
-case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Serializable {
+case class Cube(coordinates: Array[Double], ID: String = "0") extends Shape with Serializable {
   require(coordinates.length == 4,
     s"Rectangle should have 6 coordinates(xMin, yMin, xMax, yMax,tMin, tMax) " +
       s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
@@ -16,7 +16,7 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
   val low: Point = Point(Array(xMin, yMin))
   val high: Point = Point(Array(xMax, yMax))
 
-  var timeStamp = (0L, 0L)
+  var timeStamp: (Long, Long) = (0L, 0L)
 
   require(xMin <= xMax && yMin <= yMax && tMin <= tMax,
     "The order should be (xMin, yMin, xMax, yMax, tMin, tMax)")
@@ -25,7 +25,7 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
 
   override def center(): Point = Point(Array((xMax + xMin) / 2, (yMax + yMin) / 2))
 
-  override var id: Long = ID
+  override var id: String = ID
 
   override def intersect(other: Shape): Boolean = other match {
     case p: Point => p.intersect(this)
@@ -83,7 +83,7 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
   }
 
 
-  def assignID(i: Long): Cube = {
+  def assignID(i: String): Cube = {
     id = i
     this
   }
@@ -117,7 +117,7 @@ case class Cube(coordinates: Array[Double], ID: Long = 0) extends Shape with Ser
     else false
   }
 
-  override def mbr(): Rectangle = this.toRectangle
+  override def mbr: Rectangle = this.toRectangle
 
   val vertices: Array[Point] = Array(Point(Array(xMin, yMin)), Point(Array(xMin, yMax)), Point(Array(xMax, yMax)), Point(Array(xMax, yMin)))
   val edges: Array[Line] = Array(Line(vertices(0), vertices(1)), Line(vertices(1), vertices(2)), Line(vertices(2), vertices(3)), Line(vertices(3), vertices(0)))

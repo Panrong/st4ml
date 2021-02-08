@@ -3,8 +3,8 @@ package geometry
 import geometry.Distances.greatCircleDistance
 
 case class Point(coordinates: Array[Double],
-                 var id: Long = 0L,
-                 var t: Long = 0)
+                 var t: Long = 0,
+                 var id: String = "0")
   extends Shape with Serializable {
 
   //  require(coordinates.length == 2, s"Point should have 2 dimensions while " +
@@ -88,7 +88,7 @@ case class Point(coordinates: Array[Double],
     else this.geoDistance(other) / (other.t - this.t)
   }
 
-  def setID(i: Long): Point = {
+  def setID(i: String): Point = {
     id = i
     this
   }

@@ -3,7 +3,7 @@ package geometry
 import geometry.Distances.greatCircleDistance
 
 
-case class Trajectory(tripID: Long,
+case class Trajectory(tripID: String,
                       startTime: Long,
                       points: Array[Point],
                       attributes: Map[String, String] = Map()) extends Shape with Serializable {
@@ -19,7 +19,7 @@ case class Trajectory(tripID: Long,
 
   val endTime: (Long, Long) = points.last.timeStamp
 
-  override var id: Long = tripID
+  override var id: String = tripID
 
   def calSpeed(): Array[Double] = {
     // return speed for each gps points interval

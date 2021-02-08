@@ -23,7 +23,7 @@ object ReadPointFile {
       .filter(r=>NumberUtils.isNumber(r(1).toString) && NumberUtils.isNumber(r(2).toString))
       .map(row =>
         geometry.Point(Array(row.getString(2).toDouble ,row.getString(1).toDouble))
-          .setID(row.getString(0).hashCode()))
+          .setID(row.getString(0).hashCode().toString))
   }
 }
 

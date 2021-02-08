@@ -37,7 +37,7 @@ case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Sh
     this.mbr.inside(rectangle)
   }
 
-  override var id: Long = tripID.toLong
+  override var id: String = tripID
 
   override var timeStamp: (Long, Long) = (roads.head._2, roads.last._2)
 
@@ -64,7 +64,7 @@ case class mmTrajectory(tripID: String, roads: Array[(String, Long)]) extends Sh
       val speed = middleSpeed.head +: middleSpeed :+ middleSpeed.last
       this.speed = roads.map(_._1) zip speed
     } catch {
-      case _ => println(tripID)
+      case _: Throwable => println(tripID)
     }
     this
   }

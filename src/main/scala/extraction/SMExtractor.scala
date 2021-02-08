@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 class SMExtractor {
 
-  def extractRoadSpeed(rdd: RDD[subSpatialMap[Array[(Long, Long, Double)]]]):
+  def extractRoadSpeed(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]]):
   Map[String, Double] =
     rdd.map(x => (x.roadID, x.attributes)).mapValues(x => x.head._3)
       .mapValues((_, 1))

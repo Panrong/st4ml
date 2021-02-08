@@ -3,14 +3,14 @@ package geometry
 import scala.math.{cos, max, min}
 
 case class Rectangle(coordinates: Array[Double],
-                     ID: Long = 0,
+                     ID: String = "0",
                      override var timeStamp: (Long, Long) = (0L, 0L))
   extends Shape with Serializable {
 //  require(coordinates.length == 4,
 //    s"Rectangle should have 4 coordinates(xMin, yMin, xMax, yMax) " +
 //      s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
 
-  override var id: Long = ID
+  override var id: String = ID
 
   def xMin: Double = coordinates(0)
   def xMax: Double = coordinates(2)
@@ -79,7 +79,7 @@ case class Rectangle(coordinates: Array[Double],
     Math.sqrt(ans)
   }
 
-  def setID(i: Long): Rectangle = {
+  def setID(i: String): Rectangle = {
     id = i
     this
   }

@@ -2,7 +2,7 @@ package geometry
 
 import scala.math.{max, min}
 
-case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializable {
+case class Line(o: Point, d: Point, ID: String = "0") extends Shape with Serializable {
 
   def midPoint: Point = Point(Array((o.coordinates(0) + d.coordinates(0)) / 2, (o.coordinates(1) + d.coordinates(1)) / 2))
 
@@ -105,7 +105,7 @@ case class Line(o: Point, d: Point, ID: Long = 0) extends Shape with Serializabl
     }
   }
 
-  def setID(id: Long): Line = Line(this.o, this.d, id)
+  def setID(id: String): Line = Line(this.o, this.d, id)
 
   def setTimeStamp(t: (Long, Long)): Line = {
     timeStamp = t

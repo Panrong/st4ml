@@ -43,7 +43,7 @@ object ReadTrajJsonFile {
         "FROM jsonTable")
       val trajDS = trajDF.as[TrajAuxi]
       trajDS.rdd.map(x => {
-        val tripID = x.id.toLong
+        val tripID = x.id
         val startTime = x.TIMESTAMP.toLong
         val points = x.coordinates.zipWithIndex.map(x => {
           Point(x._1, x._2 * samplingRate + startTime)
@@ -62,7 +62,7 @@ object ReadTrajJsonFile {
       val trajDF = spark.sql("SELECT geometry.coordinates, id, properties.TIMESTAMP FROM jsonTable")
       val trajDS = trajDF.as[Traj]
       trajDS.rdd.map(x => {
-        val tripID = x.id.toLong
+        val tripID = x.id
         val startTime = x.TIMESTAMP.toLong
         val points = x.coordinates.zipWithIndex.map(x => {
           Point(x._1, x._2 * samplingRate + startTime)

@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 class Converter {
   def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[subSpatialMap[Array[(Long, Long)]]] = {
+  RDD[subSpatialMap[Array[(Long, String)]]] = {
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
       case (_, traj) =>
@@ -17,7 +17,7 @@ class Converter {
   }
 
   def trajSpeed2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[subSpatialMap[Array[(Long, Long, Double)]]] = {
+  RDD[subSpatialMap[Array[(Long, String, Double)]]] = {
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
       case (_, traj) =>
