@@ -422,7 +422,6 @@ object RTree {
 
     def recursiveGroupMBR(entries: Array[(T, String, Int)], cur_dim: Int, until_dim: Int)
     : Array[Array[(T, String, Int)]] = {
-      //println(entries.deep)
       val len = entries.length.toDouble
       val grouped = entries.sortWith(compMBR(cur_dim))
         .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray

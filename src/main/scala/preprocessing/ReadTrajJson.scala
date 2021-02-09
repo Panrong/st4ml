@@ -16,7 +16,7 @@ object ReadTrajJson {
                               points: Array[Point]
                             )
 
-  def apply(fileName: String): RDD[geometry.Trajectory] = {
+  def apply(fileName: String, numPartitions: Int): RDD[geometry.Trajectory] = {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val df = spark.read.option("multiline", "true").json(fileName)
@@ -26,14 +26,20 @@ object ReadTrajJson {
       val id = tmpTraj.id
       val traj = tmpTraj.points.length match {
         case 0 => geometry.Trajectory(id, 0, new Array[geometry.Point](0))
-        case _ => {
-          val points = tmpTraj.points.map(p =>
-            geometry.Point(Array(p.longitude.toDouble, p.latitude.toDouble), p.timestamp.toLong, id))
-          geometry.Trajectory(id, points.head.t, points)
-        }
+        case _ =>
+          try {
+            val points = tmpTraj.points.map(p =>
+              geometry.Point(Array(p.longitude.toDouble, p.latitude.toDouble), p.timestamp.toLong, id))
+            geometry.Trajectory(id, points.head.t, points)
+          }
+          catch {
+            case _: Throwable => geometry.Trajectory("invalid", 0, Array(geometry.Point(Array(-181,-181))))
+          }
       }
       traj
     })
-    ds.rdd
+    val res = ds.rdd.filter(_.id != "invalid").repartition(numPartitions)
+    println(s"=== Total number of trajectories: ${res.count}")
+    res
   }
 }

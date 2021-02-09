@@ -66,7 +66,9 @@ class FileReadingSuite extends AnyFunSuite with BeforeAndAfter {
     val spark = SparkSession.builder().master("local").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajRDD = ReadTrajJson("datasets/traj_template_converted.json")
+    val trajRDD = ReadTrajJson("datasets/traj_100000_converted.json", 4)
+    println(trajRDD.count)
+    println(trajRDD.take(5).deep)
   }
 
   def afterEach() {
