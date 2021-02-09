@@ -4,7 +4,7 @@ import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajFile
-import selection.partitioner.{HashPartitioner, QuadTreePartitioner}
+import selection.partitioner._
 import selection.selector.{RTreeSelector, TemporalSelector}
 
 import java.lang.System.nanoTime

@@ -8,9 +8,9 @@ import scala.reflect.ClassTag
 
 
 class FilterSelector(override val queryRange: Rectangle,
-                                            override val partitionRange: Map[Int, Rectangle]) extends SpatialSelector {
+                     override val partitionRange: Map[Int, Rectangle]) extends SpatialSelector {
 
-   override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
+  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
     val spark = SparkContext.getOrCreate()
     spark.broadcast(queryRange)
     dataRDD

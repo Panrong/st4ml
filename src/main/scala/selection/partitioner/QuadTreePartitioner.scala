@@ -136,11 +136,11 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
    * @return : List(xMin, yMin, xMax, yMax)
    */
   def genBoundary(partitionMap: Map[Int, Rectangle]): List[Double] = {
-    val boxes: Iterable[Array[Double]] = partitionMap.values.map(_.coordinates)
-    val minLon: Double = boxes.map(_.head).min
-    val minLat: Double = boxes.map(_ (1)).min
-    val maxLon: Double = boxes.map(_ (2)).max
-    val maxLat: Double = boxes.map(_.last).max
+    val boxes = partitionMap.values.map(_.coordinates)
+    val minLon = boxes.map(_.head).min
+    val minLat = boxes.map(_ (1)).min
+    val maxLon = boxes.map(_ (2)).max
+    val maxLat = boxes.map(_.last).max
     List(minLon, minLat, maxLon, maxLat)
   }
 

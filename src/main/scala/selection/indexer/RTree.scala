@@ -402,108 +402,110 @@ object RTree {
 
   def apply[T <: Shape : ClassTag](entries: Array[(T, String, Int)], max_entries_per_node: Int): RTree[T] = {
     val entries_len = entries.length.toDouble
-
-    val dimension = entries.length match {
-      case 0 => 2
-      case _ => entries(0)._1.mbr.low.coordinates.length
+    if (entries_len == 0) {
+      val root = new RTreeNode(Rectangle(Array(0, 0, 0, 0)), new Array[RTreeEntry](0), false)
+      new RTree(root).setNumEntries(0)
     }
-    val dim = new Array[Int](dimension)
-    var remaining = entries_len / max_entries_per_node
-    for (i <- 0 until dimension) {
-      dim(i) = Math.ceil(Math.pow(remaining, 1.0 / (dimension - i))).toInt
-      remaining /= dim(i)
-    }
+    else {
+      val dimension = entries(0)._1.mbr.low.coordinates.length
+      val dim = new Array[Int](dimension)
+      var remaining = entries_len / max_entries_per_node
+      for (i <- 0 until dimension) {
+        dim(i) = Math.ceil(Math.pow(remaining, 1.0 / (dimension - i))).toInt
+        remaining /= dim(i)
+      }
 
-    def compMBR(dim: Int)(left: (T, String, Int), right: (T, String, Int)): Boolean = {
-      val left_center = left._1.mbr.low.coordinates(dim) + left._1.mbr.high.coordinates(dim)
-      val right_center = right._1.mbr.low.coordinates(dim) + right._1.mbr.high.coordinates(dim)
-      left_center < right_center
-    }
+      def compMBR(dim: Int)(left: (T, String, Int), right: (T, String, Int)): Boolean = {
+        val left_center = left._1.mbr.low.coordinates(dim) + left._1.mbr.high.coordinates(dim)
+        val right_center = right._1.mbr.low.coordinates(dim) + right._1.mbr.high.coordinates(dim)
+        left_center < right_center
+      }
 
-    def recursiveGroupMBR(entries: Array[(T, String, Int)], cur_dim: Int, until_dim: Int)
-    : Array[Array[(T, String, Int)]] = {
-      val len = entries.length.toDouble
-      val grouped = entries.sortWith(compMBR(cur_dim))
-        .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray
-      if (cur_dim < until_dim) {
-        grouped.flatMap(now => recursiveGroupMBR(now, cur_dim + 1, until_dim))
-      } else grouped
-    }
+      def recursiveGroupMBR(entries: Array[(T, String, Int)], cur_dim: Int, until_dim: Int)
+      : Array[Array[(T, String, Int)]] = {
+        val len = entries.length.toDouble
+        val grouped = entries.sortWith(compMBR(cur_dim))
+          .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray
+        if (cur_dim < until_dim) {
+          grouped.flatMap(now => recursiveGroupMBR(now, cur_dim + 1, until_dim))
+        } else grouped
+      }
 
-    val grouped = recursiveGroupMBR(entries, 0, dimension - 1)
-    val rtree_nodes = mutable.ArrayBuffer[(Rectangle, RTreeNode)]()
-    grouped.foreach(list => {
-      val min = new Array[Double](dimension).map(x => Double.MaxValue)
-      val max = new Array[Double](dimension).map(x => Double.MinValue)
-      list.foreach(now => {
-        for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.mbr.low.coordinates(i))
-        for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.mbr.high.coordinates(i))
-      })
-      val mbr = Rectangle(min ++ max)
-      rtree_nodes += ((mbr, RTreeNode(mbr, list)))
-    })
-
-    var cur_rtree_nodes = rtree_nodes.toArray
-    var cur_len = cur_rtree_nodes.length.toDouble
-    remaining = cur_len / max_entries_per_node
-    for (i <- 0 until dimension) {
-      dim(i) = Math.ceil(Math.pow(remaining, 1.0 / (dimension - i))).toInt
-      remaining /= dim(i)
-    }
-
-    def over(dim: Array[Int]): Boolean = {
-      for (i <- dim.indices)
-        if (dim(i) != 1) return false
-      true
-    }
-
-    def comp(dim: Int)(left: (Rectangle, RTreeNode), right: (Rectangle, RTreeNode)): Boolean = {
-      val left_center = left._1.low.coordinates(dim) + left._1.high.coordinates(dim)
-      val right_center = right._1.low.coordinates(dim) + right._1.high.coordinates(dim)
-      left_center < right_center
-    }
-
-    def recursiveGroupRTreeNode(entries: Array[(Rectangle, RTreeNode)],
-                                cur_dim: Int, until_dim: Int): Array[Array[(Rectangle, RTreeNode)]] = {
-      val len = entries.length.toDouble
-      val grouped = entries.sortWith(comp(cur_dim))
-        .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray
-      if (cur_dim < until_dim) {
-        grouped.flatMap(now => recursiveGroupRTreeNode(now, cur_dim + 1, until_dim))
-      } else grouped
-    }
-
-    while (!over(dim)) {
-      val grouped = recursiveGroupRTreeNode(cur_rtree_nodes, 0, dimension - 1)
-      var tmp_nodes = mutable.ArrayBuffer[(Rectangle, RTreeNode)]()
+      val grouped = recursiveGroupMBR(entries, 0, dimension - 1)
+      val rtree_nodes = mutable.ArrayBuffer[(Rectangle, RTreeNode)]()
       grouped.foreach(list => {
         val min = new Array[Double](dimension).map(x => Double.MaxValue)
         val max = new Array[Double](dimension).map(x => Double.MinValue)
         list.foreach(now => {
-          for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.low.coordinates(i))
-          for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.high.coordinates(i))
+          for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.mbr.low.coordinates(i))
+          for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.mbr.high.coordinates(i))
         })
         val mbr = Rectangle(min ++ max)
-        tmp_nodes += ((mbr, RTreeNode(mbr, list)))
+        rtree_nodes += ((mbr, RTreeNode(mbr, list)))
       })
-      cur_rtree_nodes = tmp_nodes.toArray
-      cur_len = cur_rtree_nodes.length.toDouble
+
+      var cur_rtree_nodes = rtree_nodes.toArray
+      var cur_len = cur_rtree_nodes.length.toDouble
       remaining = cur_len / max_entries_per_node
       for (i <- 0 until dimension) {
         dim(i) = Math.ceil(Math.pow(remaining, 1.0 / (dimension - i))).toInt
         remaining /= dim(i)
       }
+
+      def over(dim: Array[Int]): Boolean = {
+        for (i <- dim.indices)
+          if (dim(i) != 1) return false
+        true
+      }
+
+      def comp(dim: Int)(left: (Rectangle, RTreeNode), right: (Rectangle, RTreeNode)): Boolean = {
+        val left_center = left._1.low.coordinates(dim) + left._1.high.coordinates(dim)
+        val right_center = right._1.low.coordinates(dim) + right._1.high.coordinates(dim)
+        left_center < right_center
+      }
+
+      def recursiveGroupRTreeNode(entries: Array[(Rectangle, RTreeNode)],
+                                  cur_dim: Int, until_dim: Int): Array[Array[(Rectangle, RTreeNode)]] = {
+        val len = entries.length.toDouble
+        val grouped = entries.sortWith(comp(cur_dim))
+          .grouped(Math.ceil(len / dim(cur_dim)).toInt).toArray
+        if (cur_dim < until_dim) {
+          grouped.flatMap(now => recursiveGroupRTreeNode(now, cur_dim + 1, until_dim))
+        } else grouped
+      }
+
+      while (!over(dim)) {
+        val grouped = recursiveGroupRTreeNode(cur_rtree_nodes, 0, dimension - 1)
+        var tmp_nodes = mutable.ArrayBuffer[(Rectangle, RTreeNode)]()
+        grouped.foreach(list => {
+          val min = new Array[Double](dimension).map(x => Double.MaxValue)
+          val max = new Array[Double](dimension).map(x => Double.MinValue)
+          list.foreach(now => {
+            for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.low.coordinates(i))
+            for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.high.coordinates(i))
+          })
+          val mbr = Rectangle(min ++ max)
+          tmp_nodes += ((mbr, RTreeNode(mbr, list)))
+        })
+        cur_rtree_nodes = tmp_nodes.toArray
+        cur_len = cur_rtree_nodes.length.toDouble
+        remaining = cur_len / max_entries_per_node
+        for (i <- 0 until dimension) {
+          dim(i) = Math.ceil(Math.pow(remaining, 1.0 / (dimension - i))).toInt
+          remaining /= dim(i)
+        }
+      }
+
+      val min = new Array[Double](dimension).map(x => Double.MaxValue)
+      val max = new Array[Double](dimension).map(x => Double.MinValue)
+      cur_rtree_nodes.foreach(now => {
+        for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.low.coordinates(i))
+        for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.high.coordinates(i))
+      })
+
+      val mbr = Rectangle(min ++ max)
+      val root = RTreeNode(mbr, cur_rtree_nodes)
+      new RTree(root).setNumEntries(entries_len.toInt)
     }
-
-    val min = new Array[Double](dimension).map(x => Double.MaxValue)
-    val max = new Array[Double](dimension).map(x => Double.MinValue)
-    cur_rtree_nodes.foreach(now => {
-      for (i <- 0 until dimension) min(i) = Math.min(min(i), now._1.low.coordinates(i))
-      for (i <- 0 until dimension) max(i) = Math.max(max(i), now._1.high.coordinates(i))
-    })
-
-    val mbr = Rectangle(min ++ max)
-    val root = RTreeNode(mbr, cur_rtree_nodes)
-    new RTree(root).setNumEntries(entries_len.toInt)
   }
 }

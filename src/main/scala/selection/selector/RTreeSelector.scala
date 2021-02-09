@@ -1,6 +1,6 @@
 package selection.selector
 
-import geometry.{Point, Rectangle, Shape}
+import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 import selection.indexer.RTree
 
@@ -42,7 +42,7 @@ class RTreeSelector(override val queryRange: Rectangle,
       })
     indexedRDD
       .filter {
-        case (_, rtree) => rtree.numEntries != 0
+        case (_, rtree) => rtree.numEntries != 0 && rtree.root.m_mbr.intersect(queryRange)
       }
       .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
         .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
