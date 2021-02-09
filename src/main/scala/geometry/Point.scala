@@ -4,7 +4,8 @@ import geometry.Distances.greatCircleDistance
 
 case class Point(coordinates: Array[Double],
                  var t: Long = 0,
-                 var id: String = "0")
+                 var id: String = "0",
+                 attributes: Map[String, String] = Map())
   extends Shape with Serializable {
 
   //  require(coordinates.length == 2, s"Point should have 2 dimensions while " +
@@ -113,4 +114,6 @@ case class Point(coordinates: Array[Double],
   override def center(): Point = this
 
   override def toString = s"Point($x,$y,$timeStamp,id=$id)"
+
+  def setAttributes(a: Map[String, String]): Point = this.copy(attributes = a)
 }

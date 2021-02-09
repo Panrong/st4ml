@@ -6,7 +6,6 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing._
 
-import java.lang.System.nanoTime
 import scala.io.Source
 
 class FileReadingSuite extends AnyFunSuite with BeforeAndAfter {

@@ -57,34 +57,34 @@ object SelectorTest {
     println("*-*-*-*-*-*-*-*-*-*-*-*")
     println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.\n")
 
-    /** test hash partitioner */
-    println("==== HASH ====")
-
-    t = nanoTime()
-    val hashPartitioner = new HashPartitioner(numPartitions)
-    val pRDDHash = hashPartitioner.partition(trajRDD).cache()
-    val partitionRangeHash = hashPartitioner.partitionRange
-
-    val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
-    pRDDHash.count()
-    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
-
-    t = nanoTime()
-    val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
-    println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
-    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
-
-    t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
-    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
-    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
+//    /** test hash partitioner */
+//    println("==== HASH ====")
+//
+//    t = nanoTime()
+//    val hashPartitioner = new HashPartitioner(numPartitions)
+//    val pRDDHash = hashPartitioner.partition(trajRDD).cache()
+//    val partitionRangeHash = hashPartitioner.partitionRange
+//
+//    val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
+//    pRDDHash.count()
+//    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
+//
+//    t = nanoTime()
+//    val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
+//    println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
+//    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
+//
+//    t = nanoTime()
+//    val temporalSelectorH = new TemporalSelector(tQuery)
+//    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
+//    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
+//    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** test quadTree partitioner */
     println("\n==== quadTree ====")
 
     t = nanoTime()
-    val quadTreePartitioner = new QuadTreePartitioner(numPartitions)
+    val quadTreePartitioner = new QuadTreePartitioner(numPartitions, Some(0.2))
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
 

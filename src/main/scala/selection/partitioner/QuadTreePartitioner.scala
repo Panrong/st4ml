@@ -96,6 +96,10 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
         }
         nodeToSplit.entries = new Array[T](0)
       }
+      val totalArea = nodeList.map(_._2.r.area).sum
+      //      println(totalArea)
+      //      println(root.r.area)
+      //      assert(root.r.area == totalArea)
       nodeList
     }
 
@@ -126,7 +130,7 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
 
   def getSamplingRate[T <: Shape : ClassTag](dataRDD: RDD[T]): Double = {
     val dataSize = dataRDD.count
-    max(min(1000 / dataSize.toDouble, 0.5), 100 * exactNumPartitions / dataSize.toDouble)
+    max(max(min(1000 / dataSize.toDouble, 0.5), 100 * exactNumPartitions / dataSize.toDouble), 0.3)
   }
 
   /**

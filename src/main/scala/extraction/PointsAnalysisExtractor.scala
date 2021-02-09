@@ -5,7 +5,14 @@ import org.apache.spark.rdd.RDD
 
 class PointsAnalysisExtractor extends Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
-    pRDD.map(point => (point.id.toString, 1))
+    pRDD.map(point => (point.id, 1))
+      .reduceByKey(_ + _)
+      .sortBy(_._2, ascending = false)
+      .take(n)
+  }
+
+  def extractMostFrequentPoints(attribute: String, n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
+    pRDD.map(point => (point.attributes(attribute), 1))
       .reduceByKey(_ + _)
       .sortBy(_._2, ascending = false)
       .take(n)
@@ -13,7 +20,7 @@ class PointsAnalysisExtractor extends Serializable {
 
   def extractPermanentResidents(t: (Long, Long), occurrenceThreshold: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
     pRDD.filter(p => p.timeStamp._2 >= t._1 && p.timeStamp._1 <= t._2)
-      .map(point => (point.id.toString, 1))
+      .map(point => (point.id, 1))
       .reduceByKey(_ + _)
       .filter(_._2 >= occurrenceThreshold)
       .collect
@@ -21,7 +28,7 @@ class PointsAnalysisExtractor extends Serializable {
 
   def extractNewMoveIn(t: Long, occurrenceThreshold: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
     pRDD.filter(p => p.timeStamp._1 >= t)
-      .map(point => (point.id.toString, 1))
+      .map(point => (point.id, 1))
       .reduceByKey(_ + _)
       .filter(_._2 >= occurrenceThreshold)
       .collect

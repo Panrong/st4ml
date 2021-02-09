@@ -28,4 +28,9 @@ class Converter {
       .map(x => subSpatialMap(roadID = x._1, attributes = x._2))
   }
 
+  def traj2Point(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
+    rdd.map(_._2).flatMap(
+      traj => traj.points.map(p =>
+        p.setAttributes(Map("tripID"->traj.id))))
+  }
 }
