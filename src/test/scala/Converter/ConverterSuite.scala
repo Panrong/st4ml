@@ -14,7 +14,7 @@ import scala.io.Source
 
 class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
 
-  var spark : SparkSession = _
+  var spark: SparkSession = _
   var sc: SparkContext = _
 
   def beforeEach() {
@@ -36,12 +36,13 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
   }
-  test("test traj2point"){
+
+  test("test traj2point") {
     val spark = SparkSession.builder().master("local").getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajJson("datasets/traj_100000_converted.json", 4)
-    val sQuery = Rectangle(Array(-90, -180, 90, 180))
+    val sQuery = Rectangle(Array(115, 25, 125, 35))
 
     val partitioner = new HashPartitioner(4)
     val pRDD = partitioner.partition(trajRDD).cache()
@@ -56,8 +57,12 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     println(s"--- converted to ${pointRDD.count} points")
 
     val extractor = new PointsAnalysisExtractor()
+    val filteredPointRDD = pointRDD.filter(x => x.coordinates(0) > 115 && x.coordinates(1) > 25 && x.coordinates(0) < 125 && x.coordinates(1) < 35)
     extractor.extractMostFrequentPoints("tripID", 5)(pointRDD).foreach(println(_))
+    println(s" ... Spatial range: ${extractor.extractSpatialRange(filteredPointRDD).mkString("Array(", ", ", ")")}")
+    println(s" ... Temporal range: ${extractor.extractTemporalRange(filteredPointRDD).mkString("Array(", ", ", ")")}")
   }
+
   def afterEach() {
     spark.stop()
   }

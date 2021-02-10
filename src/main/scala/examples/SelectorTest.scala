@@ -80,6 +80,9 @@ object SelectorTest {
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
+    pRDDHash.unpersist()
+    queriedRDD2Hash.unpersist()
+
     /** test quadTree partitioner */
     println("\n==== quadTree ====")
 

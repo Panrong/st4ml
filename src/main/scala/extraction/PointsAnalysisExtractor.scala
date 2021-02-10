@@ -33,4 +33,20 @@ class PointsAnalysisExtractor extends Serializable {
       .filter(_._2 >= occurrenceThreshold)
       .collect
   }
+
+  def extractSpatialRange(pRDD: RDD[Point]) : Array[Double] = {
+    val lons = pRDD.map(_.coordinates(0))
+    val lats = pRDD.map(_.coordinates(1))
+    val lonMin = lons.reduce(math.min)
+    val latMin = lats.reduce(math.min)
+    val lonMax = lons.reduce(math.max)
+    val latMax = lats.reduce(math.max)
+    Array(lonMin, latMin, lonMax, latMax)
+  }
+
+  def extractTemporalRange(pRDD:RDD[Point]):Array[Long] = {
+    val tStarts = pRDD.map(_.timeStamp._1)
+    val tEnds = pRDD.map(_.timeStamp._2)
+    Array(tStarts.reduce(math.min), tEnds.reduce(math.max))
+  }
 }
