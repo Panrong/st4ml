@@ -14,6 +14,7 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
 
   override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     partitionRange = getPartitionRange(dataRDD)
+    //    partitionRange.keys.foreach(x => println(partitionRange(x)))
     val partitioner = new KeyPartitioner(exactNumPartitions)
     val boundary = genBoundary(partitionRange)
     val pRDD = assignPartition(dataRDD, partitionRange, boundary)
@@ -96,10 +97,14 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
         }
         nodeToSplit.entries = new Array[T](0)
       }
-      val totalArea = nodeList.map(_._2.r.area).sum
+      //      val totalArea = nodeList.map(_._2.r.area).sum
       //      println(totalArea)
       //      println(root.r.area)
       //      assert(root.r.area == totalArea)
+      //      println(nodeList.values.filter(x => x.isLeaf).size)
+      //      nodeList.values.filter(x => x.isLeaf).foreach(x => println(x.r))
+      //      println("-----")
+
       nodeList
     }
 
@@ -203,10 +208,13 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
     val sampledRDD = dataRDD.sample(withReplacement = false, sr)
     val quadTree = new QuadTree[T](sampledRDD.collect, exactNumPartitions)
-    val nodeList = quadTree.partition.filter { case (_, v) => v.isLeaf }
-      .map { case (k, v) => (v.r, k) }
-    // nodeID -> partitionID
+    val nodeList = quadTree.partition
+      .filter { case (_, v) => v.isLeaf }
+      .map(_._2.r)
+    //    println("--")
+    //    nodeList.foreach(x => println(x))
+    //    println("--")
     nodeList.zipWithIndex
-      .map(x => (x._2, x._1._1)).toMap // make all leaves have ids 0 to numPartition-1
+      .map(x => (x._2, x._1)).toMap // make all leaves have ids 0 to numPartition-1
   }
 }
