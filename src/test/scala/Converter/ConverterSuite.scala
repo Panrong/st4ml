@@ -70,8 +70,14 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
 
     val newMoveIn = extractor.extractNewMoveIn(1598176021, 10)(filteredPointRDD)
     println(s" ... Number of new move-ins after time 1598176021 : ${newMoveIn.length}")
-  }
 
+    val pr = extractor.extractPermanentResidents((1596882269, 1598888976), 200)(filteredPointRDD)
+    println(s" ... Number of permanent residences : ${pr.length}")
+
+    val abnormity =extractor.extractAbnormity()(filteredPointRDD)
+    println(s" ... Number of abnormal ids : ${abnormity.length}")
+
+  }
   def afterEach() {
     spark.stop()
   }

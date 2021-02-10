@@ -4,6 +4,9 @@ import geometry.Point
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
+import java.text.SimpleDateFormat
+import java.util.Date
+
 class PointsAnalysisExtractor extends Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
     pRDD.map(point => (point.id, 1))
@@ -35,7 +38,7 @@ class PointsAnalysisExtractor extends Serializable {
       .collect
   }
 
-  def extractSpatialRange(pRDD: RDD[Point]) : Array[Double] = {
+  def extractSpatialRange(pRDD: RDD[Point]): Array[Double] = {
     val lons = pRDD.map(_.coordinates(0))
     val lats = pRDD.map(_.coordinates(1))
     val lonMin = lons.reduce(math.min)
@@ -45,23 +48,36 @@ class PointsAnalysisExtractor extends Serializable {
     Array(lonMin, latMin, lonMax, latMax)
   }
 
-  def extractTemporalRange(pRDD:RDD[Point]):Array[Long] = {
+  def extractTemporalRange(pRDD: RDD[Point]): Array[Long] = {
     val tStarts = pRDD.map(_.timeStamp._1)
     val tEnds = pRDD.map(_.timeStamp._2)
     Array(tStarts.reduce(math.min), tEnds.reduce(math.max))
   }
 
-  def extractTemporalQuantile(percentages: Array[Double])(pRDD:RDD[Point]): Array[Double] ={
+  def extractTemporalQuantile(percentages: Array[Double])(pRDD: RDD[Point]): Array[Double] = {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val pDF = pRDD.map(_.timeStamp._1).toDF()
     pDF.stat.approxQuantile("value", percentages, 0.01)
   }
 
-  def extractTemporalQuantile(percentages: Double)(pRDD:RDD[Point]): Double ={
+  def extractTemporalQuantile(percentages: Double)(pRDD: RDD[Point]): Double = {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val pDF = pRDD.map(_.timeStamp._1).toDF()
     pDF.stat.approxQuantile("value", Array(percentages), 0.01).head
+  }
+
+  def extractAbnormity(range: (Int, Int) = (23, 5))(pRDD: RDD[Point]): Array[String] = {
+    val (a, b) = range._1 > range._2 match {
+      case true => (range._1, range._2)
+      case false => (range._2, range._1)
+    }
+    pRDD.map(p =>
+      (p.attributes("tripID"), new SimpleDateFormat("HH").format(p.timeStamp._1 * 1000).toInt)) // get hour of each point
+      .filter(p => p._2 >= a || p._2 <= b)
+      .map(_._1)
+      .distinct
+      .collect
   }
 }
