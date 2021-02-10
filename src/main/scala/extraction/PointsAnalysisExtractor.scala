@@ -2,6 +2,7 @@ package extraction
 
 import geometry.Point
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 class PointsAnalysisExtractor extends Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
@@ -48,5 +49,19 @@ class PointsAnalysisExtractor extends Serializable {
     val tStarts = pRDD.map(_.timeStamp._1)
     val tEnds = pRDD.map(_.timeStamp._2)
     Array(tStarts.reduce(math.min), tEnds.reduce(math.max))
+  }
+
+  def extractTemporalQuantile(percentages: Array[Double])(pRDD:RDD[Point]): Array[Double] ={
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val pDF = pRDD.map(_.timeStamp._1).toDF()
+    pDF.stat.approxQuantile("value", percentages, 0.01)
+  }
+
+  def extractTemporalQuantile(percentages: Double)(pRDD:RDD[Point]): Double ={
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val pDF = pRDD.map(_.timeStamp._1).toDF()
+    pDF.stat.approxQuantile("value", Array(percentages), 0.01).head
   }
 }

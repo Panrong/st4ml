@@ -58,9 +58,18 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
 
     val extractor = new PointsAnalysisExtractor()
     val filteredPointRDD = pointRDD.filter(x => x.coordinates(0) > 115 && x.coordinates(1) > 25 && x.coordinates(0) < 125 && x.coordinates(1) < 35)
-    extractor.extractMostFrequentPoints("tripID", 5)(pointRDD).foreach(println(_))
+    println(" ... Top 5 most frequent:" )
+    extractor.extractMostFrequentPoints("tripID", 5)(pointRDD).foreach(x => println(s" ....  $x"))
     println(s" ... Spatial range: ${extractor.extractSpatialRange(filteredPointRDD).mkString("Array(", ", ", ")")}")
     println(s" ... Temporal range: ${extractor.extractTemporalRange(filteredPointRDD).mkString("Array(", ", ", ")")}")
+
+    println(s" ... Temporal median (approx.): " +
+      s"${extractor.extractTemporalQuantile(0.5)(filteredPointRDD).toLong}")
+    println(s" ... Temporal 25% and 75% (approx.): " +
+      s"${extractor.extractTemporalQuantile(Array(0.25, 0.75))(filteredPointRDD).map(_.toLong).mkString(", ")}")
+
+    val newMoveIn = extractor.extractNewMoveIn(1598176021, 10)(filteredPointRDD)
+    println(s" ... Number of new move-ins after time 1598176021 : ${newMoveIn.length}")
   }
 
   def afterEach() {
