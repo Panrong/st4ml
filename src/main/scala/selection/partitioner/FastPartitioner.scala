@@ -15,7 +15,7 @@ class FastPartitioner(numPartitions: Int) extends SpatialPartitioner {
   override var samplingRate: Option[Double] = None
 
   override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] =
-    dataRDD.mapPartitionsWithIndex {
+    dataRDD.repartition(numPartitions).mapPartitionsWithIndex {
       (index, partitionIterator) => partitionIterator.map(x => (index, x))
     }
 }
