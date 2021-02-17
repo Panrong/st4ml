@@ -21,7 +21,7 @@ object ReadTrajFile {
   RDD[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
-    val t = nanoTime
+    var t = nanoTime
     val df = spark.read.option("header", "true")
       .option("numPartitions", numPartitions)
       .csv(filename).limit(num)
@@ -43,9 +43,12 @@ object ReadTrajFile {
       geometry.Trajectory(tripID, startTime, points, Map("taxiID" -> taxiID.toString))
     })
     println("==== Read CSV Done")
+    resRDD.take(1)
+    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
+    t = nanoTime
     println("--- Total number of lines: " + df.count)
     println("--- Total number of valid entries: " + resRDD.count)
-    if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
+    if (timeCount) println("... Counting time used: " + (nanoTime - t) / 1e9d + "s")
     if (clean) checkMapCoverage(removeRedundancy(trajBreak(resRDD)), mapRange)
     else resRDD
   }
