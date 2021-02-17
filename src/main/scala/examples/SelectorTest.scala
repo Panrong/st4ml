@@ -61,7 +61,7 @@ object SelectorTest {
     println("==== HASH ====")
 
     t = nanoTime()
-    val hashPartitioner = new HashPartitioner(numPartitions)
+    val hashPartitioner = new FastPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
