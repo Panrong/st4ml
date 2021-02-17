@@ -5,7 +5,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 import java.text.SimpleDateFormat
-import java.util.Date
 
 class PointsAnalysisExtractor extends Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
@@ -30,12 +29,19 @@ class PointsAnalysisExtractor extends Serializable {
       .collect
   }
 
-  def extractNewMoveIn(t: Long, occurrenceThreshold: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
-    pRDD.filter(p => p.timeStamp._1 >= t)
+  def extractNewMoveIn(t: Long, occurrenceThresholdAfter: Int, occurrenceThresholdBefore: Int = 3)
+                      (pRDD: RDD[Point]): Array[(String, Int)] = {
+    val validAfter = pRDD.filter(p => p.timeStamp._1 >= t)
       .map(point => (point.id, 1))
       .reduceByKey(_ + _)
-      .filter(_._2 >= occurrenceThreshold)
-      .collect
+      .filter(_._2 >= occurrenceThresholdAfter)
+    val validBefore = pRDD.filter(p => p.timeStamp._1 <= t)
+      .map(point => (point.id, 1))
+      .reduceByKey(_ + _)
+      .filter(_._2 <= occurrenceThresholdBefore)
+    validAfter
+      .join(validBefore)
+      .mapValues(x => x._1).collect
   }
 
   def extractSpatialRange(pRDD: RDD[Point]): Array[Double] = {
@@ -69,9 +75,10 @@ class PointsAnalysisExtractor extends Serializable {
   }
 
   def extractAbnormity(range: (Int, Int) = (23, 5))(pRDD: RDD[Point]): Array[String] = {
-    val (a, b) = range._1 > range._2 match {
-      case true => (range._1, range._2)
-      case false => (range._2, range._1)
+    val (a, b) = if (range._1 > range._2) {
+      (range._1, range._2)
+    } else {
+      (range._2, range._1)
     }
     pRDD.map(p =>
       (p.attributes("tripID"), new SimpleDateFormat("HH").format(p.timeStamp._1 * 1000).toInt)) // get hour of each point

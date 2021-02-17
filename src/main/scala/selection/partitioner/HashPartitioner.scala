@@ -1,6 +1,6 @@
 package selection.partitioner
 
-import geometry.Rectangle
+import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
