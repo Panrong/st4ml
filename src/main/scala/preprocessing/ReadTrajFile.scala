@@ -17,19 +17,33 @@ object ReadTrajFile {
    * @param clean    : clean the trajectories
    * @return : RDD[Trajectory]
    */
-  def apply(filename: String, num: Int, numPartitions: Int = 8, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
+  def apply(filename: String,
+            num: Int,
+            numPartitions: Int = 8,
+            clean: Boolean = false,
+            count: Boolean = false,
+            limit: Boolean = false,
+            mapRange: List[Double] = List(-180, -90, 180, 90)):
   RDD[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     var t = nanoTime
-    val df = spark.read.option("header", "true")
-      .option("numPartitions", numPartitions)
-      .csv(filename)
-    //  .limit(num)
+    val df = if (limit) {
+      spark.read.option("header", "true")
+        .option("numPartitions", numPartitions)
+        .csv(filename)
+        .limit(num)
+    } else {
+      spark.read.option("header", "true")
+        .option("numPartitions", numPartitions)
+        .csv(filename)
+    }
     val samplingRate = 15
-    val trajRDD = df.rdd
-      //  .repartition(numPartitions)
-      .filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
+    val trajRDD = if (limit) {
+      df.rdd.repartition(numPartitions).filter(row => row(8).toString.split(',').length >= 4)
+    } else {
+      df.rdd.filter(row => row(8).toString.split(',').length >= 4)
+    }
     val resRDD = trajRDD.map(row => {
       val tripID = row(0).toString
       val taxiID = row(4).toString.toLong
@@ -47,9 +61,11 @@ object ReadTrajFile {
     resRDD.take(1)
     if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
-    println("--- Total number of lines: " + df.count)
-    println("--- Total number of valid entries: " + resRDD.count)
-    if (timeCount) println("... Counting time used: " + (nanoTime - t) / 1e9d + "s")
+    if (count) {
+      println("--- Total number of lines: " + df.count)
+      println("--- Total number of valid entries: " + resRDD.count)
+      if (timeCount) println("... Counting time used: " + (nanoTime - t) / 1e9d + "s")
+    }
     if (clean) checkMapCoverage(removeRedundancy(trajBreak(resRDD)), mapRange)
     else resRDD
   }

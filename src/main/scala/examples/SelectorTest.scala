@@ -35,8 +35,10 @@ object SelectorTest {
     val trajectoryFile = args(0)
     val numPartitions = args(1).toInt
     val dataSize = args(2).toInt
+    val limit = args(3).toBoolean
+    val count = args(4).toBoolean
 
-    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions)
+    val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions, count = count, limit = limit)
       .persist(StorageLevel.MEMORY_AND_DISK)
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     val tQuery = (1372700000L, 1372750000L)
@@ -54,10 +56,12 @@ object SelectorTest {
     })
     fullSTRDD.take(1)
     println(s"... Full scanning takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    t = nanoTime()
-    println(s"*- Full scan S: ${fullSRDD.count} ")
-    println(s"*- Full scan ST: ${fullSTRDD.count} ")
-    println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
+    if (count) {
+      t = nanoTime()
+      println(s"*- Full scan S: ${fullSRDD.count} ")
+      println(s"*- Full scan ST: ${fullSTRDD.count} ")
+      println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
+    }
     println("*-*-*-*-*-*-*-*-*-*-*-*")
 
     /** test hash partitioner */
@@ -67,8 +71,8 @@ object SelectorTest {
     val hashPartitioner = new FastPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
-
     val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
+
     pRDDHash.take(1)
     println(s"... Partitioning takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
@@ -76,19 +80,21 @@ object SelectorTest {
     val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
     queriedRDD2Hash.take(1)
     println(s"... Querying with index takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    t = nanoTime()
-    println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
-    println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
-
+    if (count) {
+      t = nanoTime()
+      println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
+      println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
+    }
     t = nanoTime()
     val temporalSelectorH = new TemporalSelector(tQuery)
     val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
     queriedRDD3Hash.take(1)
     println(s"... Temporal querying takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    t = nanoTime()
-    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
-    println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
-
+    if (count) {
+      t = nanoTime()
+      println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
+      println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
+    }
     pRDDHash.unpersist()
     queriedRDD2Hash.unpersist()
 
