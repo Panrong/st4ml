@@ -14,21 +14,22 @@ object ReadTrajFile {
    *
    * @param filename : path to the dataRDD file
    * @param num      : number of trajectories to read
-   * @param clean : clean the trajectories
+   * @param clean    : clean the trajectories
    * @return : RDD[Trajectory]
    */
-  def apply(filename: String, num: Int, numPartitions:Int = 8, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
+  def apply(filename: String, num: Int, numPartitions: Int = 8, clean: Boolean = false, mapRange: List[Double] = List(-180, -90, 180, 90)):
   RDD[geometry.Trajectory] = {
 
     val spark = SparkSession.builder().getOrCreate()
     var t = nanoTime
     val df = spark.read.option("header", "true")
       .option("numPartitions", numPartitions)
-      .csv(filename).limit(num)
+      .csv(filename)
+    //.limit(num)
     val samplingRate = 15
     val trajRDD = df.rdd
-    .repartition(numPartitions)
-    .filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
+      .repartition(numPartitions)
+      .filter(row => row(8).toString.split(',').length >= 4) // each trajectory should have no less than 2 recorded points
     val resRDD = trajRDD.map(row => {
       val tripID = row(0).toString
       val taxiID = row(4).toString.toLong
