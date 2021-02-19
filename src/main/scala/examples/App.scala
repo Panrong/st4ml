@@ -37,16 +37,19 @@ object App {
 
     /** step 1: Selection */
     val rdd1 = operator.queryHandler.query(trajRDD, sQuery, tQuery)
-
+    rdd1.cache()
+    
     /** step 2: Conversion */
     val rdd2 = operator.converter.traj2Point(rdd1)
+    rdd2.cache()
 
     /** step 3: Extraction */
 
     val extractor = operator.extractor
+    val topN = 3
     println("=== Analysing Results:")
-    println(" ... Top 5 most frequent:")
-    extractor.extractMostFrequentPoints("tripID", 3)(rdd2).foreach(x => println(s" ....  $x"))
+    println(s" ... Top $topN most frequent:")
+    extractor.extractMostFrequentPoints("tripID", topN)(rdd2).foreach(x => println(s" ....  $x"))
 
     /** repeat for more applications */
     println(s" ... Spatial range: ${extractor.extractSpatialRange(rdd2).mkString("(", ", ", ")")}")
