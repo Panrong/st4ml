@@ -50,15 +50,15 @@ object SimpleTest {
     val partitioner = new HashPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = new RTreeSelector(sQuery, partitionRange)
-    val temporalSelector = new TemporalSelector(tQuery)
+    val spatialSelector = new RTreeSelector(partitionRange)
+    val temporalSelector = new TemporalSelector
     val converter = new Converter
     val extractor = new SMExtractor
 
     /** step 1: selection */
     t = nanoTime()
-    val sRDD = spatialSelector.query(pRDD)
-    val stRDD = temporalSelector.query(sRDD).cache()
+    val sRDD = spatialSelector.query(pRDD)(sQuery)
+    val stRDD = temporalSelector.query(sRDD)(tQuery).cache()
     println(s"... Step 1 SELECTION done. Total ${stRDD.count} trajectories selected.")
     println(s".... Time used: ${(nanoTime() - t) * 1e-9} s.")
 

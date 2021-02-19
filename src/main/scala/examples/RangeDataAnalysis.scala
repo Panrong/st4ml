@@ -49,11 +49,11 @@ object RangeDataAnalysis {
     val partitioner = new HashPartitioner(numPartitions)
     val pRDD = partitioner.partition(pointRDD)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = new RTreeSelector(sQuery, partitionRange)
-    val temporalSelector = new TemporalSelector(tQuery)
+    val spatialSelector = new RTreeSelector(partitionRange)
+    val temporalSelector = new TemporalSelector
     val queriedRDD = temporalSelector.query(
-      spatialSelector.query(pRDD)
-    )
+      spatialSelector.query(pRDD)(sQuery)
+    )(tQuery)
 
     println(s"${queriedRDD.count} points inside range ($sQuery)")
     println(s"... Step 1 Selection takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")

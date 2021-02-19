@@ -71,13 +71,13 @@ object SelectorTest {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = new RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
 
     pRDDHash.take(1)
     println(s"... Partitioning takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
+    val queriedRDD2Hash = selectorHash.query(pRDDHash)(sQuery).cache()
     queriedRDD2Hash.take(1)
     println(s"... Querying with index takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     if (count) {
@@ -86,8 +86,8 @@ object SelectorTest {
       println(s"... Counting takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.\n")
     }
     t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
+    val temporalSelectorH = new TemporalSelector
+    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)(tQuery)
     queriedRDD3Hash.take(1)
     println(s"... Temporal querying takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     if (count) {

@@ -81,12 +81,12 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
-    val temporalSelectorH = new TemporalSelector(tQuery)
+    val selectorHash = RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
+    val temporalSelectorH = new TemporalSelector
 
-    val queriedRDDHash = selectorHash.query(pRDDHash).cache()
+    val queriedRDDHash = selectorHash.query(pRDDHash)(sQuery).cache()
 
-    val queriedRDDHashST = temporalSelectorH.query(queriedRDDHash)
+    val queriedRDDHashST = temporalSelectorH.query(queriedRDDHash)(tQuery)
 
     assert(queriedRDDHash.count == fullSRDD.count)
     assert(queriedRDDHashST.count == fullSTRDD.count)
@@ -132,19 +132,19 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val strPartitioner = new STRPartitioner(numPartitions)
     val pRDD = strPartitioner.partition(trajRDD).cache()
     val partitionRange = strPartitioner.partitionRange
-    val selector = new RTreeSelector(sQuery, partitionRange, Some(rTreeCapacity))
-    val temporalSelector = new TemporalSelector(tQuery)
+    val selector = RTreeSelector(partitionRange, Some(rTreeCapacity))
+    val temporalSelector = new TemporalSelector
 
-    val queriedRDD = selector.query(pRDD).cache()
+    val queriedRDD = selector.query(pRDD)(sQuery).cache()
 
-    val queriedRDDST = temporalSelector.query(queriedRDD)
+    val queriedRDDST = temporalSelector.query(queriedRDD)(tQuery)
 
     assert(queriedRDD.count == fullSRDD.count)
     assert(queriedRDDST.count == fullSTRDD.count)
 
   }
 
-  test("test quadTree partitioner + rtree"){
+  test("test quadTree partitioner + rtree") {
     var config: Map[String, String] = Map()
     val f = Source.fromFile("config")
     f.getLines
@@ -184,17 +184,18 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val strPartitioner = new QuadTreePartitioner(numPartitions)
     val pRDD = strPartitioner.partition(trajRDD).cache()
     val partitionRange = strPartitioner.partitionRange
-    val selector = new RTreeSelector(sQuery, partitionRange, Some(rTreeCapacity))
-    val temporalSelector = new TemporalSelector(tQuery)
+    val selector = RTreeSelector(partitionRange, Some(rTreeCapacity))
+    val temporalSelector = new TemporalSelector
 
-    val queriedRDD = selector.query(pRDD).cache()
+    val queriedRDD = selector.query(pRDD)(sQuery).cache()
     println(queriedRDD.count())
-    val queriedRDDST = temporalSelector.query(queriedRDD)
+    val queriedRDDST = temporalSelector.query(queriedRDD)(tQuery)
 
     assert(queriedRDD.count == fullSRDD.count)
     assert(queriedRDDST.count == fullSTRDD.count)
 
   }
+
   def afterEach() {
     spark.stop()
   }

@@ -65,18 +65,18 @@ object SelectorTestHZ {
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
-    val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = new RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
     pRDDHash.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = selectorHash.query(pRDDHash).cache()
+    val queriedRDD2Hash = selectorHash.query(pRDDHash)(sQuery).cache()
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
+    val temporalSelectorH = new TemporalSelector
+    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)(tQuery)
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -88,18 +88,18 @@ object SelectorTestHZ {
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
 
-    val selectorQt = new RTreeSelector(sQuery, partitionRangeQt, Some(rTreeCapacity))
+    val selectorQt = new RTreeSelector(partitionRangeQt, Some(rTreeCapacity))
     pRDDQt.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Qt = selectorQt.query(pRDDQt).cache()
+    val queriedRDD2Qt = selectorQt.query(pRDDQt)(sQuery).cache()
     println(s"==== Queried dataset contains ${queriedRDD2Qt.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val temporalSelectorQt = new TemporalSelector(tQuery)
-    val queriedRDD3Qt = temporalSelectorQt.query(queriedRDD2Qt)
+    val temporalSelectorQt = new TemporalSelector
+    val queriedRDD3Qt = temporalSelectorQt.query(queriedRDD2Qt)(tQuery)
     println(s"==== Queried dataset contains ${queriedRDD3Qt.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 

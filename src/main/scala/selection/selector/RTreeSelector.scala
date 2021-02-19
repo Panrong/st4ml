@@ -7,11 +7,11 @@ import selection.indexer.RTree
 import scala.math.max
 import scala.reflect.ClassTag
 
-class RTreeSelector(override val queryRange: Rectangle,
-                    override val partitionRange: Map[Int, Rectangle],
-                    var capacity: Option[Int] = None) extends SpatialSelector {
+case class RTreeSelector(override val partitionRange: Map[Int, Rectangle],
+                         var capacity: Option[Int] = None) extends SpatialSelector {
 
-  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)]): RDD[(Int, T)] = {
+  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
+                                           (queryRange: Rectangle): RDD[(Int, T)] = {
     val c = capacity.getOrElse({
       val dataSize = dataRDD.count
       max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)

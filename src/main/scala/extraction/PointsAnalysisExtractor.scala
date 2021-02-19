@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 
 import java.text.SimpleDateFormat
 
-class PointsAnalysisExtractor extends Serializable {
+class PointsAnalysisExtractor extends Extractor with Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
     pRDD.map(point => (point.id, 1))
       .reduceByKey(_ + _)

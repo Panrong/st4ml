@@ -3,7 +3,7 @@ package extraction
 import geometry.subSpatialMap
 import org.apache.spark.rdd.RDD
 
-class SMExtractor {
+class SMExtractor extends Extractor with Serializable {
 
   def extractRoadSpeed(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]]):
   Map[String, Double] =

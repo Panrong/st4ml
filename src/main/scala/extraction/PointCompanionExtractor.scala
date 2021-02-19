@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 import scala.math.abs
 import selection.partitioner.STRPartitioner
 
-class PointCompanionExtractor(sThreshold: Double, tThreshold: Double) extends Serializable {
+class PointCompanionExtractor(sThreshold: Double, tThreshold: Double) extends Extractor with Serializable {
   def extract(pRDD: RDD[Point]): Array[(String, String)] = {
     val pairRDD = pRDD.cartesian(pRDD).filter{
       case (p1, p2) =>

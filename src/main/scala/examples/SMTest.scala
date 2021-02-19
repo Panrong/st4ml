@@ -68,20 +68,20 @@ object SMTest {
     val partitioner = new STRPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val filterSelector = new FilterSelector(sQuery, partitionRange)
-    val rtreeSelector = new RTreeSelector(sQuery, partitionRange)
+    val filterSelector = new FilterSelector(partitionRange)
+    val rtreeSelector = new RTreeSelector(partitionRange)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query by filtering */
     t = nanoTime()
-    val queriedRDD1 = filterSelector.query(pRDD) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD1 = filterSelector.query(pRDD)(sQuery) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
     println(s"==== Queried dataset contains ${queriedRDD1.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** spatial query with index */
     t = nanoTime()
-    val queriedRDD2 = rtreeSelector.query(pRDD) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
+    val queriedRDD2 = rtreeSelector.query(pRDD)(sQuery) //.map(x => (x._2.id, x)).groupByKey().flatMap(x => x._2.take(1))
 
 
     println(s"==== Queried dataset contains ${queriedRDD2.count} entries (RTree)")
@@ -89,8 +89,8 @@ object SMTest {
 
     /** temporal query by filtering */
     t = nanoTime()
-    val temporalSelector = new TemporalSelector(tQuery)
-    val queriedRDD3 = temporalSelector.query(queriedRDD2)
+    val temporalSelector = new TemporalSelector
+    val queriedRDD3 = temporalSelector.query(queriedRDD2)(tQuery)
     //    queriedRDD3.take(6).foreach(println(_))
     println(s"==== Queried dataset contains ${queriedRDD3.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
@@ -102,24 +102,24 @@ object SMTest {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new FilterSelector(sQuery, partitionRangeHash)
-    val rtreeselectorHash = new FilterSelector(sQuery, partitionRangeHash)
+    val selectorHash = new FilterSelector(partitionRangeHash)
+    val rtreeselectorHash = new FilterSelector(partitionRangeHash)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD1Hash = selectorHash.query(pRDDHash)
+    val queriedRDD1Hash = selectorHash.query(pRDDHash)(sQuery)
     println(s"==== Queried dataset contains ${queriedRDD1Hash.count} entries (filtering)")
     println(s"... Querying by filtering takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = rtreeselectorHash.query(pRDDHash)
+    val queriedRDD2Hash = rtreeselectorHash.query(pRDDHash)(sQuery)
     println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
     println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val temporalSelectorH = new TemporalSelector(tQuery)
-    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)
+    val temporalSelectorH = new TemporalSelector
+    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)(tQuery)
     println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
     println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
 

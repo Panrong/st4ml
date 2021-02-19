@@ -47,8 +47,8 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     val partitioner = new HashPartitioner(4)
     val pRDD = partitioner.partition(trajRDD).cache()
     val partitionRange = partitioner.partitionRange
-    val selector = new RTreeSelector(sQuery, partitionRange, Some(500))
-    val queriedRDD = selector.query(pRDD)
+    val selector = new RTreeSelector( partitionRange, Some(500))
+    val queriedRDD = selector.query(pRDD)(sQuery)
     println(s"--- ${queriedRDD.count} trajectories")
 
     val converter = new Converter()

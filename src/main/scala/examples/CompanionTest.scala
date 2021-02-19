@@ -1,7 +1,7 @@
 package examples
 
 import extraction.PointCompanionExtractor
-import geometry.Rectangle
+import geometry.{Point, Rectangle}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajFile
@@ -44,7 +44,7 @@ object CompanionTest extends App {
   val tQuery = (0L, 1500000000L)
 
   val pointRDD = trajRDD.flatMap(traj => {
-    traj.points.zipWithIndex.map(x => x._1.setID((traj.hashCode().abs + x._2.toString)))
+    traj.points.zipWithIndex.map(x => x._1.setID(traj.hashCode().abs + x._2.toString))
   })
 
   /** initialise operators */
@@ -52,13 +52,13 @@ object CompanionTest extends App {
   val partitioner = new HashPartitioner(numPartitions)
   val pRDD = partitioner.partition(pointRDD)
   val partitionRange = partitioner.partitionRange
-  val spatialSelector = new RTreeSelector(sQuery, partitionRange)
-  val temporalSelector = new TemporalSelector(tQuery)
+  val spatialSelector = RTreeSelector(partitionRange)
+  val temporalSelector = new TemporalSelector
 
   /** step 1: selection */
 
-  val sRDD = spatialSelector.query(pRDD)
-  val stRDD = temporalSelector.query(sRDD)
+  val sRDD: RDD[(Int, Point)] = spatialSelector.query(pRDD)(sQuery)
+  val stRDD = temporalSelector.query(sRDD)(tQuery)
 
   println(s"${sRDD.count} points after spatial filtering")
   println(s"${stRDD.count} points after spatio-temporal filtering")
