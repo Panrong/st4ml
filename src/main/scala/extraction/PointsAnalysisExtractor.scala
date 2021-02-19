@@ -87,7 +87,8 @@ class PointsAnalysisExtractor extends Extractor with Serializable {
       .distinct
       .collect
   }
-  def extractNumAttribute(key:String)(pRDD:RDD[Point]):Long =
+
+  def extractNumAttribute(key: String)(pRDD: RDD[Point]): Long =
     pRDD.map(x => x.attributes(key))
       .distinct
       .count

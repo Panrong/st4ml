@@ -8,7 +8,7 @@ import java.lang.System.nanoTime
 import scala.util.control.Breaks
 
 object ReadTrajFile {
-  val timeCount = true
+  val timeCount = false
 
   /**
    *
@@ -57,7 +57,7 @@ object ReadTrajFile {
       }
       geometry.Trajectory(tripID, startTime, points, Map("taxiID" -> taxiID.toString))
     })
-    println("==== Read CSV Done")
+    //println("==== Read CSV Done")
     resRDD.take(1)
     if (timeCount) println("... Time used: " + (nanoTime - t) / 1e9d + "s")
     t = nanoTime
