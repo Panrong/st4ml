@@ -39,7 +39,7 @@ object SelectorTest {
     val count = args(4).toBoolean
 
     val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions, count = count, limit = limit)
-      .persist(StorageLevel.MEMORY_AND_DISK)
+      .cache()
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     val tQuery = (1372700000L, 1372750000L)
     //val tQuery = (1399900000L, 1400000000L)
@@ -68,7 +68,7 @@ object SelectorTest {
     println("==== HASH Partitioner ====")
 
     t = nanoTime()
-    val hashPartitioner = new FastPartitioner(numPartitions)
+    val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
     val selectorHash = new RTreeSelector(sQuery, partitionRangeHash, Some(rTreeCapacity))
