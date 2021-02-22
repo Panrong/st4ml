@@ -1,13 +1,13 @@
 package examples
 
-import convertion.Converter
-import extraction.SMExtractor
+import operators.convertion.Converter
+import operators.extraction.SMExtractor
 import geometry.Rectangle
 import geometry.road.RoadGrid
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadMMTrajFile
-import selection.partitioner.HashPartitioner
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.HashPartitioner
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -50,7 +50,7 @@ object SimpleTest {
     val partitioner = new HashPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = new RTreeSelector(partitionRange)
+    val spatialSelector = new RTreeHandler(partitionRange)
     val temporalSelector = new TemporalSelector
     val converter = new Converter
     val extractor = new SMExtractor

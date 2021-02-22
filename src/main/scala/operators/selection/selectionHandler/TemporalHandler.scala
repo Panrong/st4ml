@@ -1,4 +1,4 @@
-package selection.selector
+package operators.selection.selectionHandler
 
 import geometry.Shape
 import org.apache.spark.rdd.RDD

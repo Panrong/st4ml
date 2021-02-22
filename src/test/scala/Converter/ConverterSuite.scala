@@ -1,15 +1,15 @@
 package Converter
 
-import convertion.Converter
+import operators.convertion.Converter
 import geometry.Rectangle
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajJson
-import selection.partitioner.HashPartitioner
-import selection.selector.RTreeSelector
-import extraction.PointsAnalysisExtractor
+import operators.selection.partitioner.HashPartitioner
+import operators.selection.selectionHandler.RTreeHandler
+import operators.extraction.PointsAnalysisExtractor
 import scala.io.Source
 
 class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
@@ -47,7 +47,7 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     val partitioner = new HashPartitioner(4)
     val pRDD = partitioner.partition(trajRDD).cache()
     val partitionRange = partitioner.partitionRange
-    val selector = new RTreeSelector( partitionRange, Some(500))
+    val selector = new RTreeHandler( partitionRange, Some(500))
     val queriedRDD = selector.query(pRDD)(sQuery)
     println(s"--- ${queriedRDD.count} trajectories")
 

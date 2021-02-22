@@ -1,4 +1,4 @@
-package selection.indexer
+package operators.selection.indexer
 
 import scala.collection.mutable
 import scala.util.control.Breaks

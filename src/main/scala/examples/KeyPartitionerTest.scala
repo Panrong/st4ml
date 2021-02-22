@@ -4,8 +4,8 @@ import geometry.Shape
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import preprocessing.{ReadQueryFile, ReadTrajFile}
-import selection.indexer.RTree
-import selection.partitioner.STRPartitioner
+import operators.selection.indexer.RTree
+import operators.selection.partitioner.STRPartitioner
 
 import java.lang.System.nanoTime
 import scala.collection.immutable.ListMap

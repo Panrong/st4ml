@@ -1,4 +1,4 @@
-package selection
+package operators.selection
 
 import geometry.Rectangle
 import org.apache.spark.SparkContext
@@ -7,8 +7,8 @@ import org.apache.spark.storage.StorageLevel
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-import selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import scala.io.Source
 import scala.math.{max, sqrt}
@@ -81,7 +81,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
     val temporalSelectorH = new TemporalSelector
 
     val queriedRDDHash = selectorHash.query(pRDDHash)(sQuery).cache()
@@ -132,7 +132,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val strPartitioner = new STRPartitioner(numPartitions)
     val pRDD = strPartitioner.partition(trajRDD).cache()
     val partitionRange = strPartitioner.partitionRange
-    val selector = RTreeSelector(partitionRange, Some(rTreeCapacity))
+    val selector = RTreeHandler(partitionRange, Some(rTreeCapacity))
     val temporalSelector = new TemporalSelector
 
     val queriedRDD = selector.query(pRDD)(sQuery).cache()
@@ -184,7 +184,7 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     val strPartitioner = new QuadTreePartitioner(numPartitions)
     val pRDD = strPartitioner.partition(trajRDD).cache()
     val partitionRange = strPartitioner.partitionRange
-    val selector = RTreeSelector(partitionRange, Some(rTreeCapacity))
+    val selector = RTreeHandler(partitionRange, Some(rTreeCapacity))
     val temporalSelector = new TemporalSelector
 
     val queriedRDD = selector.query(pRDD)(sQuery).cache()

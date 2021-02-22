@@ -1,11 +1,11 @@
 package examples
 
-import extraction.PointsAnalysisExtractor
+import operators.extraction.PointsAnalysisExtractor
 import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
 import preprocessing.{GenFakePoints, ReadPointFile}
-import selection.partitioner.HashPartitioner
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.HashPartitioner
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -49,7 +49,7 @@ object RangeDataAnalysis {
     val partitioner = new HashPartitioner(numPartitions)
     val pRDD = partitioner.partition(pointRDD)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = new RTreeSelector(partitionRange)
+    val spatialSelector = new RTreeHandler(partitionRange)
     val temporalSelector = new TemporalSelector
     val queriedRDD = temporalSelector.query(
       spatialSelector.query(pRDD)(sQuery)

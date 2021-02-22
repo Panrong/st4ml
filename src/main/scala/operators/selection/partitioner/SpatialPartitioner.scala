@@ -1,4 +1,4 @@
-package selection.partitioner
+package operators.selection.partitioner
 
 import geometry.Rectangle
 import org.apache.spark.rdd.RDD

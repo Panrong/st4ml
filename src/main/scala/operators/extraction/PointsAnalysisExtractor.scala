@@ -1,4 +1,4 @@
-package extraction
+package operators.extraction
 
 import geometry.Point
 import org.apache.spark.rdd.RDD

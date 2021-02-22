@@ -4,8 +4,8 @@ import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajFile
-import selection.partitioner._
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner._
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -71,7 +71,7 @@ object SelectorTest {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = new RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
 
     pRDDHash.take(1)
     println(s"... Partitioning takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")

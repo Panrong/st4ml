@@ -1,14 +1,14 @@
-package selection.selector
+package operators.selection.selectionHandler
 
 import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
-import selection.indexer.RTree
+import operators.selection.indexer.RTree
 
 import scala.math.max
 import scala.reflect.ClassTag
 
-case class RTreeSelector(override val partitionRange: Map[Int, Rectangle],
-                         var capacity: Option[Int] = None) extends SpatialSelector {
+case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
+                        var capacity: Option[Int] = None) extends SpatialHandler {
 
   override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
                                            (queryRange: Rectangle): RDD[(Int, T)] = {

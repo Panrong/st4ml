@@ -1,9 +1,9 @@
-package extraction
+package operators.extraction
 
 import geometry.Point
 import org.apache.spark.rdd.RDD
 import scala.math.abs
-import selection.partitioner.STRPartitioner
+import operators.selection.partitioner.STRPartitioner
 
 class PointCompanionExtractor(sThreshold: Double, tThreshold: Double) extends Extractor with Serializable {
   def extract(pRDD: RDD[Point]): Array[(String, String)] = {

@@ -1,4 +1,4 @@
-package selection.selector
+package operators.selection.selectionHandler
 
 import geometry.{Rectangle, Shape}
 import org.apache.spark.SparkContext
@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 
 
-class FilterSelector(override val partitionRange: Map[Int, Rectangle]) extends SpatialSelector {
+class FilterHandler(override val partitionRange: Map[Int, Rectangle]) extends SpatialHandler {
 
   override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
                                            (queryRange: Rectangle): RDD[(Int, T)] = {

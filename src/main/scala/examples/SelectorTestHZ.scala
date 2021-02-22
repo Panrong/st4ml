@@ -4,8 +4,8 @@ import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
-import selection.partitioner.{HashPartitioner, QuadTreePartitioner}
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner}
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -65,7 +65,7 @@ object SelectorTestHZ {
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
-    val selectorHash = new RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = new RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
     pRDDHash.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -88,7 +88,7 @@ object SelectorTestHZ {
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
 
-    val selectorQt = new RTreeSelector(partitionRangeQt, Some(rTreeCapacity))
+    val selectorQt = new RTreeHandler(partitionRangeQt, Some(rTreeCapacity))
     pRDDQt.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 

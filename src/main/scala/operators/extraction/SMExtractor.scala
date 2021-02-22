@@ -1,4 +1,4 @@
-package extraction
+package operators.extraction
 
 import geometry.subSpatialMap
 import org.apache.spark.rdd.RDD

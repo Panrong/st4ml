@@ -1,4 +1,4 @@
-package convertion
+package operators.convertion
 
 import geometry._
 import org.apache.spark.rdd.RDD

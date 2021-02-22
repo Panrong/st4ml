@@ -1,13 +1,13 @@
 package examples
 
-import convertion.Converter
-import extraction.PointsAnalysisExtractor
+import operators.convertion.Converter
+import operators.extraction.PointsAnalysisExtractor
 import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
-import selection.partitioner.HashPartitioner
-import selection.selector.{RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.HashPartitioner
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import java.text.SimpleDateFormat
@@ -68,7 +68,7 @@ object PointAnalysisTest {
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
-    val selectorHash = new RTreeSelector(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = new RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
     pRDDHash.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 

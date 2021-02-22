@@ -1,16 +1,16 @@
-package selection.queryHandler
+package operators.selection
 
 import geometry.{Rectangle, Shape}
+import operators.selection.partitioner.HashPartitioner
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
-import selection.partitioner.HashPartitioner
-import selection.selector.{RTreeSelector, TemporalSelector}
 
 import scala.reflect.ClassTag
 
-class DefaultQueryHandler
+class DefaultSelector
 (partitioner: HashPartitioner,
- var spatialSelector: RTreeSelector,
- temporalSelector: TemporalSelector) extends QueryHandler {
+ var spatialSelector: RTreeHandler,
+ temporalSelector: TemporalSelector) extends Selector {
   override def query[R <: Shape : ClassTag](dataRDD: RDD[R],
                                             sQuery: Rectangle,
                                             tQuery: (Long, Long)): RDD[(Int, R)] = {
@@ -22,13 +22,13 @@ class DefaultQueryHandler
   }
 }
 
-object DefaultQueryHandler {
-  def apply(numPartitions: Int): DefaultQueryHandler = {
+object DefaultSelector {
+  def apply(numPartitions: Int): DefaultSelector = {
     val partitioner = new HashPartitioner(numPartitions)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = RTreeSelector(partitionRange)
+    val spatialSelector = RTreeHandler(partitionRange)
     val temporalSelector = new TemporalSelector()
-    new DefaultQueryHandler(partitioner, spatialSelector, temporalSelector)
+    new DefaultSelector(partitioner, spatialSelector, temporalSelector)
   }
 
 }

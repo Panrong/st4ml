@@ -1,4 +1,4 @@
-package selection.partitioner
+package operators.selection.partitioner
 
 import org.apache.spark.Partitioner
 

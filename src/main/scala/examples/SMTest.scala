@@ -1,13 +1,13 @@
 package examples
 
-import convertion.Converter
-import extraction.SMExtractor
+import operators.convertion.Converter
+import operators.extraction.SMExtractor
 import geometry.Rectangle
 import geometry.road.RoadGrid
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadMMTrajFile
-import selection.partitioner.{HashPartitioner, STRPartitioner}
-import selection.selector.{FilterSelector, RTreeSelector, TemporalSelector}
+import operators.selection.partitioner.{HashPartitioner, STRPartitioner}
+import operators.selection.selectionHandler.{FilterHandler, RTreeHandler, TemporalSelector}
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -68,8 +68,8 @@ object SMTest {
     val partitioner = new STRPartitioner(numPartitions)
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
-    val filterSelector = new FilterSelector(partitionRange)
-    val rtreeSelector = new RTreeSelector(partitionRange)
+    val filterSelector = new FilterHandler(partitionRange)
+    val rtreeSelector = new RTreeHandler(partitionRange)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -102,8 +102,8 @@ object SMTest {
     val hashPartitioner = new HashPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
-    val selectorHash = new FilterSelector(partitionRangeHash)
-    val rtreeselectorHash = new FilterSelector(partitionRangeHash)
+    val selectorHash = new FilterHandler(partitionRangeHash)
+    val rtreeselectorHash = new FilterHandler(partitionRangeHash)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
