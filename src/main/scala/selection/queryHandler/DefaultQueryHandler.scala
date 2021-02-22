@@ -26,7 +26,7 @@ object DefaultQueryHandler {
   def apply(numPartitions: Int): DefaultQueryHandler = {
     val partitioner = new HashPartitioner(numPartitions)
     val partitionRange = partitioner.partitionRange
-    val spatialSelector = RTreeSelector(partitionRange, Some(1000))
+    val spatialSelector = RTreeSelector(partitionRange)
     val temporalSelector = new TemporalSelector()
     new DefaultQueryHandler(partitioner, spatialSelector, temporalSelector)
   }

@@ -10,7 +10,6 @@ import preprocessing.ReadTrajFile
 object App {
   def main(args: Array[String]): Unit = {
 
-
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
@@ -24,21 +23,18 @@ object App {
     val trajectoryFile = args(0)
     val numPartitions = args(1).toInt
     val dataSize = args(2).toInt
-
+    val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
+    val tQuery = args(4).split(",").map(_.toLong)
     /** initialize operators */
     val operator = new SttDefault(numPartitions)
 
     /** read input data */
     val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
 
-    /** spatial and temporal range */
-    val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
-    val tQuery = (1372700000L, 1372750000L)
-
     /** step 1: Selection */
-    val rdd1 = operator.queryHandler.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.queryHandler.query(trajRDD, sQuery, (tQuery.head, tQuery.last))
     rdd1.cache()
-    
+
     /** step 2: Conversion */
     val rdd2 = operator.converter.traj2Point(rdd1)
     rdd2.cache()
