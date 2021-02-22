@@ -32,7 +32,7 @@ object App {
     val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.queryHandler.query(trajRDD, sQuery, (tQuery.head, tQuery.last))
+    val rdd1 = operator.selector.query(trajRDD, sQuery, (tQuery.head, tQuery.last))
     rdd1.cache()
 
     /** step 2: Conversion */
