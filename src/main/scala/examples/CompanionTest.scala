@@ -65,12 +65,12 @@ object CompanionTest extends App {
 
   /** step 3: extraction */
   t = nanoTime()
-  val extractor = new PointCompanionExtractor(500, 100)
-  val extractedO = extractor.optimizedExtract(stRDD.map(x => x._2))
+  val extractor = new PointCompanionExtractor
+  val extractedO = extractor.optimizedExtract(500, 100)(stRDD.map(x => x._2))
   println(s"${extractedO.length} pairs have companion relationship (optimized)")
   println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
   //    println(extracted2.sorted.deep)
-  val extracted = extractor.extract(stRDD.map(x => x._2))
+  val extracted = extractor.extract(500, 100)(stRDD.map(x => x._2))
   println(s"${extracted.length} pairs have companion relationship (full scan)")
   println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
   //    println(extracted.sorted.deep)

@@ -5,8 +5,8 @@ import org.apache.spark.rdd.RDD
 import scala.math.abs
 import operators.selection.partitioner.STRPartitioner
 
-class PointCompanionExtractor(sThreshold: Double, tThreshold: Double) extends Extractor with Serializable {
-  def extract(pRDD: RDD[Point]): Array[(String, String)] = {
+class PointCompanionExtractor extends Extractor with Serializable {
+  def extract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): Array[(String, String)] = {
     val pairRDD = pRDD.cartesian(pRDD).filter{
       case (p1, p2) =>
         abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold && abs(p1.geoDistance(p2)) <= sThreshold && p1.id != p2.id
@@ -17,10 +17,9 @@ class PointCompanionExtractor(sThreshold: Double, tThreshold: Double) extends Ex
       .map(x => (x.head, x(1)))
     pairRDD.collect
   }
-  def optimizedExtract(pRDD: RDD[Point]): Array[(String, String)] = {
+  def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): Array[(String, String)] = {
     val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
     val repartitionedRDD = partitioner.partition(pRDD)
-
     repartitionedRDD.mapPartitions(x => {
       val points = x.toArray.map(_._2)
       points.flatMap(x => points.map(y => (x, y))).filter{

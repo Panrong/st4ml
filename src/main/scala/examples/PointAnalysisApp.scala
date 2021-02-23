@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 
-object App {
+object PointAnalysisApp {
   def main(args: Array[String]): Unit = {
 
     /** set up Spark environment */
