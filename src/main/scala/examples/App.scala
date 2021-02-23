@@ -16,7 +16,7 @@ object App {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-      .master("local[*]")
+      //.master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -26,14 +26,7 @@ object App {
     val numPartitions = args(1).toInt
     val dataSize = args(2).toInt
     val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
-
-    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    val tQuery = if (args(4).split(",").head forall Character.isDigit) {
-      args(4).split(",").map(_.toLong)
-    } else {
-      args(4).split(",").map(format.parse(_).getTime / 1000)
-    }
-
+    val tQuery = parseTemporalRange(args(4))
 
     /** initialize operators */
     val operator = new SttDefault(numPartitions)
@@ -42,7 +35,7 @@ object App {
     val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, (tQuery.head, tQuery.last))
+    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     rdd1.cache()
 
     /** step 2: Conversion */
@@ -50,7 +43,6 @@ object App {
     rdd2.cache()
 
     /** step 3: Extraction */
-
     val extractor = operator.extractor
     val topN = 3
     println("=== Analysing Results:")
@@ -85,9 +77,20 @@ object App {
     sc.stop()
   }
 
+  /** helper functions */
   def timeLong2String(tm: Long): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     val tim = fm.format(new Date(tm * 1000))
     tim
+  }
+
+  def parseTemporalRange(s: String, pattern: String = "yyyy-MM-dd HH:mm:ss"): (Long, Long) = {
+    val format = new SimpleDateFormat(pattern)
+    val tRange = if (s.split(",").head forall Character.isDigit) {
+      s.split(",").map(_.toLong)
+    } else {
+      s.split(",").map(format.parse(_).getTime / 1000)
+    }
+    (tRange.head, tRange.last)
   }
 }
