@@ -18,7 +18,7 @@ object CompanionApp {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-      //      .master("local[*]")
+            .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -48,7 +48,7 @@ object CompanionApp {
     //    rdd2.cache()
 
     /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(500, 100)(rdd2)
+    val companionPairs = operator.extractor.optimizedExtract(100, 5000)(rdd2)
     println("=== Companion Analysis done: ")
     println(s"    ... In total ${companionPairs.length} companion pairs")
     println("    ... Some examples: ")

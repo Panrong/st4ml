@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 import scala.Array.concat
 import scala.math.{max, min}
 
-class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None)
+class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None, threshold: Double = 0)
   extends SpatialPartitioner {
 
   override var partitionRange: Map[Int, Rectangle] = Map()
@@ -214,7 +214,9 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
     //    println("--")
     //    nodeList.foreach(x => println(x))
     //    println("--")
-    nodeList.zipWithIndex
+    val boxesWithID = nodeList.zipWithIndex
       .map(x => (x._2, x._1)).toMap // make all leaves have ids 0 to numPartition-1
+    if (threshold != 0) boxesWithID.mapValues(rectangle => rectangle.dilate(threshold)).map(identity)
+    else boxesWithID
   }
 }
