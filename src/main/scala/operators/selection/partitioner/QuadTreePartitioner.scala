@@ -219,4 +219,25 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
     if (threshold != 0) boxesWithID.mapValues(rectangle => rectangle.dilate(threshold)).map(identity)
     else boxesWithID
   }
+
+  /**
+   * Partition spatial dataRDD and queries simultaneously
+   *
+   * @param dataRDD  : data RDD
+   * @param queryRDD : query RDD
+   * @tparam T : type of spatial dataRDD, extending geometry.Shape
+   * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
+   */
+  def copartition[T <: geometry.Shape : ClassTag, R <: geometry.Shape : ClassTag]
+  (dataRDD: RDD[T], queryRDD: RDD[R]):
+  (RDD[(Int, T)], RDD[(Int, R)]) = {
+    val partitionMap = getPartitionRange(dataRDD)
+    val partitioner = new KeyPartitioner(numPartitions)
+    val boundary = genBoundary(partitionMap)
+    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+      .partitionBy(partitioner)
+    val pQueryRDD = assignPartition(queryRDD, partitionMap, boundary)
+      .partitionBy(partitioner)
+    (pRDD, pQueryRDD)
+  }
 }

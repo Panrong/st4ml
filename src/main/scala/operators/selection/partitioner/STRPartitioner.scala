@@ -168,9 +168,9 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
-  def copartition[T <: geometry.Shape : ClassTag]
-  (dataRDD: RDD[T], queryRDD: RDD[Rectangle]):
-  (RDD[(Int, T)], RDD[(Int, Rectangle)]) = {
+  def copartition[T <: geometry.Shape : ClassTag, R <: geometry.Shape : ClassTag]
+  (dataRDD: RDD[T], queryRDD: RDD[R]):
+  (RDD[(Int, T)], RDD[(Int, R)]) = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
