@@ -1,10 +1,12 @@
 package examples
 
-import examples.PointAnalysisTest.timeLong2String
 import geometry.Rectangle
 import operators.SttDefault
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajFile
+
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 object App {
@@ -14,7 +16,7 @@ object App {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-      //      .master("local[*]")
+      .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -24,7 +26,15 @@ object App {
     val numPartitions = args(1).toInt
     val dataSize = args(2).toInt
     val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
-    val tQuery = args(4).split(",").map(_.toLong)
+
+    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    val tQuery = if (args(4).split(",").head forall Character.isDigit) {
+      args(4).split(",").map(_.toLong)
+    } else {
+      args(4).split(",").map(format.parse(_).getTime / 1000)
+    }
+
+
     /** initialize operators */
     val operator = new SttDefault(numPartitions)
 
@@ -73,6 +83,11 @@ object App {
     println(s" ... Number of abnormal ids : ${abnormity.length}")
 
     sc.stop()
+  }
 
+  def timeLong2String(tm: Long): String = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    val tim = fm.format(new Date(tm * 1000))
+    tim
   }
 }

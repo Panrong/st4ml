@@ -68,7 +68,7 @@ object PointAnalysisTest {
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
-    val selectorHash = new RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
     pRDDHash.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
