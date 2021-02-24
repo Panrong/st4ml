@@ -68,22 +68,22 @@ object CompanionTest {
     /** step 3: extraction */
     t = nanoTime()
     val extractor = new PointCompanionExtractor
-    val extractedO = extractor.optimizedExtract(500, 100)(pointRDD)
-    println(s"${extractedO.length} pairs have companion relationship (optimized)")
-    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
-    //    println(extracted2.sorted.deep)
-    val extracted = extractor.extract(500, 100)(pointRDD)
-    println(s"${extracted.length} pairs have companion relationship (full scan)")
-    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
-    //    println(extracted.sorted.deep)
+//    val extractedO = extractor.optimizedExtract(500, 100)(pointRDD)
+//    println(s"${extractedO.length} pairs have companion relationship (optimized)")
+//    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
+//    //    println(extracted2.sorted.deep)
+//    val extracted = extractor.extract(500, 100)(pointRDD)
+//    println(s"${extracted.length} pairs have companion relationship (full scan)")
+//    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
+//    //    println(extracted.sorted.deep)
 
     /** step 3.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)
     val queryPoints = converter.traj2Point(queries.map((0, _)))
-    val queried1 = extractor.queryWithIDsFS(500, 100)(pointRDD, queryPoints)
+    val queried1 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints) // 500m and 10min
     val count1 = queried1.mapValues(_.distinct.length)
     println(mutable.ListMap(count1.toSeq.sortBy(_._1): _*))
-    val queried2 = extractor.queryWithIDs(500, 100)(pointRDD, queryPoints)
+    val queried2 = extractor.queryWithIDsFS(500, 600)(pointRDD, queryPoints)
     val count2 = queried2.mapValues(_.distinct.length)
     println(mutable.ListMap(count2.toSeq.sortBy(_._1): _*))
 
