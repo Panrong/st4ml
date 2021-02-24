@@ -36,7 +36,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
   }
 
   def queryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): Map[String, Array[String]] = {
-    val partitioner = new QuadTreePartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
+    val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
     val (repartitionedRDD, repartitionedQueryRDD) = partitioner.copartition(pRDD, queryRDD)
     repartitionedRDD.zipPartitions(repartitionedQueryRDD) {
       (pIterator, qIterator) => {
