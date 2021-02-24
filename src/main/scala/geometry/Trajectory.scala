@@ -73,4 +73,6 @@ case class Trajectory(tripID: String,
 
   override def inside(rectangle: Rectangle): Boolean = this.mbr.inside(rectangle)
 
+  def setID(id: String): Trajectory = this.copy(tripID = id)
+
 }

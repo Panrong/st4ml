@@ -1,4 +1,4 @@
-package Converter
+package operators.convertion
 
 import operators.convertion.Converter
 import geometry.Rectangle
