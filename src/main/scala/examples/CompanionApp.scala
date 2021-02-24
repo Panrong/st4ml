@@ -48,7 +48,7 @@ object CompanionApp {
     //    rdd2.cache()
 
     /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(100, 5000)(rdd2)
+    val companionPairs = operator.extractor.optimizedExtract(100, 600)(rdd2)
     println("=== Companion Analysis done: ")
     println(s"    ... In total ${companionPairs.length} companion pairs")
     println("    ... Some examples: ")

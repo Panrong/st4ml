@@ -43,7 +43,8 @@ class PointCompanionExtractor extends Extractor with Serializable {
         val points = pIterator.toArray.map(_._2)
         val queries = qIterator.toArray.map(_._2)
         points.flatMap(x => queries.map(y => (x, y))).filter {
-          case (p1, p2) => abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold && abs(p1.geoDistance(p2)) <= sThreshold &&
+          case (p1, p2) => abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold &&
+            abs(p1.geoDistance(p2)) <= sThreshold &&
             p1.attributes("tripID") != p2.attributes("tripID")
         }.map(x => (x._2.attributes("tripID"), x._1.attributes("tripID")))
           .toIterator
@@ -57,7 +58,8 @@ class PointCompanionExtractor extends Extractor with Serializable {
   def queryWithIDsFS(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): Map[String, Array[String]] = {
     queryRDD.cartesian(pRDD).filter {
       case (p1, p2) =>
-        abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold && abs(p1.geoDistance(p2)) <= sThreshold &&
+        abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold &&
+          abs(p1.geoDistance(p2)) <= sThreshold &&
           p1.attributes("tripID") != p2.attributes("tripID")
     }.map{
       case(p,q) => (p.attributes("tripID"), q.attributes("tripID"))
