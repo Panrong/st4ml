@@ -3,6 +3,8 @@ package operators.convertion
 import geometry._
 import org.apache.spark.rdd.RDD
 
+import scala.reflect.ClassTag
+
 class Converter {
   def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
   RDD[subSpatialMap[Array[(Long, String)]]] = {
@@ -31,6 +33,10 @@ class Converter {
   def traj2Point(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
     rdd.map(_._2).flatMap(
       traj => traj.points.map(p =>
-        p.setAttributes(Map("tripID"->traj.id))))
+        p.setAttributes(Map("tripID" -> traj.id))))
+  }
+
+  def doNothing[T <: Shape : ClassTag](rdd: RDD[(Int, T)]): RDD[T] = {
+    rdd.map(_._2)
   }
 }

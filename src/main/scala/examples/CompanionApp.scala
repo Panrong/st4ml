@@ -2,7 +2,7 @@ package examples
 
 import geometry.Rectangle
 import operators.convertion.Converter
-import operators.extraction.PointCompanionExtractor
+import operators.extraction.TrajCompanionExtractor
 import operators.selection.DefaultSelector
 import operators.CustomOperatorSet
 import org.apache.spark.sql.SparkSession
@@ -18,7 +18,7 @@ object CompanionApp {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-            .master("local[*]")
+      //      .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -29,30 +29,35 @@ object CompanionApp {
     val dataSize = args(2).toInt
     val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
     val tQuery = parseTemporalRange(args(4))
+    val queryFile = args(5)
+    val queryThreshold = args(6).split(",").map(_.toDouble)
+    val sThreshold = queryThreshold.head
+    val tThreshold = queryThreshold.last
+
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
       new Converter,
-      new PointCompanionExtractor)
+      new TrajCompanionExtractor)
 
     /** read input data */
     val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions, limit = true)
+    val queryRDD = ReadTrajFile(queryFile, 1)
 
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     //    rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2Point(rdd1)
+    val rdd2 = operator.converter.doNothing(rdd1)
     //    rdd2.cache()
-
     /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(100, 600)(rdd2)
+    val companionPairs = operator.extractor.queryWithIDs(sThreshold, tThreshold)(rdd2, queryRDD)
+    val count = companionPairs.mapValues(_.distinct.length)
     println("=== Companion Analysis done: ")
-    println(s"    ... In total ${companionPairs.length} companion pairs")
-    println("    ... Some examples: ")
-    companionPairs.take(5).foreach(x => println(s"    ... ${x._1} and ${x._2}"))
+    println(" ... number of companion IDs for each query: ")
+    count.foreach { case (q, c) => println(s"  ... $q: $c") }
     sc.stop()
   }
 
