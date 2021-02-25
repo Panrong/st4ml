@@ -42,7 +42,7 @@ object CompanionApp {
       new TrajCompanionExtractor)
 
     /** read input data */
-    val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions, limit = true)
+    val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
     val queryRDD = ReadTrajFile(queryFile, 1)
 
     /** step 1: Selection */

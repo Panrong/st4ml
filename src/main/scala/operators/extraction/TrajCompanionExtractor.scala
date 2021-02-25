@@ -1,7 +1,7 @@
 package operators.extraction
 
 import geometry.{Point, Trajectory}
-import operators.selection.partitioner.STRPartitioner
+import operators.selection.partitioner.{QuadTreePartitioner, STRPartitioner}
 import org.apache.spark.rdd.RDD
 
 import scala.math.abs
@@ -28,7 +28,7 @@ class TrajCompanionExtractor extends Serializable {
 
   def queryWithIDs(sThreshold: Double, tThreshold: Double)
                   (pRDD: RDD[Trajectory], queryRDD: RDD[Trajectory]): Map[String, Array[String]] = {
-    val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
+    val partitioner = new QuadTreePartitioner(pRDD.getNumPartitions, Some(0.2))
     val (repartitionedRDD, repartitionedQueryRDD) = partitioner.copartition(pRDD, queryRDD)
     repartitionedRDD.zipPartitions(repartitionedQueryRDD) {
       (pIterator, qIterator) => {
