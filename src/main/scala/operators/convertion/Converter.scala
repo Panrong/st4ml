@@ -39,4 +39,32 @@ class Converter {
   def doNothing[T <: Shape : ClassTag](rdd: RDD[(Int, T)]): RDD[T] = {
     rdd.map(_._2)
   }
+
+  def point2Traj(rdd: RDD[Point], timeSplit: Double = 600): RDD[Trajectory] = {
+    val numPartitions = rdd.getNumPartitions
+    rdd.map(p => (p.attributes("tripID"), p))
+      .groupByKey()
+      .coalesce(numPartitions)
+      .mapValues(points => {
+        points.toSeq.sortBy(_.timeStamp._1)
+          .foldRight(new Array[Array[Point]](0)) {
+            (x, r) =>
+              if (r.length == 0 || x.timeStamp._1 - r.last.last.timeStamp._2 > timeSplit) r :+ Array(x)
+              else {
+                val last = r.last
+                r.dropRight(1) :+ (last :+ x)
+              }
+          }
+      })
+      .flatMapValues(x => x)
+      .map(_._2)
+      .filter(_.length > 1)
+      .zipWithUniqueId()
+      .map { case (points, id) =>
+        Trajectory(id.toString,
+          points.head.timeStamp._1,
+          points, attributes = Map("tripID" -> points.head.attributes("tripID")))
+      }
+  }
+
 }

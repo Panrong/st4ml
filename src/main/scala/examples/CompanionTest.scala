@@ -1,13 +1,13 @@
 package examples
 
-import geometry.{Rectangle, Trajectory}
+import geometry.{Point, Rectangle, Trajectory}
 import operators.convertion.Converter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import preprocessing.ReadTrajFile
+import preprocessing.{ReadTrajFile, ReadTrajJson}
 
 import java.lang.System.nanoTime
 import scala.collection.mutable
@@ -68,14 +68,14 @@ object CompanionTest {
     /** step 3: extraction */
     t = nanoTime()
     val extractor = new PointCompanionExtractor
-//    val extractedO = extractor.optimizedExtract(500, 100)(pointRDD)
-//    println(s"${extractedO.length} pairs have companion relationship (optimized)")
-//    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
-//    //    println(extracted2.sorted.deep)
-//    val extracted = extractor.extract(500, 100)(pointRDD)
-//    println(s"${extracted.length} pairs have companion relationship (full scan)")
-//    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
-//    //    println(extracted.sorted.deep)
+    //    val extractedO = extractor.optimizedExtract(500, 100)(pointRDD)
+    //    println(s"${extractedO.length} pairs have companion relationship (optimized)")
+    //    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
+    //    //    println(extracted2.sorted.deep)
+    //    val extracted = extractor.extract(500, 100)(pointRDD)
+    //    println(s"${extracted.length} pairs have companion relationship (full scan)")
+    //    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
+    //    //    println(extracted.sorted.deep)
 
     /** step 3.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)

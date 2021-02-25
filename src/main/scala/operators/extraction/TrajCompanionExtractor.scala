@@ -25,7 +25,6 @@ class TrajCompanionExtractor extends Serializable {
       .toMap
   }
 
-
   def queryWithIDs(sThreshold: Double, tThreshold: Double)
                   (pRDD: RDD[Trajectory], queryRDD: RDD[Trajectory]): Map[String, Array[String]] = {
     val partitioner = new QuadTreePartitioner(pRDD.getNumPartitions, Some(0.2))

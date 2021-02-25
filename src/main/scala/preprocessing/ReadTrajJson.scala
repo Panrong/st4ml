@@ -23,23 +23,23 @@ object ReadTrajJson {
     val ds = df.as[TmpTraj]
       .filter(tmpTraj => tmpTraj.points.length != 0)
       .map(tmpTraj => {
-      val id = tmpTraj.id
-      val traj = tmpTraj.points.length match {
-        case 0 => geometry.Trajectory(id, 0, new Array[geometry.Point](0))
-        case _ =>
-          try {
-            val points = tmpTraj.points.map(p =>
-              geometry.Point(Array(p.longitude.toDouble, p.latitude.toDouble), p.timestamp.toLong, id))
-            geometry.Trajectory(id, points.head.t, points)
-          }
-          catch {
-            case _: Throwable => geometry.Trajectory("invalid", 0, Array(geometry.Point(Array(-181,-181))))
-          }
-      }
-      traj
-    })
+        val id = tmpTraj.id
+        val traj = tmpTraj.points.length match {
+          case 0 => geometry.Trajectory(id, 0, new Array[geometry.Point](0))
+          case _ =>
+            try {
+              val points = tmpTraj.points.map(p =>
+                geometry.Point(Array(p.longitude.toDouble, p.latitude.toDouble), p.timestamp.toLong, id))
+              geometry.Trajectory(id, points.head.t, points)
+            }
+            catch {
+              case _: Throwable => geometry.Trajectory("invalid", 0, Array(geometry.Point(Array(-181, -181))))
+            }
+        }
+        traj
+      })
     val res = ds.rdd.filter(_.id != "invalid").repartition(numPartitions)
-    println(s"=== Total number of trajectories: ${res.count}")
+    //    println(s"=== Total number of trajectories: ${res.count}")
     res
   }
 }
