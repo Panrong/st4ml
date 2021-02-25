@@ -8,8 +8,7 @@ import operators.CustomOperatorSet
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajFile
 
-import java.text.SimpleDateFormat
-import java.util.Date
+import utils.TimeParsing._
 
 object CompanionApp {
   def main(args: Array[String]): Unit = {
@@ -34,7 +33,6 @@ object CompanionApp {
     val sThreshold = queryThreshold.head
     val tThreshold = queryThreshold.last
 
-
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
@@ -52,6 +50,7 @@ object CompanionApp {
     /** step 2: Conversion */
     val rdd2 = operator.converter.doNothing(rdd1)
     //    rdd2.cache()
+
     /** step 3: Extraction */
     val companionPairs = operator.extractor.queryWithIDs(sThreshold, tThreshold)(rdd2, queryRDD)
     val count = companionPairs.mapValues(_.distinct.length)
@@ -59,22 +58,5 @@ object CompanionApp {
     println(" ... number of companion IDs for each query: ")
     count.foreach { case (q, c) => println(s"  ... $q: $c") }
     sc.stop()
-  }
-
-  /** helper functions */
-  def timeLong2String(tm: Long): String = {
-    val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    val tim = fm.format(new Date(tm * 1000))
-    tim
-  }
-
-  def parseTemporalRange(s: String, pattern: String = "yyyy-MM-dd HH:mm:ss"): (Long, Long) = {
-    val format = new SimpleDateFormat(pattern)
-    val tRange = if (s.split(",").head forall Character.isDigit) {
-      s.split(",").map(_.toLong)
-    } else {
-      s.split(",").map(format.parse(_).getTime / 1000)
-    }
-    (tRange.head, tRange.last)
   }
 }
