@@ -2,7 +2,6 @@ package operators.extraction
 
 import geometry.subSpatialMap
 import org.apache.spark.rdd.RDD
-import scalaz.Scalaz._
 
 class SMExtractor extends Extractor with Serializable {
   /**
