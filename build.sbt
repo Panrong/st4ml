@@ -1,6 +1,6 @@
 name := "st-tool"
 
-version := "1.0"
+version := "2.0"
 
 scalaVersion := "2.12.10"
 
@@ -13,3 +13,5 @@ libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.0.+" % "provided
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
+
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.3"

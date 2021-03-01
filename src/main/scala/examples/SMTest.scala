@@ -138,6 +138,29 @@ object SMTest {
     for (i <- avgSpeed.take(5)) {
       println(s"Road ID: ${i._1} --- Average speed ${i._2.formatted("%.3f")} km/h")
     }
+
+    val totalFlow = extractor.extractRoadFlow(convertedRDD)
+    println("\n===  Flow === :")
+    for (i <- totalFlow.take(5)) {
+      println(s"Road ID: ${i._1} --- Total Flow ${i._2}")
+    }
+
+    val startTime = tQuery._1
+    val endTime = tQuery._2
+    val windowSize = 15 * 60
+    val slidingFlow = extractor.extractSlidingFlow(convertedRDD, startTime, endTime, windowSize)
+    println(s"\n===  Sliding Flow started at $startTime with window size $windowSize s === :")
+    for (i <- slidingFlow.take(5)) {
+      println(s"Road ID: ${i._1} --- Sliding Flow ${i._2}")
+    }
+    val checksum1 = slidingFlow.values.flatten.sum
+    val checksum2 = totalFlow.values.sum
+    assert(checksum1 == checksum2)
+
+    val slidingSpeed = extractor.extractSlidingSpeed(convertedRDD, startTime, endTime, windowSize)
+    for (i <- slidingSpeed.take(5)) {
+      println(s"Road ID: ${i._1} --- Sliding Flow ${i._2}")
+    }
     sc.stop()
   }
 }
