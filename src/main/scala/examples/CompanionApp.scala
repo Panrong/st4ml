@@ -17,7 +17,7 @@ object CompanionApp {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-      //      .master("local[*]")
+           .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -40,7 +40,7 @@ object CompanionApp {
       new TrajCompanionExtractor)
 
     /** read input data */
-    val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
+    val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions, limit = true)
     val queryRDD = ReadTrajFile(queryFile, 1)
 
     /** step 1: Selection */
