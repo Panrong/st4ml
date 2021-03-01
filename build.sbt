@@ -13,5 +13,3 @@ libraryDependencies += "org.apache.spark" %% "spark-mllib" % "3.0.+" % "provided
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
-
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.3"

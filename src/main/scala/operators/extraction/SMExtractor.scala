@@ -42,12 +42,18 @@ class SMExtractor extends Extractor with Serializable {
   def extractSlidingFlow(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]],
                          startTime: Long, endTime: Long, windowSize: Int):
   Map[String, List[Int]] = {
-    val length = ((endTime - startTime) / windowSize).toInt
-    val emptyMap = (0 until length zip Array.fill(length)(0)).toMap
+    val length = ((endTime - startTime) / windowSize).toInt + 1
+    val emptyArray = scala.collection.mutable.ArrayBuffer.fill(length)(0)
     rdd.map(x => (x.roadID, x.attributes))
       .mapValues(x => x.map(s => (s._1 - startTime).toInt / windowSize))
-      .mapValues(x => x.groupBy(identity).mapValues(_.size) |+| emptyMap)
-      .mapValues(x => x.toList.sortBy(_._1).map(_._2))
+      .mapValues(x => x.groupBy(identity).mapValues(_.size))
+      .mapValues(x => x.filter { case (k, _) => k < length})
+      .mapValues(x => {
+        x.foreach {
+          case (k, v) => emptyArray(k) = v
+        }
+        emptyArray.toList
+      })
       .collect.toMap
   }
 
@@ -55,7 +61,7 @@ class SMExtractor extends Extractor with Serializable {
                           startTime: Long, endTime: Long, windowSize: Int):
   Map[String, List[Double]] = {
 
-    val length = ((endTime - startTime) / windowSize).toInt
+    val length = ((endTime - startTime) / windowSize).toInt + 1
     val emptyArray = scala.collection.mutable.ArrayBuffer.fill(length)(0.0)
     rdd.map(x => (x.roadID, x.attributes))
       .mapValues(x => x.map(s => ((s._1 - startTime).toInt / windowSize, s._3)))
