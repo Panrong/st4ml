@@ -17,7 +17,7 @@ object CompanionApp {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-           .master("local[*]")
+//      .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
