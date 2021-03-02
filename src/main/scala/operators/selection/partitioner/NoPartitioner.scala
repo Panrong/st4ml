@@ -14,7 +14,9 @@ class NoPartitioner(numPartitions: Int) extends SpatialPartitioner {
 
   override var samplingRate: Option[Double] = None
 
-  override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] ={
-    dataRDD.map((0,_))
+  override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] =
+    dataRDD.mapPartitionsWithIndex {
+      case (index, partitionIterator) => partitionIterator.map(x => (index, x))
     }
 }
+
