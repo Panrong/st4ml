@@ -69,7 +69,7 @@ object SelectorTest {
     println("==== HASH Partitioner ====")
 
     t = nanoTime()
-    val hashPartitioner = new HashPartitioner(numPartitions)
+    val hashPartitioner = new NoPartitioner(numPartitions)
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
     val selectorHash = RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
