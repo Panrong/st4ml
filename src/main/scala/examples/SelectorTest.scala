@@ -29,6 +29,7 @@ object SelectorTest {
       .master(config("master"))
       .appName(config("appName"))
       .getOrCreate()
+
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     val trajectoryFile = args(0)

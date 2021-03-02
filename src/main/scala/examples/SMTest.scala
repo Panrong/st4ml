@@ -153,14 +153,13 @@ object SMTest {
     for (i <- slidingFlow.take(5)) {
       println(s"Road ID: ${i._1} --- Sliding Flow ${i._2}")
     }
-    val checksum1 = slidingFlow.values.flatten.sum
-    val checksum2 = totalFlow.values.sum
-//    assert(checksum1 == checksum2)
+
     println(s"\n===  Sliding speed started at $startTime with window size $windowSize s === :")
     val slidingSpeed = extractor.extractSlidingSpeed(convertedRDD, startTime, endTime, windowSize)
     for (i <- slidingSpeed.take(5)) {
       println(s"Road ID: ${i._1} --- Sliding Flow ${i._2}")
     }
+
     sc.stop()
   }
 }

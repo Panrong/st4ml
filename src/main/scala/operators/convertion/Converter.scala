@@ -2,12 +2,19 @@ package operators.convertion
 
 import geometry._
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import scala.reflect.ClassTag
 
 class Converter {
+
   def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
   RDD[subSpatialMap[Array[(Long, String)]]] = {
+
+    SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+      Array(classOf[mmTrajectory],
+        classOf[subSpatialMap[Array[(Long, String)]]]))
+
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
       case (_, traj) =>
@@ -20,6 +27,11 @@ class Converter {
 
   def trajSpeed2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
   RDD[subSpatialMap[Array[(Long, String, Double)]]] = {
+
+    SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+      Array(classOf[mmTrajectory],
+        classOf[subSpatialMap[Array[(Long, String,Double)]]]))
+
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
       case (_, traj) =>
@@ -31,6 +43,11 @@ class Converter {
   }
 
   def traj2Point(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
+
+    SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+      Array(classOf[Trajectory],
+        classOf[Point]))
+
     rdd.map(_._2).flatMap(
       traj => traj.points.map(p =>
         p.setAttributes(Map("tripID" -> traj.id))))
@@ -41,6 +58,11 @@ class Converter {
   }
 
   def point2Traj(rdd: RDD[Point], timeSplit: Double = 600): RDD[Trajectory] = {
+
+    SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+      Array(classOf[Trajectory],
+        classOf[Point]))
+
     val numPartitions = rdd.getNumPartitions
     rdd.map(p => (p.attributes("tripID"), p))
       .groupByKey()

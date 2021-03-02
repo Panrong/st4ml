@@ -3,12 +3,18 @@ package operators.selection.selectionHandler
 import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 import operators.selection.indexer.RTree
+import org.apache.spark.sql.SparkSession
 
 import scala.math.max
 import scala.reflect.ClassTag
 
 case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
                         var capacity: Option[Int] = None) extends SpatialHandler {
+
+  SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+    Array(classOf[RTree[_]],
+      classOf[Rectangle],
+      classOf[Shape]))
 
   override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
                                            (queryRange: Rectangle): RDD[(Int, T)] = {
