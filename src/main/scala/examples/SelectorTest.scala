@@ -4,6 +4,7 @@ import geometry.Rectangle
 import operators.selection.partitioner._
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajFile
 
 import java.lang.System.nanoTime
@@ -39,7 +40,7 @@ object SelectorTest {
     val count = args(4).toBoolean
 
     val trajRDD = ReadTrajFile(trajectoryFile, num = dataSize, numPartitions, count = count, limit = limit)
-      .cache()
+      .persist(StorageLevel.MEMORY_ONLY_SER)
     val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
     val tQuery = (1372700000L, 1372750000L)
     //val tQuery = (1399900000L, 1400000000L)
