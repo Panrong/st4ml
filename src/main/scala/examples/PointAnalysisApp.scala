@@ -3,7 +3,7 @@ package examples
 import geometry.Rectangle
 import operators.SttDefault
 import org.apache.spark.sql.SparkSession
-import preprocessing.ReadTrajFile
+import preprocessing.ReadTrajJson
 
 import utils.TimeParsing._
 
@@ -14,7 +14,7 @@ object PointAnalysisApp {
     val spark = SparkSession
       .builder()
       .appName("ExampleApp")
-      //.master("local[*]")
+//      .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -30,14 +30,14 @@ object PointAnalysisApp {
     val operator = new SttDefault(numPartitions)
 
     /** read input data */
-    val trajRDD = ReadTrajFile(trajectoryFile, dataSize, numPartitions)
+    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2Point(rdd1)
+    val rdd2 = operator.converter.traj2PointClean(rdd1, sQuery)
     rdd2.cache()
 
     /** step 3: Extraction */

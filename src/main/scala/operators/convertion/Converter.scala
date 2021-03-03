@@ -30,7 +30,7 @@ class Converter {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[mmTrajectory],
-        classOf[subSpatialMap[Array[(Long, String,Double)]]]))
+        classOf[subSpatialMap[Array[(Long, String, Double)]]]))
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
@@ -51,6 +51,18 @@ class Converter {
     rdd.map(_._2).flatMap(
       traj => traj.points.map(p =>
         p.setAttributes(Map("tripID" -> traj.id))))
+  }
+
+  def traj2PointClean(rdd: RDD[(Int, Trajectory)], sQuery: Rectangle): RDD[Point] = {
+
+    SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
+      Array(classOf[Trajectory],
+        classOf[Point]))
+
+    rdd.map(_._2).flatMap(
+      traj => traj.points.map(p =>
+        p.setAttributes(Map("tripID" -> traj.id))))
+      .filter(_.inside(sQuery))
   }
 
   def doNothing[T <: Shape : ClassTag](rdd: RDD[(Int, T)]): RDD[T] = {
