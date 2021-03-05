@@ -2,12 +2,13 @@ package operators.convertion
 
 import operators.convertion.Converter
 import geometry.Rectangle
+import geometry.road.RoadGrid
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
-import preprocessing.{ReadPointFile, ReadTrajJson}
-import operators.selection.partitioner.HashPartitioner
+import preprocessing.{ReadPointFile, ReadTrajFile, ReadTrajJson}
+import operators.selection.partitioner.{FastPartitioner, HashPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
 import operators.extraction.PointsAnalysisExtractor
 
@@ -88,9 +89,35 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     println(s"Average length:  ${trajRDD.map(_.points.length).aggregate(0)(_ + _, _ + _) / trajRDD.count}")
     val converter = new Converter
     val pointRDD = converter.traj2Point(trajRDD.map((0, _)))
-    val convertedTrajRDD = converter.point2Traj(pointRDD)
+    val convertedTrajRDD = converter.point2Traj(pointRDD.map((0, _)))
     println(convertedTrajRDD.count)
     println(s"Average length:  ${convertedTrajRDD.map(_.points.length).aggregate(0)(_ + _, _ + _) / trajRDD.count}")
+  }
+
+  test("test point to spatial map") {
+    val spark = SparkSession.builder().master("local").getOrCreate()
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
+    val sQuery = Rectangle(Array(-9, 40, -8, 42))
+
+    val partitioner = new FastPartitioner(16)
+    val pRDD = partitioner.partition(trajRDD)
+    val partitionRange = partitioner.partitionRange
+    val selector = RTreeHandler(partitionRange, Some(500))
+    val queriedRDD = selector.query(pRDD)(sQuery)
+    println(s"--- ${queriedRDD.count} trajectories")
+
+    val converter = new Converter()
+    val pointRDD = converter.traj2Point(queriedRDD)
+      .zipWithUniqueId()
+      .map(x => x._1.setID(x._2.toString))
+    println(s"--- converted to ${pointRDD.count} points")
+
+    val smRDD = converter.point2SpatialMap(pointRDD.map((0, _)), RoadGrid("preprocessing/porto.csv"))
+    smRDD.take(5).foreach(x =>
+      println(x.roadID, x.attributes.length))
+    assert(smRDD.map(x => x.attributes.length).reduce(_ + _) == pointRDD.count())
   }
 
   def afterEach() {

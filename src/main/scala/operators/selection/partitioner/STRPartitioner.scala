@@ -161,6 +161,22 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
   }
 
   /**
+   * Partition spatial dataRDD with given Partition ranges
+   * @param dataRDD : data RDD
+   * @param partitionMap : Map (id -> range as rectangle)
+   * @tparam T : type of spatial dataRDD, extending geometry.Shape
+   * @return partitioned RDD of [(partitionNumber, dataRDD)]
+   */
+  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T], partitionMap: Map[Int, Rectangle]): RDD[(Int, T)] = {
+    val partitioner = new KeyPartitioner(numPartitions)
+    val boundary = genBoundary(partitionMap)
+
+    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+      .partitionBy(partitioner)
+    pRDD
+  }
+
+  /**
    * Partition spatial dataRDD and queries simultaneously
    *
    * @param dataRDD  : data RDD

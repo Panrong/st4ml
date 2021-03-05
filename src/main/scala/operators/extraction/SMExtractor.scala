@@ -1,6 +1,6 @@
 package operators.extraction
 
-import geometry.subSpatialMap
+import geometry.SubSpatialMap
 import org.apache.spark.rdd.RDD
 
 class SMExtractor extends Extractor with Serializable {
@@ -10,7 +10,7 @@ class SMExtractor extends Extractor with Serializable {
    * @param rdd : road with attribute of (timeStamp, trajID, speed))
    * @return Map of (roadID, avgSpeed)
    */
-  def extractRoadSpeed(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]]):
+  def extractRoadSpeed(rdd: RDD[SubSpatialMap[Array[(Long, String, Double)]]]):
   Map[String, Double] = {
     rdd.map(x => (x.roadID, x.attributes)).mapValues(x => x.head._3)
       .mapValues((_, 1))
@@ -25,7 +25,7 @@ class SMExtractor extends Extractor with Serializable {
    * @param rdd : road with attribute of (timeStamp, trajID, speed))
    * @return Map of (roadID, avgSpeed)
    */
-  def extractRoadFlow(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]]): Map[String, Int] = {
+  def extractRoadFlow(rdd: RDD[SubSpatialMap[Array[(Long, String, Double)]]]): Map[String, Int] = {
     rdd.map(x => (x.roadID, x.attributes)).mapValues(x => x.length)
       .collect.toMap
   }
@@ -38,7 +38,7 @@ class SMExtractor extends Extractor with Serializable {
    * @param windowSize : in second
    * @return : Map of ( roadID -> (flow1, flow2, ...))
    */
-  def extractSlidingFlow(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]],
+  def extractSlidingFlow(rdd: RDD[SubSpatialMap[Array[(Long, String, Double)]]],
                          startTime: Long, endTime: Long, windowSize: Int):
   Map[String, List[Int]] = {
     val length = ((endTime - startTime) / windowSize).toInt + 1
@@ -56,7 +56,7 @@ class SMExtractor extends Extractor with Serializable {
       .collect.toMap
   }
 
-  def extractSlidingSpeed(rdd: RDD[subSpatialMap[Array[(Long, String, Double)]]],
+  def extractSlidingSpeed(rdd: RDD[SubSpatialMap[Array[(Long, String, Double)]]],
                           startTime: Long, endTime: Long, windowSize: Int):
   Map[String, List[Double]] = {
 

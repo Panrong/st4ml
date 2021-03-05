@@ -1,6 +1,9 @@
 package operators.convertion
 
 import geometry._
+import geometry.road.RoadGrid
+import operators.selection.partitioner.{QuadTreePartitioner, STRPartitioner}
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -9,11 +12,11 @@ import scala.reflect.ClassTag
 class Converter {
 
   def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[subSpatialMap[Array[(Long, String)]]] = {
+  RDD[SubSpatialMap[Array[(Long, String)]]] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[mmTrajectory],
-        classOf[subSpatialMap[Array[(Long, String)]]]))
+        classOf[SubSpatialMap[Array[(Long, String)]]]))
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
@@ -22,15 +25,15 @@ class Converter {
     }
       .map(x => (x._1._1, (x._1._2, x._2))) // (roadID, (timeStamp, trajID))
       .groupByKey(numPartitions).mapValues(_.toArray)
-      .map(x => subSpatialMap(roadID = x._1, attributes = x._2))
+      .map(x => SubSpatialMap(roadID = x._1, attributes = x._2))
   }
 
   def trajSpeed2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[subSpatialMap[Array[(Long, String, Double)]]] = {
+  RDD[SubSpatialMap[Array[(Long, String, Double)]]] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[mmTrajectory],
-        classOf[subSpatialMap[Array[(Long, String, Double)]]]))
+        classOf[SubSpatialMap[Array[(Long, String, Double)]]]))
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
@@ -39,7 +42,7 @@ class Converter {
     }
       .map(x => (x._1._1._1, (x._1._1._2, x._1._2, x._2))) // (roadID, (timeStamp, trajID, speed))
       .groupByKey(numPartitions).mapValues(_.toArray)
-      .map(x => subSpatialMap(roadID = x._1, attributes = x._2))
+      .map(x => SubSpatialMap(roadID = x._1, attributes = x._2))
   }
 
   def traj2Point(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
@@ -69,14 +72,14 @@ class Converter {
     rdd.map(_._2)
   }
 
-  def point2Traj(rdd: RDD[Point], timeSplit: Double = 600): RDD[Trajectory] = {
+  def point2Traj(rdd: RDD[(Int, Point)], timeSplit: Double = 600): RDD[Trajectory] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[Trajectory],
         classOf[Point]))
 
     val numPartitions = rdd.getNumPartitions
-    rdd.map(p => (p.attributes("tripID"), p))
+    rdd.map(p => (p._2.attributes("tripID"), p._2))
       .groupByKey()
       .coalesce(numPartitions)
       .mapValues(points => {
@@ -101,4 +104,37 @@ class Converter {
       }
   }
 
+  /**
+   * map GPS points to spatial map based on shortest distance
+   * @param rdd : point RDD
+   * @param roadMap : spatial Map
+   * @param threshold : maximum projection distance from a point to a road for matching
+   * @return : SpatialMap RDD
+   */
+  def point2SpatialMap(rdd: RDD[(Int, Point)],
+                       roadMap: RoadGrid,
+                       threshold: Double = 50): RDD[SubSpatialMap[Array[Point]]] = {
+    val sc = SparkContext.getOrCreate()
+    val numPartitions = rdd.getNumPartitions
+    val eRDD = sc.parallelize(roadMap.edges, numPartitions)
+    val partitioner = new STRPartitioner(numPartitions, threshold = threshold, samplingRate = Some(1))
+    val (pointRDD, edgeRDD) = partitioner.copartition(rdd.map(_._2), eRDD)
+    val pointEdgeDistRDD = pointRDD.zipPartitions(edgeRDD)((iterator1, iterator2) => {
+      val points = iterator1.map(_._2).toArray
+      val edges = iterator2.map(_._2).toArray
+      points.flatMap(
+        point => edges.map(edge => (point, (edge.id, edge.minDist(point)))))
+        .filter { case (_, (_, d)) => d < threshold }
+        .toIterator
+    })
+    val pointEdgeRDD = pointEdgeDistRDD.map(x => (x._1.id, x)).reduceByKey((a, b) => List(a, b).minBy(_._2._2))
+      .map(_._2)
+      .map {
+        case (point, (edge, _)) => (edge, point)
+      }
+    pointEdgeRDD.groupByKey()
+      .map {
+        case (edge, points) => SubSpatialMap(edge, points.toArray.distinct)
+      }
+  }
 }
