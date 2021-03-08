@@ -55,6 +55,7 @@ object SelectorTest {
       val (ts, te) = x.timeStamp
       ts <= tQuery._2 && ts >= tQuery._1 || te <= tQuery._2 && te >= tQuery._1
     })
+    fullSRDD.take(1)
     fullSTRDD.take(1)
     println(s"... Full scanning takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     if (count) {
