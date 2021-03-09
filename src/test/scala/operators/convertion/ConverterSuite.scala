@@ -1,6 +1,5 @@
 package operators.convertion
 
-import operators.convertion.Converter
 import geometry.Rectangle
 import geometry.road.RoadGrid
 import org.apache.spark.SparkContext
@@ -8,7 +7,7 @@ import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.{ReadPointFile, ReadTrajFile, ReadTrajJson}
-import operators.selection.partitioner.{FastPartitioner, HashPartitioner}
+import operators.selection.partitioner.{FastPartitioner, HashPartitioner, STRPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
 import operators.extraction.PointsAnalysisExtractor
 
@@ -118,6 +117,53 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     smRDD.take(5).foreach(x =>
       println(x.roadID, x.attributes.length))
     assert(smRDD.map(x => x.attributes.length).reduce(_ + _) == pointRDD.count())
+  }
+
+//  currently not working
+//  test("test traj to time series") {
+//    val spark = SparkSession.builder().master("local").getOrCreate()
+//    val sc = spark.sparkContext
+//    sc.setLogLevel("ERROR")
+//    val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
+//    val sQuery = Rectangle(Array(-9, 40, -8, 42))
+//
+//    val partitioner = new FastPartitioner(16)
+//    val pRDD = partitioner.partition(trajRDD)
+//    val partitionRange = partitioner.partitionRange
+//    val selector = RTreeHandler(partitionRange, Some(500))
+//    val queriedRDD = selector.query(pRDD)(sQuery)
+//    println(s"--- ${queriedRDD.count} trajectories")
+//
+//    val converter = new Converter()
+//    val timeSeriesRDD = converter.traj2TimeSeries(queriedRDD, 1370000000, 15*60*1000)
+//    timeSeriesRDD.take(5).foreach(x => println(x))
+//  }
+
+  test("test point to time series"){
+    val spark = SparkSession.builder().master("local").getOrCreate()
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
+    val sQuery = Rectangle(Array(-9, 40, -8, 42))
+
+    val partitioner = new FastPartitioner(8)
+    val pRDD = partitioner.partition(trajRDD)
+    val partitionRange = partitioner.partitionRange
+    val selector = RTreeHandler(partitionRange, Some(500))
+    val queriedRDD = selector.query(pRDD)(sQuery)
+    println(s"--- ${queriedRDD.count} trajectories")
+
+    val converter = new Converter()
+
+    val pointRDD = converter.traj2Point(queriedRDD).map((0,_))
+
+//    val tsRDD = converter.point2TimeSeries(pointRDD,1372636854, 100)
+//    println(tsRDD.count)
+//    tsRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
+
+    val tsSpatialRDD = converter.point2TimeSeries(pointRDD,1372636854, 1000, partitioner = new STRPartitioner(8, samplingRate = Some(1.0)))
+    println(tsSpatialRDD.count)
+    tsSpatialRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
   }
 
   def afterEach() {
