@@ -152,7 +152,7 @@ class Converter {
    */
   def point2TimeSeries[T <: SpatialPartitioner : ClassTag]
   (rdd: RDD[(Int, Point)], startTime: Long, timeInterval: Int, partitioner: T)
-  : RDD[TimeSeries[Array[Point]]] = {
+  : RDD[TimeSeries[Point]] = {
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     repartitionedRDD.mapPartitions(partition => {
       val partitionID = partition.next()._1
@@ -182,20 +182,22 @@ class Converter {
    */
   def point2TimeSeries[T <: SpatialPartitioner : ClassTag]
   (rdd: RDD[(Int, Point)], startTime: Long, timeInterval: Int, endTime: Option[Long] = None)
-  : RDD[TimeSeries[Array[Point]]] = {
+  : RDD[TimeSeries[Point]] = {
     val end = endTime.getOrElse(rdd.map(_._2.timeStamp._2).max)
     val numPartitions = rdd.getNumPartitions
     val partitioner = new TemporalPartitioner(startTime, end, timeInterval, numPartitions)
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     val numSlotsPerPartition = partitioner.numSlotsPerPartition
+
     repartitionedRDD.
       mapPartitions(partition => {
         if (partition.isEmpty) {
           Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Point]](0)))
         } else {
-          val partitionID = partition.next()._1
+          val partitionArray = partition.toArray
+          val partitionID = partitionArray.head._1
           val partitionStartTime = startTime + partitionID * timeInterval * numSlotsPerPartition
-          val points = partition.map(_._2).toArray
+          val points = partitionArray.map(_._2)
           val slots = Array.fill[Array[Point]](numSlotsPerPartition)(new Array[Point](0))
           for (p <- points) {
             val s = ((p.t - partitionStartTime) / timeInterval).toInt
