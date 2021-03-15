@@ -17,7 +17,7 @@ object TimeSeriesApp {
     val spark = SparkSession
       .builder()
       .appName("TimeSeriesApp")
-      .master("local[*]")
+      //      .master("local[*]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -27,6 +27,7 @@ object TimeSeriesApp {
     val numPartitions = args(1).toInt
     val sQuery = Rectangle(args(2).split(",").map(_.toDouble))
     val tQuery = parseTemporalRange(args(3))
+    val queryRange = args(4).split(",").map(_.toLong)
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajFile, numPartitions)
@@ -52,7 +53,7 @@ object TimeSeriesApp {
 
     /** step 3: Extraction */
     val extractor = new TimeSeriesExtractor()
-    val res = extractor.CountTimeSlotSamples((1596040000, 1596041000))(rdd2)
+    val res = extractor.CountTimeSlotSamples((queryRange.head, queryRange.last))(rdd2)
     println(res.collect.deep)
     println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
@@ -71,6 +72,8 @@ object TimeSeriesApp {
     println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     println(res.map(_._2).sum)
     println(benchmark.map(_._2).sum)
+    println(slots.length)
     sc.stop()
   }
 }
+

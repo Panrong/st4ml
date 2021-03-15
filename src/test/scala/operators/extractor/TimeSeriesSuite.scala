@@ -58,7 +58,7 @@ class TimeSeriesSuite extends AnyFunSuite with BeforeAndAfter {
 
     val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100)
     val extractor = new TimeSeriesExtractor
-    val extractedRDD = extractor.extractByTime((1372638000, 1372639000))(tsRDD)
+    val extractedRDD = extractor.extractByTime((1596364709, 1596374709))(tsRDD)
     val c = pointRDD.map(_._2).filter(x => x.timeStamp._1 >= 1372638000 && x.timeStamp._2 <= 1372639000)
     assert(extractedRDD.count == c.count)
 

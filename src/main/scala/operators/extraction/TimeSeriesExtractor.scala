@@ -25,7 +25,9 @@ class TimeSeriesExtractor {
 
   def CountTimeSlotSamples[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[((Long, Long), Int)] = {
     rdd.filter(ts => ts.startTime <= timeRange._2 && ts.endTime >= timeRange._1)
-      .flatMap(ts => ts.toMap.mapValues(_.length))
-  }
-
+      .flatMap(ts => ts.toMap)
+      .filter {
+        case ((tStart, tEnd), _) => tStart <= timeRange._2 && tEnd >= timeRange._1
+      }  }
+    .mapValues(_.length)
 }
