@@ -6,43 +6,31 @@ import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import preprocessing.ReadTrajFile
+import preprocessing.ReadTrajJson
 
 import java.lang.System.nanoTime
 import scala.collection.mutable
 import scala.io.Source
 
+// Find companion of a query set
 object TrajCompanionTest {
   def main(args: Array[String]): Unit = {
     var t = nanoTime()
-    /** set up Spark environment */
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
 
     val spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      //.master("local[*]")
+      .appName("CompanionTest")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     val trajectoryFile = args(0)
     val numPartitions = args(1).toInt
-    val dataSize = args(2).toInt
-    val queryFile = args(3)
+    val queryFile = args(2)
+    val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
+    val tQuery = (args(4).split(",").head.toLong, args(4).split(",").last.toLong)
 
-    val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize, limit = true).repartition(numPartitions)
-
-    val sQuery = Rectangle(Array(-8.682329739182336, 41.16930767535641, -8.553892156181982, 41.17336956864337))
-    val tQuery = (0L, 1500000000L)
+    val trajRDD: RDD[geometry.Trajectory] = ReadTrajJson(trajectoryFile, numPartitions).repartition(numPartitions)
 
     /** initialise operators */
 
@@ -65,7 +53,7 @@ object TrajCompanionTest {
     /** step 3: extraction */
     t = nanoTime()
     val extractor = new TrajCompanionExtractor
-    val queries = ReadTrajFile(queryFile, num = 1)
+    val queries = ReadTrajJson(queryFile, 1)
     val queried1 = extractor.queryWithIDs(500, 600)(rdd, queries) // 500m and 10min
     val count1 = queried1.mapValues(_.distinct.length)
     println(mutable.ListMap(count1.toSeq.sortBy(_._1): _*))
