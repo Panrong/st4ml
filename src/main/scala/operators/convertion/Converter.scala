@@ -2,7 +2,7 @@ package operators.convertion
 
 import geometry._
 import geometry.road.RoadGrid
-import operators.selection.partitioner.{QuadTreePartitioner, STRPartitioner, SpatialPartitioner, TemporalPartitioner}
+import operators.selection.partitioner.{STRPartitioner, SpatialPartitioner, TemporalPartitioner}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -155,25 +155,28 @@ class Converter {
   : RDD[TimeSeries[Point]] = {
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     repartitionedRDD.mapPartitions(partition => {
-      val partitionID = partition.next()._1
-      val points = partition.map(_._2).toArray
-      val l = (points.map(_.t).max.toInt - startTime).toInt / timeInterval + 1
-      val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
-      for (p <- points) {
-        val s = ((p.t - startTime) / timeInterval).toInt
-        slots(s) = slots(s) :+ p
+      if (partition.isEmpty) {
+        Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Point]](0)))
+      } else {
+        val partitionID = partition.next()._1
+        val points = partition.map(_._2).toArray
+        val l = (points.map(_.t).max.toInt - startTime).toInt / timeInterval + 1
+        val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
+        for (p <- points) {
+          val s = ((p.t - startTime) / timeInterval).toInt
+          slots(s) = slots(s) :+ p
+        }
+        val ts = TimeSeries(partitionID.toString, startTime, timeInterval, slots)
+        Iterator(ts)
       }
-
-      val ts = TimeSeries(partitionID.toString, startTime, timeInterval, slots)
-      Iterator(ts)
-    })
+    }.filterNot(ts => ts.id == "Empty"))
   }
 
   /**
    * Convert points to one time series, which is temporally partitioned
    * and each partition consists of one sub time series.
    *
-   *  For each time slot, the objects are left-inclusive
+   * For each time slot, the objects are left-inclusive
    *
    * @param rdd          : point rdd after conversion
    * @param startTime    : start time of the time series
@@ -212,64 +215,64 @@ class Converter {
       )
   }
 
-//  def traj2TimeSeries[T <: SpatialPartitioner : ClassTag]
-//  (rdd: RDD[(Int, Trajectory)], startTime: Long, timeInterval: Int, partitioner: Option[T] = None)
-//  : RDD[TimeSeries[Array[Trajectory]]] = {
-//
-//    if (partitioner.isDefined) {
-//      val partitionedRDD = partitioner.get.partition(rdd.map(_._2))
-//      partitionedRDD.mapPartitions(iter => {
-//        if (iter.isEmpty) {
-//          Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Trajectory]](0)))
-//        }
-//        else {
-//          val partitionerID = iter.next()._1
-//          val ts = iter.map {
-//            case (_, traj) => {
-//              val l = (traj.points.last.t - startTime).toInt / timeInterval + 1
-//              val slots = new Array[Array[Point]](l)
-//              for (p <- traj.points) {
-//                val s = ((p.t - startTime) / timeInterval).toInt
-//                slots(s) = slots(s) :+ p
-//              }
-//              //            for (i <- 0 to slots.length - 2) {
-//              //                slots(i) = slots(i) :+ slots(i + 1).head
-//              //                slots(i + 1) = slots(i).last +: slots(i + 1)
-//              //            }
-//
-//              // for temporary test
-//              slots.dropRight(1).foreach(x => assert(x.length > 1))
-//
-//              slots.map(points => Trajectory(traj.tripID, points.head.t, points))
-//            }
-//          }
-//          Iterator(TimeSeries(partitionerID.toString, startTime + partitionerID * timeInterval, timeInterval, ts.toArray))
-//        }
-//      })
-//    }
-//    else {
-//      val slicedRDD = rdd.map(_._2).flatMap(traj => {
-//        val l = (traj.points.last.t - startTime).toInt / timeInterval + 1
-//        val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
-//        for (p <- traj.points) {
-//          val s = ((p.t - startTime) / timeInterval).toInt
-//          slots(s) = slots(s) :+ p
-//        }
-//        for (i <- 0 to slots.length - 2) {
-//          slots(i) = slots(i) :+ slots(i + 1).head
-//          slots(i + 1) = slots(i).last +: slots(i + 1)
-//        }
-//
-//        // for temporary test
-//        slots.dropRight(1).foreach(x => assert(x.length > 1))
-//
-//        slots.map(points => Trajectory(traj.tripID, points.head.t, points)).zipWithIndex
-//          .map { case (traj, idx) => ((idx - 1) * timeInterval, traj) }
-//
-//      })
-//      val series = slicedRDD.groupByKey().collect.sortBy(_._1).map(_._2.toArray)
-//      val spark = SparkSession.builder().getOrCreate()
-//      spark.sparkContext.parallelize(Seq(TimeSeries("traj", startTime, timeInterval, series)))
-//    }
-//  }
+  //  def traj2TimeSeries[T <: SpatialPartitioner : ClassTag]
+  //  (rdd: RDD[(Int, Trajectory)], startTime: Long, timeInterval: Int, partitioner: Option[T] = None)
+  //  : RDD[TimeSeries[Array[Trajectory]]] = {
+  //
+  //    if (partitioner.isDefined) {
+  //      val partitionedRDD = partitioner.get.partition(rdd.map(_._2))
+  //      partitionedRDD.mapPartitions(iter => {
+  //        if (iter.isEmpty) {
+  //          Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Trajectory]](0)))
+  //        }
+  //        else {
+  //          val partitionerID = iter.next()._1
+  //          val ts = iter.map {
+  //            case (_, traj) => {
+  //              val l = (traj.points.last.t - startTime).toInt / timeInterval + 1
+  //              val slots = new Array[Array[Point]](l)
+  //              for (p <- traj.points) {
+  //                val s = ((p.t - startTime) / timeInterval).toInt
+  //                slots(s) = slots(s) :+ p
+  //              }
+  //              //            for (i <- 0 to slots.length - 2) {
+  //              //                slots(i) = slots(i) :+ slots(i + 1).head
+  //              //                slots(i + 1) = slots(i).last +: slots(i + 1)
+  //              //            }
+  //
+  //              // for temporary test
+  //              slots.dropRight(1).foreach(x => assert(x.length > 1))
+  //
+  //              slots.map(points => Trajectory(traj.tripID, points.head.t, points))
+  //            }
+  //          }
+  //          Iterator(TimeSeries(partitionerID.toString, startTime + partitionerID * timeInterval, timeInterval, ts.toArray))
+  //        }
+  //      })
+  //    }
+  //    else {
+  //      val slicedRDD = rdd.map(_._2).flatMap(traj => {
+  //        val l = (traj.points.last.t - startTime).toInt / timeInterval + 1
+  //        val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
+  //        for (p <- traj.points) {
+  //          val s = ((p.t - startTime) / timeInterval).toInt
+  //          slots(s) = slots(s) :+ p
+  //        }
+  //        for (i <- 0 to slots.length - 2) {
+  //          slots(i) = slots(i) :+ slots(i + 1).head
+  //          slots(i + 1) = slots(i).last +: slots(i + 1)
+  //        }
+  //
+  //        // for temporary test
+  //        slots.dropRight(1).foreach(x => assert(x.length > 1))
+  //
+  //        slots.map(points => Trajectory(traj.tripID, points.head.t, points)).zipWithIndex
+  //          .map { case (traj, idx) => ((idx - 1) * timeInterval, traj) }
+  //
+  //      })
+  //      val series = slicedRDD.groupByKey().collect.sortBy(_._1).map(_._2.toArray)
+  //      val spark = SparkSession.builder().getOrCreate()
+  //      spark.sparkContext.parallelize(Seq(TimeSeries("traj", startTime, timeInterval, series)))
+  //    }
+  //  }
 }

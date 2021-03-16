@@ -62,7 +62,7 @@ class TimeSeriesSuite extends AnyFunSuite with BeforeAndAfter {
     val c = pointRDD.map(_._2).filter(x => x.timeStamp._1 >= 1597119319 && x.timeStamp._2 <= 1597120219)
     assert(extractedRDD.count == c.count)
 
-    println(extractor.CountTimeSlotSamples((1597119319,1597120219))(tsRDD).collect().mkString("Array(", ", ", ")"))
+    println(extractor.countTimeSlotSamples((1597119319,1597120219))(tsRDD).collect().mkString("Array(", ", ", ")"))
   }
 
   def afterEach() {
