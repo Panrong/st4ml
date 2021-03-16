@@ -19,7 +19,7 @@ object TrajCompanionTest {
 
     val spark = SparkSession
       .builder()
-      //.master("local[*]")
+      //      .master("local[*]")
       .appName("CompanionTest")
       .getOrCreate()
     val sc = spark.sparkContext
@@ -57,9 +57,9 @@ object TrajCompanionTest {
     val queried1 = extractor.queryWithIDs(500, 600)(rdd, queries) // 500m and 10min
     val count1 = queried1.mapValues(_.distinct.length)
     println(mutable.ListMap(count1.toSeq.sortBy(_._1): _*))
-    val queried2 = extractor.queryWithIDsFS(500, 600)(rdd, queries)
-    val count2 = queried2.mapValues(_.distinct.length)
-    println(mutable.ListMap(count2.toSeq.sortBy(_._1): _*))
+    //    val queried2 = extractor.queryWithIDsFS(500, 600)(rdd, queries)
+    //    val count2 = queried2.mapValues(_.distinct.length)
+    //    println(mutable.ListMap(count2.toSeq.sortBy(_._1): _*))
 
     sc.stop()
   }
