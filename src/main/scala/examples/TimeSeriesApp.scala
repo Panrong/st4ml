@@ -54,7 +54,7 @@ object TimeSeriesApp {
     /** step 3: Extraction */
     val extractor = new TimeSeriesExtractor()
     val res = extractor.CountTimeSlotSamples((queryRange.head, queryRange.last))(rdd2)
-    println(res.collect.deep)
+    println(res.collect.sortBy(_._1._1).deep)
     println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     val slots = res.collect.map(_._1)
@@ -65,14 +65,45 @@ object TimeSeriesApp {
     val benchmark = pointRDD.mapPartitions(iter => {
       val points = iter.map(_._2).toArray
       slots.map(slot => {
-        (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 <= slot._2))
+        (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
       }).toIterator
     }).reduceByKey(_ + _)
-    println(benchmark.collect.deep)
+    println(benchmark.collect.sortBy(_._1._1).deep)
     println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     println(res.map(_._2).sum)
     println(benchmark.map(_._2).sum)
     println(slots.length)
+    //    println(pointRDD.count)
+    //    println(rdd2.map(x => x.series.flatten.length).sum)
+    //    println(rdd2.flatMap(x => x.toMap.values).map(_.length).reduce(_ + _))
+    //    var sum = 0
+    //    var slot = new Array[(Long, Long)](0)
+    //    val test = rdd2.flatMap(_.toMap).collect
+    //    val testMap = test.toMap.mapValues(_.length)
+    //    test.sortBy(_._1._1).foreach(x => {
+    //      println(s"${x._1} ${x._2.length}")
+    //      sum += x._2.length
+    //      slot = slot :+ x._1
+    //    })
+    //    var gt = slot.map((_, 0)).toMap
+    //    val points = pointRDD.map(_._2).collect()
+    //    for (point <- points) {
+    //      for (ts <- gt.keys) {
+    //        if (point.timeStamp._1 >= ts._1 && point.timeStamp._2 < ts._2) {
+    //          gt = gt + (ts -> (gt(ts) +1))
+    //        }
+    //      }
+    //    }
+    //    gt.toArray.sortBy(_._1._1).foreach(x => {
+    //      println(s"${x._1} ${x._2}")
+    //    })
+    //
+    //    for(i <- slot){
+    //      if(testMap(i)!=gt(i)) println(i, testMap(i), gt(i))
+    //    }
+    //
+    //    println(sum)
+    //    println(gt.values.toArray.sum)
     sc.stop()
   }
 }

@@ -173,6 +173,8 @@ class Converter {
    * Convert points to one time series, which is temporally partitioned
    * and each partition consists of one sub time series.
    *
+   *  For each time slot, the objects are left-inclusive
+   *
    * @param rdd          : point rdd after conversion
    * @param startTime    : start time of the time series
    * @param timeInterval : the length for temporal slicing
