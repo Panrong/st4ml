@@ -17,7 +17,7 @@ object Config {
     Map(
       "master" -> "spark://11.167.227.34:7077",
       "numPartitions" -> "64",
-      "hzData" -> "/datasets/traj_10000_converted.json",
+      "hzData" -> "/datasets/hz_traj/",
       "portoData" -> "/datasets/porto_traj.csv",
     )
   }
