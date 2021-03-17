@@ -6,31 +6,34 @@ import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 
 import utils.TimeParsing._
+import utils.Config
 
-object PointAnalysisApp {
+object PointAnalysisDemo {
   def main(args: Array[String]): Unit = {
 
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
-      .appName("ExampleApp")
-//      .master("local[*]")
+      .appName("PointAnalysisDemo")
+      .master(Config.get("master"))
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
     /** parse input arguments */
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-    val dataSize = args(2).toInt
-    val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
-    val tQuery = parseTemporalRange(args(4))
+    val numPartitions = Config.get("numPartitions").toInt
+    val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
+    val tQuery = parseTemporalRange(args(1))
+
+    /**
+     * example input arguments: "118.116, 29.061, 120.167, 30.184" "2020-08-11 01:33:20, 2020-08-11 15:26:40"
+     */
 
     /** initialize operators */
     val operator = new SttDefault(numPartitions)
 
     /** read input data */
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+    val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
 
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)

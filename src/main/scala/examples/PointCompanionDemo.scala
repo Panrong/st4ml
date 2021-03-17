@@ -8,27 +8,32 @@ import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.TimeParsing._
+import utils.Config
 
-object CompanionApp {
+object PointCompanionDemo {
   def main(args: Array[String]): Unit = {
 
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
       .appName("CompanionAll")
-      //      .master("local[*]")
+      .master(Config.get("master"))
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
     /** parse input arguments */
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-    val sQuery = Rectangle(args(2).split(",").map(_.toDouble))
-    val tQuery = parseTemporalRange(args(3))
-    val queryThreshold = args(4).split(",").map(_.toDouble)
+    val trajectoryFile = Config.get("hzData")
+    val numPartitions = Config.get("numPartitions").toInt
+    val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
+    val tQuery = parseTemporalRange(args(1))
+    val queryThreshold = args(2).split(",").map(_.toDouble)
     val sThreshold = queryThreshold.head
     val tThreshold = queryThreshold.last
+
+    /**
+     * example input arguments: "118.35,29.183,120.5,30.55" "1597132800,1597136400" "1000,600"
+     */
 
     /** initialize operators */
     val operator = new CustomOperatorSet(

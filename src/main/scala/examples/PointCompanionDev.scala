@@ -1,44 +1,38 @@
 package examples
 
-import geometry.{Point, Rectangle, Trajectory}
+import geometry.{Rectangle, Trajectory}
 import operators.convertion.Converter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import preprocessing.{ReadTrajFile, ReadTrajJson}
+import preprocessing.ReadTrajFile
+import utils.Config
 
 import java.lang.System.nanoTime
 import scala.collection.mutable
-import scala.io.Source
 
-object CompanionTest {
+object PointCompanionDev {
   def main(args: Array[String]): Unit = {
     var t = nanoTime()
     /** set up Spark environment */
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
-
     val spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("PointCompanionDev")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-    val dataSize = args(2).toInt
-    val queryFile = args(3)
+
+    val trajectoryFile = Config.get("portoData")
+    val numPartitions = Config.get("numPartitions").toInt
+    val dataSize = args(0).toInt
+    val queryFile = args(1)
+
+    /**
+     * example input arguments: 1000 preprocessing/query.csv
+     */
 
     val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize, limit = true).repartition(numPartitions)
 

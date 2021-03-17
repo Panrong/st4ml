@@ -7,28 +7,33 @@ import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
+import utils.Config
 
 import java.lang.System.nanoTime
 import scala.collection.mutable
-import scala.io.Source
 
 // Find companion of a query set
-object TrajCompanionTest {
+object TrajCompanionDev {
   def main(args: Array[String]): Unit = {
     var t = nanoTime()
 
     val spark = SparkSession
       .builder()
-      //      .master("local[*]")
+      .master(Config.get("master"))
       .appName("CompanionTest")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-    val queryFile = args(2)
-    val sQuery = Rectangle(args(3).split(",").map(_.toDouble))
-    val tQuery = (args(4).split(",").head.toLong, args(4).split(",").last.toLong)
+
+    val trajectoryFile = Config.get("hzData")
+    val numPartitions = Config.get("numPartitions").toInt
+    val queryFile = args(0)
+    val sQuery = Rectangle(args(1).split(",").map(_.toDouble))
+    val tQuery = (args(2).split(",").head.toLong, args(2).split(",").last.toLong)
+
+    /**
+     * example input arguments: datasets/query100.json 118.116,29.061,120.167,30.184 1597000000,1598000000
+     */
 
     val trajRDD: RDD[geometry.Trajectory] = ReadTrajJson(trajectoryFile, numPartitions).repartition(numPartitions)
 

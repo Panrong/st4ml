@@ -11,31 +11,26 @@ import operators.selection.selectionHandler.{FilterHandler, RTreeHandler, Tempor
 
 import java.lang.System.nanoTime
 import scala.io.Source
+import utils.Config
 
-object SMTest {
+object SpatialMapDev {
   def main(args: Array[String]) {
     var t = nanoTime()
     /** set up Spark environment */
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
     val spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("SpatialMapDev")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val numPartitions = args(0).toInt
-    val trajectoryFile = args(1)
-    val mapFile = args(2)
+    val numPartitions = Config.get("numPartitions").toInt
+    val trajectoryFile = args(0)
+    val mapFile = args(1)
+
+    /**
+     * example input arguments: datasets/mm10000.csv preprocessing/porto.csv
+     */
 
     /** **********************************
      * test map-matched trajectory dataset

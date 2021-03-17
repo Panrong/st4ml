@@ -1,45 +1,36 @@
 package examples
 
 import geometry.Rectangle
+import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner}
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
-import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner}
-import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
+import utils.Config
 
 import java.lang.System.nanoTime
-import scala.io.Source
 import scala.math.{max, sqrt}
 
-object SelectorTestHZ {
+object SelectorDev {
   def main(args: Array[String]): Unit = {
     var t = nanoTime()
     /** set up Spark environment */
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
     val spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("SelectorDev")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-    val dataSize = args(2).toInt
+
+    val trajectoryFile = Config.get("hzData")
+    val numPartitions = Config.get("numPartitions").toInt
 
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK)
-    val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
+    val dataSize = trajRDD.count
 
+    val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
     val tQuery = (1597000000L, 1598000000L)
     val rTreeCapacity = max(sqrt(dataSize / numPartitions).toInt, 100)
 
@@ -65,7 +56,7 @@ object SelectorTestHZ {
     val pRDDHash = hashPartitioner.partition(trajRDD).cache()
     val partitionRangeHash = hashPartitioner.partitionRange
 
-    val selectorHash = new RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
+    val selectorHash = RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
     pRDDHash.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -88,7 +79,7 @@ object SelectorTestHZ {
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
 
-    val selectorQt = new RTreeHandler(partitionRangeQt, Some(rTreeCapacity))
+    val selectorQt = RTreeHandler(partitionRangeQt, Some(rTreeCapacity))
     pRDDQt.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 

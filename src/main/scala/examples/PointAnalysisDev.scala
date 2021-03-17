@@ -12,34 +12,22 @@ import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import java.lang.System.nanoTime
 import java.text.SimpleDateFormat
 import java.util.Date
-import scala.io.Source
 import scala.math.{max, sqrt}
+import utils.Config
 
-object PointAnalysisTest {
+object PointAnalysisDev {
   def main(args: Array[String]): Unit = {
     var t = nanoTime()
     /** set up Spark environment */
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
     val spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("PointAnalysisDev")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val trajectoryFile = args(0)
-    val numPartitions = args(1).toInt
-
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+    val numPartitions = Config.get("numPartitions").toInt
+    val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
       .persist(StorageLevel.MEMORY_AND_DISK)
     val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
 

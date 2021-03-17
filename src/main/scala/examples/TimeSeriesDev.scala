@@ -7,29 +7,34 @@ import operators.selection.DefaultSelector
 import operators.selection.partitioner.QuadTreePartitioner
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
+import utils.Config
 import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
 
-object TimeSeriesApp {
+object TimeSeriesDev {
   def main(args: Array[String]): Unit = {
 
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
       .appName("TimeSeriesApp")
-      .master("local[*]")
+      .master(Config.get("master"))
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
     /** parse input arguments */
-    val trajFile = args(0)
-    val numPartitions = args(1).toInt
-    val sQuery = Rectangle(args(2).split(",").map(_.toDouble))
-    val tQuery = parseTemporalRange(args(3))
-    val queryRange = args(4).split(",").map(_.toLong)
-    val mode = args(5)
+    val trajFile = Config.get("hzData")
+    val numPartitions = Config.get("numPartitions").toInt
+    val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
+    val tQuery = parseTemporalRange(args(1))
+    val queryRange = args(2).split(",").map(_.toLong)
+    val mode = args(3)
+
+    /**
+     * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 temporal
+     */
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajFile, numPartitions)

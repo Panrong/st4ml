@@ -10,6 +10,7 @@ import org.apache.spark.sql.SparkSession
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
+import utils.Config
 
 import scala.io.Source
 
@@ -19,20 +20,10 @@ class TimeSeriesSuite extends AnyFunSuite with BeforeAndAfter {
   var sc: SparkContext = _
 
   def beforeEach() {
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
     spark = SparkSession
       .builder()
-      .master("local[*]")
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("testFileReading")
       .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")

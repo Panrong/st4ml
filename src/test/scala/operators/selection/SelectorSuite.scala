@@ -1,16 +1,16 @@
 package operators.selection
 
 import geometry.Rectangle
+import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
+import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
-import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
+import utils.Config
 
-import scala.io.Source
 import scala.math.{max, sqrt}
 
 class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
@@ -19,20 +19,10 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   var sc: SparkContext = _
 
   def beforeEach() {
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
     spark = SparkSession
       .builder()
-      .master(config("master"))
-      .appName(config("appName"))
+      .master(Config.get("master"))
+      .appName("testFileReading")
       .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -42,23 +32,9 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
    * test if partition and indexing gives the same results as full scanning
    */
   test("test hash partitioner + rtree") {
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
-    spark = SparkSession
-      .builder()
-      .master(config("master"))
-      .appName(config("appName"))
-      .getOrCreate()
+
+    spark = SparkSession.builder().getOrCreate()
     sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
 
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
@@ -93,23 +69,8 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("test STR partitioner + rtree") {
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
-    spark = SparkSession
-      .builder()
-      .master(config("master"))
-      .appName(config("appName"))
-      .getOrCreate()
+    spark = SparkSession.builder().getOrCreate()
     sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
 
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
@@ -145,23 +106,8 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("test quadTree partitioner + rtree") {
-    var config: Map[String, String] = Map()
-    val f = Source.fromFile("config")
-    f.getLines
-      .filterNot(_.startsWith("//"))
-      .filterNot(_.startsWith("\n"))
-      .foreach(l => {
-        val p = l.split(" ")
-        config = config + (p(0) -> p(1))
-      })
-    f.close()
-    spark = SparkSession
-      .builder()
-      .master(config("master"))
-      .appName(config("appName"))
-      .getOrCreate()
+    spark = SparkSession.builder().getOrCreate()
     sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
 
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
