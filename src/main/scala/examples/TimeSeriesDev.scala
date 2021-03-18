@@ -113,49 +113,49 @@ object TimeSeriesDev {
       //    println(sum)
       //    println(gt.values.toArray.sum)
     }
-    else if (mode == "spatial") {
-      /** step 2: Conversion */
-      val converter = new Converter
-      val pointRDD = converter.traj2Point(rdd1).map((0, _))
-      pointRDD.cache()
-      pointRDD.take(1)
-      var t = nanoTime()
-      println("--- start conversion")
-      t = nanoTime()
-      val partitioner = new QuadTreePartitioner(numPartitions)
-      val rdd2 = converter.point2TimeSeries(pointRDD, startTime = 1596038419, 15 * 60, partitioner)
-      rdd2.cache()
-      rdd2.take(1)
-      println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-      println(rdd2.getNumPartitions)
-      t = nanoTime()
-
-      /** step 3: Extraction */
-      val extractor = new TimeSeriesExtractor()
-      val res = extractor.countTimeSlotSamplesSpatial((queryRange.head, queryRange.last))(rdd2)
-      val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
-      println(res.getNumPartitions)
-      res.collect.foreach(x => println(x.deep))
-      println(resCombined.sortBy(_._1._1).deep)
-      println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-
-      val slots = resCombined.map(_._1)
-
-      /** benchmark */
-      t = nanoTime()
-
-      val benchmark = pointRDD.mapPartitions(iter => {
-        val points = iter.map(_._2).toArray
-        slots.map(slot => {
-          (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
-        }).toIterator
-      }).reduceByKey(_ + _)
-      println(benchmark.collect.sortBy(_._1._1).deep)
-      println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-      println(resCombined.map(_._2).sum)
-      println(benchmark.map(_._2).sum)
-      println(slots.length)
-    }
+//    else if (mode == "spatial") {
+//      /** step 2: Conversion */
+//      val converter = new Converter
+//      val pointRDD = converter.traj2Point(rdd1).map((0, _))
+//      pointRDD.cache()
+//      pointRDD.take(1)
+//      var t = nanoTime()
+//      println("--- start conversion")
+//      t = nanoTime()
+//      val partitioner = new QuadTreePartitioner(numPartitions)
+//      val rdd2 = converter.point2TimeSeries(pointRDD, startTime = 1596038419, 15 * 60, partitioner)
+//      rdd2.cache()
+//      rdd2.take(1)
+//      println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+//      println(rdd2.getNumPartitions)
+//      t = nanoTime()
+//
+//      /** step 3: Extraction */
+//      val extractor = new TimeSeriesExtractor()
+//      val res = extractor.countTimeSlotSamplesSpatial((queryRange.head, queryRange.last))(rdd2)
+//      val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
+//      println(res.getNumPartitions)
+//      res.collect.foreach(x => println(x.deep))
+//      println(resCombined.sortBy(_._1._1).deep)
+//      println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+//
+//      val slots = resCombined.map(_._1)
+//
+//      /** benchmark */
+//      t = nanoTime()
+//
+//      val benchmark = pointRDD.mapPartitions(iter => {
+//        val points = iter.map(_._2).toArray
+//        slots.map(slot => {
+//          (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
+//        }).toIterator
+//      }).reduceByKey(_ + _)
+//      println(benchmark.collect.sortBy(_._1._1).deep)
+//      println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+//      println(resCombined.map(_._2).sum)
+//      println(benchmark.map(_._2).sum)
+//      println(slots.length)
+//    }
     else println("mode (args(5)) should be \"spatial\" or \"temporal\"")
     sc.stop()
   }

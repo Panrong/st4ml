@@ -4,7 +4,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class TemporalPartitioner(startTime: Long, endTime: Long, timeInterval: Int, numPartitions: Int) extends Serializable {
+class TemporalPartitioner(startTime: Long, endTime: Long, timeInterval: Int = 1, numPartitions: Int) extends Serializable {
   val numSlots: Int = (endTime - startTime).toInt / timeInterval + 1
   val numSlotsPerPartition: Int = numSlots / numPartitions + 1
 

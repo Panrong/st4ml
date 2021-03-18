@@ -7,8 +7,8 @@ import scala.reflect.ClassTag
  *
  * @param id           : id of the spatialMap
  * @param timeStamp    : the temporal snapshot
- * @param contents     : Anything to be recorded. Can be a list, array, map etc. Better to have an identifier alongside.
- * @param classTag$T$0 : Type of contents
+ * @param contents     : Anything to be recorded. Can be a list, array, map etc.
+ *                     Better to have an identifier alongside.
  * @tparam T : Type of contents
  */
 case class SpatialMap[T: ClassTag](id: String, timeStamp: Long, contents: Array[T]) {
@@ -19,7 +19,8 @@ case class SpatialMap[T: ClassTag](id: String, timeStamp: Long, contents: Array[
       contents = this.contents ++ sm.contents)
   }
 
-  def aggregate(otherSMs: Array[SpatialMap[T]], id: String = "AggregatedSpatialMap"): SpatialMap[T] = {
+  def aggregate(otherSMs: Array[SpatialMap[T]],
+                id: String = "AggregatedSpatialMap"): SpatialMap[T] = {
     SpatialMap[T](id = id,
       timeStamp = math.max(this.timeStamp, otherSMs.map(_.timeStamp).max),
       contents = Array.concat(this.contents, otherSMs.flatMap(_.contents)))
@@ -29,7 +30,8 @@ case class SpatialMap[T: ClassTag](id: String, timeStamp: Long, contents: Array[
     val subSMLength = contents.length / num + 1
     val contentsArray = contents.sliding(subSMLength, subSMLength).toArray
     contentsArray.zipWithIndex.map {
-      case (contents, i) => SpatialMap(id = this.id + "-" + i, timeStamp = this.timeStamp, contents = contents)
+      case (contents, i) =>
+        SpatialMap(id = this.id + "-" + i, timeStamp = this.timeStamp, contents = contents)
     }
   }
 }
