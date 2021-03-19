@@ -3,39 +3,20 @@ package operators.selection
 import geometry.Rectangle
 import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-import utils.Config
+
+import setup.SharedSparkSession
 
 import scala.math.{max, sqrt}
 
-class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
-
-  var spark: SparkSession = _
-  var sc: SparkContext = _
-
-  def beforeEach() {
-    spark = SparkSession
-      .builder()
-      .master(Config.get("master"))
-      .appName("testFileReading")
-      .getOrCreate()
-    sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-  }
+class SelectorSuite extends AnyFunSuite with SharedSparkSession {
 
   /**
    * test if partition and indexing gives the same results as full scanning
    */
   test("test hash partitioner + rtree") {
-
-    spark = SparkSession.builder().getOrCreate()
-    sc = spark.sparkContext
-
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
     val dataSize = 10000
@@ -69,9 +50,6 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("test STR partitioner + rtree") {
-    spark = SparkSession.builder().getOrCreate()
-    sc = spark.sparkContext
-
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
     val dataSize = 10000
@@ -106,9 +84,6 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("test quadTree partitioner + rtree") {
-    spark = SparkSession.builder().getOrCreate()
-    sc = spark.sparkContext
-
     val trajectoryFile = "preprocessing/traj_short.csv"
     val numPartitions = 4
     val dataSize = 10000
@@ -140,9 +115,5 @@ class SelectorSuite extends AnyFunSuite with BeforeAndAfter {
     assert(queriedRDD.count == fullSRDD.count)
     assert(queriedRDDST.count == fullSTRDD.count)
 
-  }
-
-  def afterEach() {
-    spark.stop()
   }
 }

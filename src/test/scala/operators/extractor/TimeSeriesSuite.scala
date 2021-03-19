@@ -5,34 +5,14 @@ import operators.convertion.Converter
 import operators.extraction.TimeSeriesExtractor
 import operators.selection.partitioner.FastPartitioner
 import operators.selection.selectionHandler.RTreeHandler
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-import utils.Config
 
-import scala.io.Source
+import setup.SharedSparkSession
 
-class TimeSeriesSuite extends AnyFunSuite with BeforeAndAfter {
 
-  var spark: SparkSession = _
-  var sc: SparkContext = _
-
-  def beforeEach() {
-    spark = SparkSession
-      .builder()
-      .master(Config.get("master"))
-      .appName("testFileReading")
-      .getOrCreate()
-    sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-  }
-
+class TimeSeriesSuite extends AnyFunSuite with SharedSparkSession {
   test("test time series extraction apps") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
     val sQuery = Rectangle(Array(-9, 40, -8, 42))
 
@@ -54,9 +34,5 @@ class TimeSeriesSuite extends AnyFunSuite with BeforeAndAfter {
     assert(extractedRDD.count == c.count)
 
     println(extractor.countTimeSlotSamples((1597119319,1597120219))(tsRDD).collect().mkString("Array(", ", ", ")"))
-  }
-
-  def afterEach() {
-    spark.stop()
   }
 }

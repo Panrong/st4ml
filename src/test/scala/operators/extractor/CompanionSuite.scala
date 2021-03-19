@@ -2,35 +2,13 @@ package operators.extractor
 
 import operators.convertion.Converter
 import operators.extraction.{PointCompanionExtractor, TrajCompanionExtractor}
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-import utils.Config
 
-import scala.io.Source
+import setup.SharedSparkSession
 
-class CompanionSuite extends AnyFunSuite with BeforeAndAfter {
-
-  var spark: SparkSession = _
-  var sc: SparkContext = _
-
-  def beforeEach() {
-    spark = SparkSession
-      .builder()
-      .master(Config.get("master"))
-      .appName("testFileReading")
-      .getOrCreate()
-    sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-  }
-
+class CompanionSuite extends AnyFunSuite with SharedSparkSession {
   test("test companion") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-
     val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 1000, limit = true)
     val queryRDD = ReadTrajFile("preprocessing/query.csv", 5)
       .zipWithUniqueId()
@@ -60,9 +38,5 @@ class CompanionSuite extends AnyFunSuite with BeforeAndAfter {
     println(count4)
     assert(count1 == count2 && count3 == count4 && count1 == count3)
 
-  }
-
-  def afterEach() {
-    spark.stop()
   }
 }

@@ -2,37 +2,17 @@ package operators.convertion
 
 import geometry.Rectangle
 import geometry.road.RoadGrid
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SparkSession
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.{ReadPointFile, ReadTrajFile, ReadTrajJson}
 import operators.selection.partitioner.{FastPartitioner, HashPartitioner, STRPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
 import operators.extraction.PointsAnalysisExtractor
-import utils.Config
 
-import scala.io.Source
+import setup.SharedSparkSession
 
-class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
-
-  var spark: SparkSession = _
-  var sc: SparkContext = _
-
-  def beforeEach() {
-    spark = SparkSession
-      .builder()
-      .master(Config.get("master"))
-      .appName("testFileReading")
-      .getOrCreate()
-    sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-  }
+class ConverterSuite extends AnyFunSuite with SharedSparkSession {
 
   test("test traj2point") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajJson("datasets/traj_100000_converted.json", 4)
     val sQuery = Rectangle(Array(115, 25, 125, 35))
 
@@ -71,9 +51,6 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
 
   }
   test("test point to trajectory") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajJson("datasets/traj_100000_converted.json", 8)
     println(trajRDD.count)
     println(s"Average length:  ${trajRDD.map(_.points.length).aggregate(0)(_ + _, _ + _) / trajRDD.count}")
@@ -85,9 +62,6 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
   }
 
   test("test point to spatial map") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
     val sQuery = Rectangle(Array(-9, 40, -8, 42))
 
@@ -131,9 +105,6 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
   //  }
 
   test("test point to time series") {
-    val spark = SparkSession.builder().master("local").getOrCreate()
-    val sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
     val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 10, 16, limit = true)
     val sQuery = Rectangle(Array(-9, 40, -8, 42))
 
@@ -155,9 +126,5 @@ class ConverterSuite extends AnyFunSuite with BeforeAndAfter {
     val tsSpatialRDD = converter.point2TimeSeries(pointRDD, 1372636854, 1000, partitioner = new STRPartitioner(8, samplingRate = Some(1.0)))
     println(tsSpatialRDD.count)
     tsSpatialRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
-  }
-
-  def afterEach() {
-    spark.stop()
   }
 }

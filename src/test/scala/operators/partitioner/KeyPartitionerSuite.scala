@@ -3,36 +3,20 @@ package operators.partitioner
 import geometry.Shape
 import operators.selection.indexer.RTree
 import operators.selection.partitioner.STRPartitioner
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import org.scalatest.BeforeAndAfter
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.{ReadQueryFile, ReadTrajFile}
-import utils.Config
 
 import java.lang.System.nanoTime
 import scala.collection.immutable.ListMap
-import scala.io.Source
+
+import setup.SharedSparkSession
 
 /**
  * Test key partitioner with range query
  */
-class KeyPartitionerSuite extends AnyFunSuite with BeforeAndAfter {
-
-  var spark: SparkSession = _
-  var sc: SparkContext = _
-
-  def beforeEach() {
-    spark = SparkSession
-      .builder()
-      .master(Config.get("master"))
-      .appName("testFileReading")
-      .getOrCreate()
-    sc = spark.sparkContext
-    sc.setLogLevel("ERROR")
-  }
-
+class KeyPartitionerSuite extends AnyFunSuite with SharedSparkSession {
   test("test key partitioner") {
     val spark = SparkSession.builder().master("local").getOrCreate()
     val sc = spark.sparkContext
@@ -229,9 +213,5 @@ class KeyPartitionerSuite extends AnyFunSuite with BeforeAndAfter {
     println(ListMap(res6.collect.toSeq.sortBy(_._1): _*))
     println(s"=== Querying with partitioning and indexing takes ${(nanoTime - t) / 1e9} s.")
     sc.stop()
-  }
-
-  def afterEach() {
-    spark.stop()
   }
 }

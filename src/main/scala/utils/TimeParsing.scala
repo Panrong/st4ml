@@ -3,6 +3,7 @@ package utils
 import java.text.SimpleDateFormat
 import java.util.Date
 
+
 object TimeParsing {
   def timeLong2String(tm: Long): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
