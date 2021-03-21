@@ -7,10 +7,11 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import scala.util.control.Breaks._
+import scala.math.{max, min}
 
 import scala.reflect.ClassTag
 
-class Converter {
+class Converter extends Serializable {
 
   def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
   RDD[SubSpatialMap[Array[(Long, String)]]] = {
@@ -141,7 +142,7 @@ class Converter {
   }
 
   /**
-   * Convert points to a raster, where the dataset is spatially partitioned
+   * Convert points to timeSeries, where the dataset is spatially partitioned
    * and each partition consists of one time series.
    *
    * @param rdd          : point rdd after conversion
@@ -149,90 +150,47 @@ class Converter {
    * @param timeInterval : the length for temporal slicing
    * @param partitioner  : extends spatial partitioner
    * @tparam T : type of partitioner
-   * @return : rdd of a raster with integer id
+   * @return : rdd of timeSeries
    */
-  def point2Raster[T <: SpatialPartitioner : ClassTag]
+  def point2TimeSeries[T <: SpatialPartitioner : ClassTag]
   (rdd: RDD[(Int, Point)], startTime: Long, timeInterval: Int, partitioner: T)
-  : RDD[Raster[Int, Point]] = {
+  : RDD[TimeSeries[Point]] = {
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     repartitionedRDD.mapPartitions(partition => {
       if (partition.isEmpty) {
-        Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Point]](0)))
+        Iterator(TimeSeries[Point]("Empty", startTime, timeInterval, Rectangle(Array(0, 0, 0, 0)), new Array[Array[Point]](0)))
       } else {
-        val partitionID = partition.next()._1
-        val points = partition.map(_._2).toArray
+        val partitionArray = partition.toArray
+        val partitionID = partitionArray.head._1
+        val spatialRange = partitioner.partitionRange(partitionID)
+        val points = partitionArray.map(_._2)
         val l = (points.map(_.t).max.toInt - startTime).toInt / timeInterval + 1
         val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
         for (p <- points) {
           val s = ((p.t - startTime) / timeInterval).toInt
           slots(s) = slots(s) :+ p
         }
-        val ts = TimeSeries(partitionID.toString, startTime, timeInterval, slots)
+        val ts = TimeSeries(partitionID.toString, startTime, timeInterval, spatialRange, slots)
         Iterator(ts)
       }
-    }.filterNot(ts => ts.id == "Empty")
-      .zipWithIndex.map {
-      case (ts, id) =>
-        Raster(id = id.toString, contents = Array((id, ts)))
-    })
+    }).filter(x => x.id != "Empty")
   }
 
-  /**
-   * Convert points to one time series, which is temporally partitioned
-   * and each partition consists of one sub time series.
-   *
-   * For each time slot, the objects are left-inclusive
-   *
-   * @param rdd          : point rdd after conversion
-   * @param startTime    : start time of the time series
-   * @param timeInterval : the length for temporal slicing
-   * @param endTime      : expected end time of the time series
-   * @tparam T : type of partitioner
-   * @return : rdd of time series where each time series contains points attribute
-   */
-  def point2TimeSeries[T <: SpatialPartitioner : ClassTag]
-  (rdd: RDD[(Int, Point)], startTime: Long, timeInterval: Int, endTime: Option[Long] = None)
-  : RDD[TimeSeries[Point]] = {
-    val end = endTime.getOrElse(rdd.map(_._2.timeStamp._2).max)
-    val numPartitions = rdd.getNumPartitions
-    val partitioner = new TemporalPartitioner(startTime, end, timeInterval, numPartitions)
-    val repartitionedRDD = partitioner.partition(rdd.map(_._2))
-    val numSlotsPerPartition = partitioner.numSlotsPerPartition
-    repartitionedRDD.
-      mapPartitions(partition => {
-        if (partition.isEmpty) {
-          Iterator(TimeSeries("Empty", startTime, timeInterval, new Array[Array[Point]](0)))
-        } else {
-          val partitionArray = partition.toArray
-          val partitionID = partitionArray.head._1
-          val partitionStartTime = startTime + partitionID * timeInterval * numSlotsPerPartition
-          val points = partitionArray.map(_._2)
-          val slots = Array.fill[Array[Point]](numSlotsPerPartition)(new Array[Point](0))
-          for (p <- points) {
-            val s = ((p.t - partitionStartTime) / timeInterval).toInt
-            slots(s) = slots(s) :+ p
-          }
-          val ts = TimeSeries(partitionID.toString, partitionStartTime, timeInterval, slots)
-          Iterator(ts)
-        }
-      }.filterNot(ts => ts.id == "Empty")
-      )
-  }
 
-  /**
-   * Convert raster to SpatialMaps by taking snapshots
-   *
-   * @param rdd          : input raster rdd
-   * @param timeInterval : time interval for snapshot taking,
-   *                     should be multiplier of TimeSeries timeInterval of the raster
-   * @tparam I : type of raster region identifier
-   * @tparam T : type of TimeSeries content
-   * @return : rdd of SpatialMap
-   */
-//  def raster2SpatialMap[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])],
-//                                                  timeInterval: Int): RDD[SpatialMap[T]] = ???
-//
-//  def raster2TimeSeries[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])]): RDD[TimeSeries[T]] = ???
+  //  /**
+  //   * Convert raster to SpatialMaps by taking snapshots
+  //   *
+  //   * @param rdd          : input raster rdd
+  //   * @param timeInterval : time interval for snapshot taking,
+  //   *                     should be multiplier of TimeSeries timeInterval of the raster
+  //   * @tparam I : type of raster region identifier
+  //   * @tparam T : type of TimeSeries content
+  //   * @return : rdd of SpatialMap
+  //   */
+  //  def raster2SpatialMap[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])],
+  //                                                  timeInterval: Int): RDD[SpatialMap[T]] = ???
+  //
+  //  def raster2TimeSeries[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])]): RDD[TimeSeries[T]] = ???
 
   def point2SpatialMap(rdd: RDD[(Int, Point)],
                        startTime: Long,
@@ -247,11 +205,15 @@ class Converter {
       val partitionID = pointsArray.head._1
       val points = pointsArray.map(_._2)
       var regionMap = regions.map((_, new Array[Point](0)))
-        for (p <- points) {
-          breakable {
+      val boundary = genBoundary(regions)
+      for (p <- points) {
+        breakable {
           for (k <- regionMap.keys) {
-            if (p.inside(k._2)) {
-              val o = regionMap(k)
+            val pointShrink = Point(Array(
+              min(max(p.x, boundary.head), boundary(2)),
+              min(max(p.y, boundary(1)), boundary(3))
+            ))
+            if (pointShrink.inside(k._2)) {              val o = regionMap(k)
               regionMap = regionMap + (k -> (o :+ p))
               break()
             }
@@ -263,5 +225,29 @@ class Converter {
         timeStamp = startTime + partitionID * duration,
         contents = regionContents))
     })
+  }
+
+  def timeSeries2Raster[T <: Shape : ClassTag](rdd: RDD[(Int, TimeSeries[T])]): RDD[Raster[T]] = {
+    rdd.map(_._2).mapPartitions(iter => {
+      val ts = iter.toArray.head
+      Iterator(Raster(id = ts.id, Array((ts.spatialRange, ts))))
+    })
+  }
+
+  def spatialMap2Point(rdd: RDD[(Int, SpatialMap[Array[Point]])]): RDD[Point] = {
+    rdd.map(_._2).flatMap(_.contents).flatMap(x => x)
+  }
+
+  def timeSeries2Point(rdd: RDD[(Int, TimeSeries[Point])]):RDD[Point] = {
+    rdd.map(_._2).flatMap(_.series).flatMap(x => x)
+  }
+
+  def genBoundary(partitionMap: Map[Int, Rectangle]): List[Double] = {
+    val boxes = partitionMap.values.map(_.coordinates)
+    val minLon = boxes.map(_.head).min
+    val minLat = boxes.map(_ (1)).min
+    val maxLon = boxes.map(_ (2)).max
+    val maxLat = boxes.map(_.last).max
+    List(minLon, minLat, maxLon, maxLat)
   }
 }

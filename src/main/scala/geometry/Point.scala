@@ -105,7 +105,7 @@ case class Point(coordinates: Array[Double],
   }
 
   override def inside(rectangle: Rectangle): Boolean = {
-    if (x >= rectangle.xMin && x < rectangle.xMax && y >= rectangle.yMin && y < rectangle.yMax) true
+    if (x >= rectangle.xMin && x <= rectangle.xMax && y >= rectangle.yMin && y <= rectangle.yMax) true
     else false
   }
 

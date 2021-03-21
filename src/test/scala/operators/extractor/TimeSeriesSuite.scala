@@ -3,11 +3,10 @@ package operators.extractor
 import geometry.Rectangle
 import operators.convertion.Converter
 import operators.extraction.TimeSeriesExtractor
-import operators.selection.partitioner.FastPartitioner
+import operators.selection.partitioner.{FastPartitioner, STRPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
-
 import setup.SharedSparkSession
 
 
@@ -27,7 +26,7 @@ class TimeSeriesSuite extends AnyFunSuite with SharedSparkSession {
 
     val pointRDD = converter.traj2Point(queriedRDD).map((0, _))
 
-    val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100)
+    val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100, new STRPartitioner(8, samplingRate = Some(1)))
     val extractor = new TimeSeriesExtractor
     val extractedRDD = extractor.extractByTime((1597119319,1597120219))(tsRDD)
     val c = pointRDD.map(_._2).filter(x => x.timeStamp._1 >= 1597119319 && x.timeStamp._2 <= 1597120219)
