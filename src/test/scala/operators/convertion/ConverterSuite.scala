@@ -123,8 +123,5 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
     println(tsRDD.count)
     tsRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
 
-    val tsSpatialRDD = converter.point2TimeSeries(pointRDD, 1372636854, 1000, partitioner = new STRPartitioner(8, samplingRate = Some(1.0)))
-    println(tsSpatialRDD.count)
-    tsSpatialRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
   }
 }
