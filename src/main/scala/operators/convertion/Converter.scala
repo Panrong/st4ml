@@ -13,12 +13,12 @@ import scala.reflect.ClassTag
 
 class Converter extends Serializable {
 
-  def traj2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[SubSpatialMap[Array[(Long, String)]]] = {
+  def traj2RoadMap(rdd: RDD[(Int, mmTrajectory)]):
+  RDD[RoadMap[Array[(Long, String)]]] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[mmTrajectory],
-        classOf[SubSpatialMap[Array[(Long, String)]]]))
+        classOf[RoadMap[Array[(Long, String)]]]))
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
@@ -27,15 +27,15 @@ class Converter extends Serializable {
     }
       .map(x => (x._1._1, (x._1._2, x._2))) // (roadID, (timeStamp, trajID))
       .groupByKey(numPartitions).mapValues(_.toArray)
-      .map(x => SubSpatialMap(roadID = x._1, attributes = x._2))
+      .map(x => RoadMap(roadID = x._1, attributes = x._2))
   }
 
-  def trajSpeed2SpatialMap(rdd: RDD[(Int, mmTrajectory)]):
-  RDD[SubSpatialMap[Array[(Long, String, Double)]]] = {
+  def trajSpeed2RoadMap(rdd: RDD[(Int, mmTrajectory)]):
+  RDD[RoadMap[Array[(Long, String, Double)]]] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[mmTrajectory],
-        classOf[SubSpatialMap[Array[(Long, String, Double)]]]))
+        classOf[RoadMap[Array[(Long, String, Double)]]]))
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
@@ -44,7 +44,7 @@ class Converter extends Serializable {
     }
       .map(x => (x._1._1._1, (x._1._1._2, x._1._2, x._2))) // (roadID, (timeStamp, trajID, speed))
       .groupByKey(numPartitions).mapValues(_.toArray)
-      .map(x => SubSpatialMap(roadID = x._1, attributes = x._2))
+      .map(x => RoadMap(roadID = x._1, attributes = x._2))
   }
 
   def traj2Point(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
@@ -116,7 +116,7 @@ class Converter extends Serializable {
    */
   def point2SpatialMap(rdd: RDD[(Int, Point)],
                        roadMap: RoadGrid,
-                       threshold: Double = 50): RDD[SubSpatialMap[Array[Point]]] = {
+                       threshold: Double = 50): RDD[RoadMap[Array[Point]]] = {
     val sc = SparkContext.getOrCreate()
     val numPartitions = rdd.getNumPartitions
     val eRDD = sc.parallelize(roadMap.edges, numPartitions)
@@ -137,7 +137,7 @@ class Converter extends Serializable {
       }
     pointEdgeRDD.groupByKey()
       .map {
-        case (edge, points) => SubSpatialMap(edge, points.toArray.distinct)
+        case (edge, points) => RoadMap(edge, points.toArray.distinct)
       }
   }
 
@@ -299,7 +299,7 @@ class Converter extends Serializable {
     }).flatMap(x => x)
   }
 
-  /** helper functions * */
+  /** helper functions **/
 
   def genBoundary(partitionMap: Map[Int, Rectangle]): Array[Double] = {
     val boxes = partitionMap.values.map(_.coordinates)
