@@ -6,6 +6,7 @@ import operators.extraction.SpatialMapExtractor
 import operators.selection.partitioner.QuadTreePartitioner
 import operators.selection.selectionHandler.RTreeHandler
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config
 
@@ -22,6 +23,7 @@ object SpatialMapDev {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+      .persist(StorageLevel.MEMORY_AND_DISK)
     val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
     val tQuery = (1597000000L, 1598000000L)
 
