@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
  * @tparam T : type of the TimeSeries contents
  */
 case class Raster[T: ClassTag](id: String,
-                               contents: Array[(Rectangle, TimeSeries[T])]) {
+                               contents: Array[TimeSeries[T]]) {
   def addSpatial(raster: Raster[T]): Raster[T] = {
     Raster(id = this.id + "-" + raster.id,
       contents = this.contents ++ raster.contents)
@@ -19,14 +19,14 @@ case class Raster[T: ClassTag](id: String,
   def addTemporal(raster: Raster[T]): Raster[T] = {
     Raster(id = this.id,
       contents = (this.contents zip raster.contents)
-        .map(x => (x._1._1, x._1._2.extend(x._2._2))))
+        .map(x => x._1.extend(x._2)))
   }
 
-  def AggregateSpatial(others: Array[Raster[T]]): Raster[T] = {
+  def aggregateSpatial(others: Array[Raster[T]]): Raster[T] = {
     others.foldLeft(this)(_.addSpatial(_))
   }
 
-  def AggregateTemporal(others: Array[Raster[T]]): Raster[T] = {
+  def aggregateTemporal(others: Array[Raster[T]]): Raster[T] = {
     others.foldLeft(this)(_.addTemporal(_))
   }
 
@@ -40,17 +40,15 @@ case class Raster[T: ClassTag](id: String,
   }
 
   def splitTemporal(num: Int): Array[Raster[T]] = {
-    contents.map {
-      case (id, content) =>
-        content.split(num).map((id, _))
-    }.zipWithIndex.map {
+    contents.map(content =>
+      content.split(num)).zipWithIndex.map {
       case (content, id) =>
         Raster(id = this.id + "-" + id.toString, contents = content)
     }
   }
 
-  def SpatialRange(): Rectangle = {
-    val recs = contents.map(_._1)
+  def spatialRange(): Rectangle = {
+    val recs = contents.map(_.spatialRange)
     val lonMin = recs.map(_.xMin).min
     val latMin = recs.map(_.yMin).min
     val lonMax = recs.map(_.xMax).max
@@ -59,7 +57,7 @@ case class Raster[T: ClassTag](id: String,
   }
 
   def temporalRange(): (Long, Long) = {
-    (contents.map(_._2.startTime).min,
-      contents.map(_._2.endTime).max)
+    (contents.map(_.startTime).min,
+      contents.map(_.endTime).max)
   }
 }

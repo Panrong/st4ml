@@ -177,25 +177,36 @@ class Converter extends Serializable {
   }
 
 
-  //  /**
-  //   * Convert raster to SpatialMaps by taking snapshots
-  //   *
-  //   * @param rdd          : input raster rdd
-  //   * @param timeInterval : time interval for snapshot taking,
-  //   *                     should be multiplier of TimeSeries timeInterval of the raster
-  //   * @tparam I : type of raster region identifier
-  //   * @tparam T : type of TimeSeries content
-  //   * @return : rdd of SpatialMap
-  //   */
-  //  def raster2SpatialMap[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])],
-  //                                                  timeInterval: Int): RDD[SpatialMap[T]] = ???
-  //
-  //  def raster2TimeSeries[I, ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[I, T])]): RDD[TimeSeries[T]] = ???
+  // convert the raster elements inside one partition to one spatial map
+  def raster2SpatialMap[I: ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[T])]): RDD[SpatialMap[T]] = {
+    rdd.map(_._2).mapPartitions(iter => {
+      val rasters = iter.toArray
+      val combinedRaster = rasters.head.aggregateTemporal(rasters.drop(1))
+      val contents = combinedRaster.contents.flatMap(x => x.series).flatten
+      Iterator(SpatialMap(id = combinedRaster.id,
+        timeStamp = combinedRaster.temporalRange(),
+        contents = Array((combinedRaster.spatialRange(), contents))))
+    })
+  }
+
+  // convert the raster elements inside one partition to one time series
+
+  def raster2TimeSeries[I: ClassTag, T: ClassTag](rdd: RDD[(Int, Raster[T])]): RDD[TimeSeries[T]] = rdd.map(_._2).mapPartitions(
+    iter => {
+      val rasters = iter.toArray
+      val combinedRaster = rasters.head.aggregateSpatial(rasters.drop(1))
+      val contents = combinedRaster.contents.flatMap(x => x.series).flatten
+      val temporalRange = combinedRaster.temporalRange()
+      Iterator(TimeSeries(id = combinedRaster.id,
+        startTime = temporalRange._1,
+        timeInterval = (temporalRange._2 - temporalRange._1).toInt,
+        spatialRange = combinedRaster.spatialRange(), series = Array(contents)))
+    })
 
   def point2SpatialMap(rdd: RDD[(Int, Point)],
                        startTime: Long,
                        endTime: Long,
-                       regions: Map[Int, Rectangle]): RDD[SpatialMap[Array[Point]]] = {
+                       regions: Map[Int, Rectangle]): RDD[SpatialMap[Point]] = {
     val numPartitions = rdd.getNumPartitions
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val duration = (endTime - startTime) / numPartitions + 1
@@ -213,7 +224,8 @@ class Converter extends Serializable {
               min(max(p.x, boundary.head), boundary(2)),
               min(max(p.y, boundary(1)), boundary(3))
             ))
-            if (pointShrink.inside(k._2)) {              val o = regionMap(k)
+            if (pointShrink.inside(k._2)) {
+              val o = regionMap(k)
               regionMap = regionMap + (k -> (o :+ p))
               break()
             }
@@ -222,32 +234,79 @@ class Converter extends Serializable {
       }
       val regionContents = regionMap.toArray.sortBy(_._1._1).map(_._2)
       Iterator(SpatialMap(id = partitionID.toString,
-        timeStamp = startTime + partitionID * duration,
-        contents = regionContents))
+        timeStamp = (startTime + partitionID * duration, startTime + (partitionID + 1) * duration),
+        contents = regionContents.map((Rectangle(boundary), _))))
     })
   }
 
-  def timeSeries2Raster[T <: Shape : ClassTag](rdd: RDD[(Int, TimeSeries[T])]): RDD[Raster[T]] = {
+  def timeSeries2Raster[T <: Shape : ClassTag](rdd: RDD[(Int, TimeSeries[T])], timeInterval: Int): RDD[Raster[T]] = {
     rdd.map(_._2).mapPartitions(iter => {
       val ts = iter.toArray.head
-      Iterator(Raster(id = ts.id, Array((ts.spatialRange, ts))))
+      val subTimeSeries = ts.splitByInterval(timeInterval)
+      subTimeSeries.zipWithIndex.map {
+        case (x, id) =>
+          Raster(id = ts.id + "-" + id.toString, Array(x))
+      }.toIterator
     })
   }
 
-  def spatialMap2Point(rdd: RDD[(Int, SpatialMap[Array[Point]])]): RDD[Point] = {
-    rdd.map(_._2).flatMap(_.contents).flatMap(x => x)
+  def spatialMap2Raster[T <: Shape : ClassTag]
+  (rdd: RDD[(Int, SpatialMap[T])]): RDD[Raster[T]] = {
+    rdd.map(_._2).mapPartitions(iter => {
+      val sm = iter.toArray.head
+      val subSpatialMaps = sm.splitByCapacity(1)
+      subSpatialMaps.zipWithIndex.map {
+        case (x, id) =>
+          val ts = TimeSeries(id.toString,
+            startTime = x.startTime,
+            timeInterval = (x.endTime - x.startTime).toInt,
+            spatialRange = x.contents.head._1,
+            series = Array(x.contents.flatMap(_._2)))
+          Raster(id = sm.id + "-" + id.toString, Array(ts))
+      }.toIterator
+    })
   }
 
-  def timeSeries2Point(rdd: RDD[(Int, TimeSeries[Point])]):RDD[Point] = {
+  def spatialMap2Point(rdd: RDD[(Int, SpatialMap[Point])]): RDD[Point] = {
+    rdd.map(_._2).flatMap(_.contents).flatMap(x => x._2)
+  }
+
+  def timeSeries2Point(rdd: RDD[(Int, TimeSeries[Point])]): RDD[Point] = {
     rdd.map(_._2).flatMap(_.series).flatMap(x => x)
   }
 
-  def genBoundary(partitionMap: Map[Int, Rectangle]): List[Double] = {
+  //one spatial contains several spatial regions, each region converts to a time series (of one temporal slot)
+  def spatialMap2TimeSeries[T: ClassTag](rdd: RDD[(Int, SpatialMap[T])]): RDD[TimeSeries[T]] = {
+    rdd.map(_._2).map(sm => {
+      val regions = sm.contents
+      val startTime = sm.startTime
+      val timeInterval = (sm.endTime - sm.startTime).toInt
+      regions.zipWithIndex.map {
+        case ((spatialRange, contents), id) => TimeSeries(id.toString, startTime, timeInterval, spatialRange, Array(contents))
+      }
+    }).flatMap(x => x)
+  }
+
+  //one time series contains several temporal slots, each slot converts to a spatial map (of one spatial region)
+  def timeSeries2SpatialMap[T: ClassTag](rdd: RDD[(Int, TimeSeries[T])]): RDD[SpatialMap[T]] = {
+    rdd.map(_._2).map(ts => {
+      val slots = ts.series
+      val timeStamp = (ts.startTime, ts.endTime)
+      val spatialRange = ts.spatialRange
+      slots.zipWithIndex.map {
+        case (contents, id) => SpatialMap(id.toString, timeStamp, Array((spatialRange, contents)))
+      }
+    }).flatMap(x => x)
+  }
+
+  /** helper functions * */
+
+  def genBoundary(partitionMap: Map[Int, Rectangle]): Array[Double] = {
     val boxes = partitionMap.values.map(_.coordinates)
     val minLon = boxes.map(_.head).min
     val minLat = boxes.map(_ (1)).min
     val maxLon = boxes.map(_ (2)).max
     val maxLat = boxes.map(_.last).max
-    List(minLon, minLat, maxLon, maxLat)
+    Array(minLon, minLat, maxLon, maxLat)
   }
 }

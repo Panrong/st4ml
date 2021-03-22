@@ -18,6 +18,8 @@ case class TimeSeries[T: ClassTag](id: String,
 
   def endTime: Long = startTime + timeInterval * series.length
 
+  def temporalRange: (Long, Long) = (startTime, endTime)
+
   // the extend and split operations are both implemented on temporal dimension
   def extend(ts: TimeSeries[T]): TimeSeries[T] = {
     //extend the TimeSeries and keep the original id
@@ -29,7 +31,11 @@ case class TimeSeries[T: ClassTag](id: String,
 
   def split(num: Int): Array[TimeSeries[T]] = {
     val subSeriesLength = series.length / num + 1
-    series.sliding(subSeriesLength, subSeriesLength).zipWithIndex.map {
+    splitByInterval(subSeriesLength)
+  }
+
+  def splitByInterval(interval: Int): Array[TimeSeries[T]] = {
+    series.sliding(interval, interval).zipWithIndex.map {
       case (series, id) =>
         TimeSeries(id = this.id + "-" + id.toString,
           startTime = this.startTime + id * this.timeInterval,
