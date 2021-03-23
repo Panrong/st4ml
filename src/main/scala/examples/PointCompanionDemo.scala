@@ -55,7 +55,7 @@ object PointCompanionDemo {
     /** step 3: Extraction */
     val companionPairs = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
     println("=== Companion Analysis done: ")
-    companionPairs.foreach { case (q, c) => println(s"  ... $q: ${c.length}") }
+    companionPairs.foreach { case (q, c) => println(s"  ... $q: ${c.size}") }
     sc.stop()
   }
 }

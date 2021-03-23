@@ -5,10 +5,12 @@ import operators.CustomOperatorSet
 import operators.convertion.Converter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{LongType, MapType, StringType, StructField, StructType}
 import preprocessing.ReadTrajJson
 import utils.Config
-import utils.TimeParsing.parseTemporalRange
+import utils.TimeParsing.{nextDay, parseTemporalRange}
+
 
 object CompanionDailyDev {
   def main(args: Array[String]): Unit = {
@@ -30,6 +32,7 @@ object CompanionDailyDev {
     val queryThreshold = args(2).split(",").map(_.toDouble)
     val sThreshold = queryThreshold.head
     val tThreshold = queryThreshold.last
+
     /**
      * example input arguments: "118.35,29.183,120.5,30.55" "2020-07-31 23:30:00,2020-08-02 00:30:00" "1000,600"
      */
@@ -53,10 +56,24 @@ object CompanionDailyDev {
     println(s"--- Total points: ${rdd2.count}")
 
     /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
     println("=== Companion Analysis done: ")
     println("=== 5 examples: ")
-    companionPairs.take(5).foreach { case (q, c) => println(s"  ... $q: ${c.deep}") }
+    companionPairsRDD.take(5).foreach { case (q, c) => println(s"  ... $q: $c") }
+
+    /** save results */
+    val schema = StructType(
+      Seq(
+        StructField("ID", StringType, nullable = false),
+        StructField("companion", MapType(LongType, StringType, valueContainsNull = false), nullable = false)
+      )
+    )
+    println(companionPairsRDD.map(Row(_)).take(1).deep)
+    val resDF = spark.createDataFrame(companionPairsRDD.map(x => Row(x._1, x._2)), schema)
+    //    resDF.show
+    //    resDF.printSchema()
+    resDF.write.json(Config.get("resPath") + nextDay(tQuery._1))
+
     sc.stop()
   }
 

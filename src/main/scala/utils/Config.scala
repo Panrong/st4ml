@@ -10,6 +10,7 @@ object Config {
       "numPartitions" -> "8",
       "hzData" -> "datasets/traj_10000_converted.json",
       "portoData" -> "preprocessing/traj_short.csv",
+      "resPath" -> "out/",
     )
   }
 
@@ -19,6 +20,7 @@ object Config {
       "numPartitions" -> "64",
       "hzData" -> "/datasets/hz_traj/",
       "portoData" -> "/datasets/porto_traj.csv",
+      "resPath" -> "/datasets/out/",
     )
   }
 

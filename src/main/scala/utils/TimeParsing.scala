@@ -20,4 +20,10 @@ object TimeParsing {
     }
     (tRange.head, tRange.last)
   }
+
+  def nextDay(tm: Long): String = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd")
+    val tim = fm.format(new Date(tm * 1000 + 1000 * 60 * 60 * 24))
+    tim
+  }
 }

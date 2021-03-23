@@ -22,7 +22,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
   }
 
   // find all companion pairs
-  def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): Array[(String, Array[(Long, String)])] = {
+  def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val partitioner = new QuadTreePartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
     val repartitionedRDD = partitioner.partition(pRDD)
     repartitionedRDD.mapPartitions(x => {
@@ -36,7 +36,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
         .map {
           case (p1, p2) => (p1.id, (p1.timeStamp._1, p2.id))
         }.toIterator
-    }).groupByKey.mapValues(_.toArray.distinct).collect.distinct
+    }).groupByKey.mapValues(_.toArray.distinct).mapValues(_.toMap).distinct
   }
 
   //find companion pairs of some queries
