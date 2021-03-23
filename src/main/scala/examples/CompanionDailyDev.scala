@@ -7,6 +7,7 @@ import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.types.{LongType, MapType, StringType, StructField, StructType}
+import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.{nextDay, parseTemporalRange}
@@ -55,7 +56,7 @@ object CompanionDailyDev {
       val (ts, te) = x.timeStamp
       ts <= tQuery._2 && te >= tQuery._1
     })
-    //    rdd2.cache()
+    rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
 
     /** step 3: Extraction */
@@ -63,20 +64,20 @@ object CompanionDailyDev {
     println("=== Companion Analysis done: ")
     println("=== 5 examples: ")
     companionPairsRDD.take(5).foreach { case (q, c) => println(s"  ... $q: $c") }
-
-    /** save results */
-    val schema = StructType(
-      Seq(
-        StructField("ID", StringType, nullable = false),
-        StructField("companion", MapType(LongType, StringType, valueContainsNull = false), nullable = false)
-      )
-    )
-    println(companionPairsRDD.map(Row(_)).take(1).deep)
-    val resDF = spark.createDataFrame(companionPairsRDD.map(x => Row(x._1, x._2)), schema)
-    //    resDF.show
-    //    resDF.printSchema()
-    resDF.write.json(Config.get("resPath") + nextDay(tQuery._1))
-
+    /*
+        /** save results */
+        val schema = StructType(
+          Seq(
+            StructField("ID", StringType, nullable = false),
+            StructField("companion", MapType(LongType, StringType, valueContainsNull = false), nullable = false)
+          )
+        )
+        //    println(companionPairsRDD.map(Row(_)).take(1).deep)
+        val resDF = spark.createDataFrame(companionPairsRDD.map(x => Row(x._1, x._2)), schema)
+        //    resDF.show
+        //    resDF.printSchema()
+        resDF.write.json(Config.get("resPath") + nextDay(tQuery._1))
+    */
     sc.stop()
   }
 
