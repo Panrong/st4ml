@@ -51,7 +51,10 @@ object CompanionDailyDev {
     //    rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2Point(rdd1)
+    val rdd2 = operator.converter.traj2Point(rdd1).filter(x => {
+      val (ts, te) = x.timeStamp
+      ts <= tQuery._2 && te >= tQuery._1
+    })
     //    rdd2.cache()
     println(s"--- Total points: ${rdd2.count}")
 
