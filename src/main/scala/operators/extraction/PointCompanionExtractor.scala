@@ -25,6 +25,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
   def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
     val repartitionedRDD = partitioner.partition(pRDD)
+    println(repartitionedRDD.mapPartitions(iter => Iterator(iter.size)).collect.deep)
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     repartitionedRDD.mapPartitions(x => {
       val points = x.toArray.map(_._2)
