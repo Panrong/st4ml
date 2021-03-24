@@ -8,18 +8,17 @@ import operators.selection.partitioner._
 
 class PointCompanionExtractor extends Extractor with Serializable {
   // find all companion pairs
-  def extract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): Array[(String, String)] = {
-    val pairRDD = pRDD.cartesian(pRDD).filter {
+  def extract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
+   pRDD.cartesian(pRDD).filter {
       case (p1, p2) =>
-        abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold && abs(p1.geoDistance(p2)) <= sThreshold &&
+        abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold &&
+          abs(p1.geoDistance(p2)) <= sThreshold &&
           p1.attributes("tripID") != p2.attributes("tripID")
     }.map {
-      case (p1, p2) =>
-        List(p1.attributes("tripID"), p2.attributes("tripID")).sorted
-    }.distinct
-      .map(x => (x.head, x(1)))
-    pairRDD.collect
+      case (p1, p2) => (p1.id, (p1.timeStamp._1, p2.id))
+    }.groupByKey.mapValues(_.toMap).reduceByKey(_++_)
   }
+
 
   // find all companion pairs
   def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
@@ -36,7 +35,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
         .map {
           case (p1, p2) => (p1.id, (p1.timeStamp._1, p2.id))
         }.toIterator
-    }).groupByKey.mapValues(_.toArray.distinct).mapValues(_.toMap).distinct
+    }).groupByKey.mapValues(_.toMap).reduceByKey(_++_)
   }
 
   //find companion pairs of some queries

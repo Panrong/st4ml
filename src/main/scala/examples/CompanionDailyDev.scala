@@ -6,7 +6,7 @@ import operators.convertion.Converter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.types.{LongType, MapType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config

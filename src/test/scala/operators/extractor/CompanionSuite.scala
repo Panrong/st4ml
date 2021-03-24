@@ -3,28 +3,34 @@ package operators.extractor
 import operators.convertion.Converter
 import operators.extraction.{PointCompanionExtractor, TrajCompanionExtractor}
 import org.scalatest.funsuite.AnyFunSuite
-import preprocessing.ReadTrajFile
+import preprocessing.ReadTrajJson
 
 import setup.SharedSparkSession
 
 class CompanionSuite extends AnyFunSuite with SharedSparkSession {
   test("test companion") {
-    val trajRDD = ReadTrajFile("preprocessing/traj_short.csv", 1000, limit = true)
-    val queryRDD = ReadTrajFile("preprocessing/query.csv", 5)
+    val trajRDD = sc.parallelize(ReadTrajJson("datasets/traj_10000_converted.json", 8).take(100))
+    val queryRDD = ReadTrajJson("datasets/query100.json", 8)
       .zipWithUniqueId()
-      .map{
-        case(traj, id) => traj.setID(id.toString)
+      .map {
+        case (traj, id) => traj.setID(id.toString)
       }
-
     /** find companion by points */
     val converter = new Converter
     val pointRDD = converter.traj2Point(trajRDD.map((0, _)))
     val queryPointRDD = converter.traj2Point(queryRDD.map((0, _)))
     val extractor1 = new PointCompanionExtractor
+
     val queried1 = extractor1.queryWithIDs(500, 600)(pointRDD, queryPointRDD) // 500m and 10min
     val count1 = queried1.mapValues(_.distinct.length)
     val queried2 = extractor1.queryWithIDsFS(500, 600)(pointRDD, queryPointRDD)
     val count2 = queried2.mapValues(_.distinct.length)
+
+    /** find all companion pairs by points */
+    val allPairs = extractor1.optimizedExtract(5000, 600)(pointRDD).collect()
+    allPairs.foreach(println(_))
+    val allPairsFullScan = extractor1.extract(5000, 600)(pointRDD).collect()
+    assert(allPairs.sortBy(_._1) sameElements allPairsFullScan.sortBy(_._1))
 
     /** find companion by trajectory */
     val extractor2 = new TrajCompanionExtractor

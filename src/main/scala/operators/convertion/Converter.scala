@@ -54,8 +54,9 @@ class Converter extends Serializable {
         classOf[Point]))
 
     rdd.map(_._2).flatMap(
-      traj => traj.points.map(p =>
-        p.setAttributes(Map("tripID" -> traj.id))))
+      traj => traj.points.map(p => {
+        p.setAttributes(Map("tripID" -> traj.id))
+      }))
   }
 
   def traj2PointClean(rdd: RDD[(Int, Trajectory)], sQuery: Rectangle): RDD[Point] = {
@@ -299,7 +300,7 @@ class Converter extends Serializable {
     }).flatMap(x => x)
   }
 
-  /** helper functions **/
+  /** helper functions * */
 
   def genBoundary(partitionMap: Map[Int, Rectangle]): Array[Double] = {
     val boxes = partitionMap.values.map(_.coordinates)
