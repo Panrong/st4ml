@@ -5,6 +5,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.math.abs
 import operators.selection.partitioner._
+import org.apache.spark.storage.StorageLevel
 
 class PointCompanionExtractor extends Extractor with Serializable {
   // find all companion pairs
@@ -24,6 +25,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
   def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
     val repartitionedRDD = partitioner.partition(pRDD)
+    repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     repartitionedRDD.mapPartitions(x => {
       val points = x.toArray.map(_._2)
       points.flatMap(x => points.map(y => (x, y))).filter {
@@ -33,9 +35,9 @@ class PointCompanionExtractor extends Extractor with Serializable {
             p1.attributes("tripID") != p2.attributes("tripID")
       }
         .map {
-          case (p1, p2) => (p1.id, (p1.timeStamp._1, p2.id))
+          case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
         }.toIterator
-    }).groupByKey.mapValues(_.toMap).reduceByKey(_++_)
+    }).reduceByKey(_++_).mapValues(_.toMap)
   }
 
   //find companion pairs of some queries
