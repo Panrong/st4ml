@@ -102,12 +102,11 @@ class PointsAnalysisExtractor extends Extractor with Serializable {
     val startTime = pRDD.map(_.timeStamp._1).min
     val startDate = date2Long(getDate(startTime))
     pRDD.map(_.timeStamp._1)
-      .map(x => ((x - startDate) / (24 * 60 * 60 * 1000), 1))
+      .map(x => ((x - startDate) / (24 * 60 * 60), 1))
       .reduceByKey(_ + _)
       .collect
-      .sortBy(_._1)
-      .map{
-        case(date, count) => (getDate(date * (24 * 60 * 60 * 1000) + startDate), count)
+      .sortBy(_._1).map {
+        case (date, count) => (getDate(date * (24 * 60 * 60) + startDate), count)
       }
   }
 }
