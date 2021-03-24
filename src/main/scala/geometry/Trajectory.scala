@@ -8,7 +8,9 @@ case class Trajectory(tripID: String,
                       points: Array[Point],
                       attributes: Map[String, String] = Map()) extends Shape with Serializable {
 
-  override var timeStamp: (Long, Long) = (points.head.timeStamp._1, points.last.timeStamp._2)
+  override var timeStamp: (Long, Long) =
+    (points.map(_.timeStamp._1).min, points.map(_.timeStamp._2).max) // to avoid invalid timeStamps
+
 
   val mbr: Rectangle = Rectangle(Array(
     points.map(p => p.coordinates(0)).min,
