@@ -26,4 +26,15 @@ object TimeParsing {
     val tim = fm.format(new Date(tm * 1000 + 1000 * 60 * 60 * 24))
     tim
   }
+
+  def getDate(tm: Long): String = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd")
+    val tim = fm.format(new Date(tm * 1000))
+    tim
+  }
+
+  def date2Long(s: String): Long = {
+    val format = new SimpleDateFormat("yyyy-MM-dd")
+    format.parse(s).getTime / 1000
+  }
 }

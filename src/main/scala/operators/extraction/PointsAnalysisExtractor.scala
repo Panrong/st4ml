@@ -5,6 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 import java.text.SimpleDateFormat
+import utils.TimeParsing._
 
 class PointsAnalysisExtractor extends Extractor with Serializable {
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
@@ -95,5 +96,18 @@ class PointsAnalysisExtractor extends Extractor with Serializable {
 
   def extractNumIds(pRDD: RDD[Point]): Long = {
     extractNumAttribute("tripID")(pRDD)
+  }
+
+  def extractDailyNum(pRDD: RDD[Point]): Array[(String, Int)] = {
+    val startTime = pRDD.map(_.timeStamp._1).min
+    val startDate = date2Long(getDate(startTime))
+    pRDD.map(_.timeStamp._1)
+      .map(x => ((x - startDate) / (24 * 60 * 60 * 1000), 1))
+      .reduceByKey(_ + _)
+      .collect
+      .sortBy(_._1)
+      .map{
+        case(date, count) => (getDate(date * (24 * 60 * 60 * 1000) + startDate), count)
+      }
   }
 }

@@ -75,6 +75,9 @@ object PointAnalysisDemo {
     val abnormity = extractor.extractAbnormity()(rdd2)
     println(s" ... Number of abnormal ids : ${abnormity.length}")
 
+    val dailyCount = extractor.extractDailyNum(rdd2)
+    dailyCount.foreach(x => println(s"${x._1}: ${x._2}"))
+
     sc.stop()
   }
 }
