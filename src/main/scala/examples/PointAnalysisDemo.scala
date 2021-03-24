@@ -34,6 +34,7 @@ object PointAnalysisDemo {
 
     /** read input data */
     val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
+    println(s" ... before selection ${trajRDD.count} trajectories")
 
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
@@ -47,6 +48,10 @@ object PointAnalysisDemo {
     val extractor = operator.extractor
     val topN = 3
     println("=== Analysing Results:")
+
+    println(s" ... Total number of trajectories: ${rdd1.count}")
+    println(s" ... Total number of points: ${rdd2.count}")
+
     println(s" ... Top $topN most frequent:")
     extractor.extractMostFrequentPoints("tripID", topN)(rdd2).foreach(x => println(s" ....  $x"))
 
@@ -77,7 +82,7 @@ object PointAnalysisDemo {
 
     val dailyCount = extractor.extractDailyNum(rdd2)
     dailyCount.foreach(x => println(s"${x._1}: ${x._2}"))
-
+    println(dailyCount.map(_._2).sum)
     sc.stop()
   }
 }
