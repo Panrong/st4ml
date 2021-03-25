@@ -61,6 +61,8 @@ object CompanionDailyDev {
 
     /** step 3: Extraction */
     val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
+    rdd2.unpersist()
     println("=== Companion Analysis done: ")
     println("=== 5 examples: ")
     companionPairsRDD.take(5).foreach { case (q, c) => println(s"  ... $q: $c") }
