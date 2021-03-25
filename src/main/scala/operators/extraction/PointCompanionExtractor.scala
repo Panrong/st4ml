@@ -42,13 +42,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
         }.toIterator
     })
       .mapValues(_.toMap)
-      // to reduce shuffle cost, shuffle all pairs into bigger groups and aggregate inside each group
-      .map(x => (abs(x._1.hashCode) % numPartitions, x))
-      .partitionBy(new KeyPartitioner(numPartitions))
-      .map(_._2)
-      .mapPartitions(iter => iter.toArray.groupBy(_._1)
-        .map(x => (x._1, x._2.map(_._2).foldLeft(Map[Long, String]())(_ ++ _))).toIterator)
-
+      .reduceByKey(_++_)
   }
 
   //find companion pairs of some queries

@@ -58,7 +58,7 @@ object CompanionDailyDev {
     })
     rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
-
+    println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
     /** step 3: Extraction */
     val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
