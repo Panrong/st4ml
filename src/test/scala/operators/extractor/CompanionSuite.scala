@@ -28,9 +28,11 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
 
     /** find all companion pairs by points */
     val allPairs = extractor1.optimizedExtract(5000, 600)(pointRDD).collect()
-    allPairs.foreach(println(_))
+    //    allPairs.foreach(println(_))
     val allPairsFullScan = extractor1.extract(5000, 600)(pointRDD).collect()
-    assert(allPairs.sortBy(_._1) sameElements allPairsFullScan.sortBy(_._1))
+    //    println("---")
+    //    allPairsFullScan.foreach(println(_))
+    assert(allPairs.sortBy(_._1) sameElements allPairsFullScan.sortBy(_._1), "find all companion pairs by points false")
 
     /** find companion by trajectory */
     val extractor2 = new TrajCompanionExtractor
