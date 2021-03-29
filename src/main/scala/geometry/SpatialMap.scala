@@ -53,6 +53,6 @@ case class SpatialMap[T: ClassTag](id: String, timeStamp: (Long, Long), contents
       s"++ temporal range: ${this.timeStamp}\n" +
       s"++ spatial ranges and number of contents in each range:\n"
     this.contents.foreach(x => s = s ++ x._1.coordinates.mkString("++  (", ",", "): ") + x._2.length + "\n")
-    s
+    s ++ "+++++\n"
   }
 }
