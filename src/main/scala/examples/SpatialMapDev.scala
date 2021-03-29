@@ -26,8 +26,8 @@ object SpatialMapDev {
     val tQuery = parseTemporalRange(args(1))
     val tStart = tQuery._1
     val tEnd = tQuery._2
-    val partitionRange = gridPartition(sQuery.coordinates, 4)
-
+    val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt)
+    val timeInterval = args(3).toInt
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
@@ -51,7 +51,7 @@ object SpatialMapDev {
         case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
       }
     var t = nanoTime()
-    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange, Some(30 * 60)).cache()
+    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange, Some(timeInterval)).cache()
     spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
