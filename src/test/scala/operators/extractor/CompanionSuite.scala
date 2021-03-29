@@ -9,8 +9,8 @@ import setup.SharedSparkSession
 
 class CompanionSuite extends AnyFunSuite with SharedSparkSession {
   test("test companion") {
-    val trajRDD = sc.parallelize(ReadTrajJson("datasets/traj_10000_converted.json", 8).take(100))
-    val queryRDD = ReadTrajJson("datasets/query100.json", 8)
+    val trajRDD = sc.parallelize(ReadTrajJson("datasets/traj_10000_converted.json", 18).take(100))
+    val queryRDD = ReadTrajJson("datasets/query100.json", 18)
       .zipWithUniqueId()
       .map {
         case (traj, id) => traj.setID(id.toString)
@@ -28,10 +28,10 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
 
     /** find all companion pairs by points */
     val allPairs = extractor1.optimizedExtract(5000, 600)(pointRDD).collect()
-    //    allPairs.foreach(println(_))
+        allPairs.foreach(println(_))
     val allPairsFullScan = extractor1.extract(5000, 600)(pointRDD).collect()
-    //    println("---")
-    //    allPairsFullScan.foreach(println(_))
+        println("---")
+        allPairsFullScan.foreach(println(_))
     assert(allPairs.sortBy(_._1) sameElements allPairsFullScan.sortBy(_._1), "find all companion pairs by points false")
 
     /** find companion by trajectory */

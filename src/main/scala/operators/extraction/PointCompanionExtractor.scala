@@ -6,7 +6,6 @@ import org.apache.spark.rdd.RDD
 import scala.math.abs
 import operators.selection.partitioner._
 import org.apache.spark.storage.StorageLevel
-import operators.selection.partitioner.KeyPartitioner
 
 class PointCompanionExtractor extends Extractor with Serializable {
 
@@ -29,9 +28,15 @@ class PointCompanionExtractor extends Extractor with Serializable {
   // find all companion pairs
   def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val numPartitions = pRDD.getNumPartitions
-    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
-    val repartitionedRDD = partitioner.partition(pRDD)
-    println(repartitionedRDD.mapPartitions(iter => Iterator(iter.size)).collect.deep)
+    //    // Spatial partitioner
+    //    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
+    //    val repartitionedRDD = partitioner.partition(pRDD)
+
+    // Temporal partitioner
+    val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min, endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
+    val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
+    //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
+
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     repartitionedRDD.mapPartitions(x => {
       val points = x.toArray.map(_._2)
