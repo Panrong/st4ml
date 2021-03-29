@@ -31,7 +31,7 @@ case class SpatialMap[T: ClassTag](id: String, timeStamp: (Long, Long), contents
     val newStartTime = (otherSMs.map(_.startTime) :+ this.startTime).min
     val newEndTime = (otherSMs.map(_.endTime) :+ this.endTime).max
     SpatialMap[T](id = id,
-      timeStamp =(newStartTime, newEndTime),
+      timeStamp = (newStartTime, newEndTime),
       contents = Array.concat(this.contents, otherSMs.flatMap(_.contents)))
   }
 
@@ -46,5 +46,13 @@ case class SpatialMap[T: ClassTag](id: String, timeStamp: (Long, Long), contents
       case (contents, i) =>
         SpatialMap(id = this.id + "-" + i, timeStamp = this.timeStamp, contents = contents)
     }
+  }
+
+  def printInfo(): String = {
+    var s = s"+++++ SptialMap: ${this.id}\n" +
+      s"++ temporal range: ${this.timeStamp}\n" +
+      s"++ spatial ranges and number of contents in each range:\n"
+    this.contents.foreach(x => s = s ++ x._1.coordinates.mkString("++  (", ",", "): ") + x._2.length + "\n")
+    s
   }
 }

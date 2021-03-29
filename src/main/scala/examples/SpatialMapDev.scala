@@ -1,15 +1,15 @@
 package examples
 
 import geometry.Rectangle
+import operators.CustomOperatorSet
 import operators.convertion.Converter
 import operators.extraction.SpatialMapExtractor
-import operators.selection.partitioner.{FastPartitioner, QuadTreePartitioner}
-import operators.selection.selectionHandler.RTreeHandler
+import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config
-
+import utils.TimeParsing.parseTemporalRange
+import utils.SpatialProcessing.gridPartition
 import java.lang.System.nanoTime
 
 object SpatialMapDev {
@@ -22,58 +22,51 @@ object SpatialMapDev {
 
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-      .persist(StorageLevel.MEMORY_AND_DISK)
-    val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
-    val tQuery = (1597000000L, 1598000000L)
+    val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
+    val tQuery = parseTemporalRange(args(1))
+    val tStart = tQuery._1
+    val tEnd = tQuery._2
+    val partitionRange = gridPartition(sQuery.coordinates, 4)
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    val partitioner = new FastPartitioner(numPartitions)
-    val pRDD = partitioner.partition(trajRDD)
+    /** initialize operators */
+    val operator = new CustomOperatorSet(
+      DefaultSelector(numPartitions),
+      new Converter,
+      new SpatialMapExtractor)
 
-    val wholeRange = partitioner.partitionRange(0)
-    val partitionRange = gridPartition(wholeRange.coordinates, 4).zipWithIndex.map(_.swap).toMap
+    /** read input data */
+    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
-    val selector = RTreeHandler(partitioner.partitionRange, Some(500))
-    val queriedRDD = selector.query(pRDD)(Rectangle(Array(-180, -180, 180, 180)))
-    println(s"--- ${queriedRDD.count} trajectories")
+    /** step 1: Selection */
+    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
 
+    println(s"--- ${rdd1.count} trajectories")
+
+    /** step 2: Conversion */
     val converter = new Converter()
-    val pointRDD = converter.traj2Point(queriedRDD).map((0, _))
-
-
-    val tStart = pointRDD.map(_._2.timeStamp).min._1
-    val tEnd = pointRDD.map(_._2.timeStamp).max._2
-
+    val pointRDD = converter.traj2Point(rdd1).map((0, _)).filter {
+      case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
+    }
     var t = nanoTime()
-    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange)
-
-    spatialMapRDD.take(1)
+    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange).cache()
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    t = nanoTime()
 
-    val extractor = new SpatialMapExtractor()
-    val extractedRDD = extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
+    /** step 3: Extraction */
+    spatialMapRDD.map(_.printInfo()).foreach(println(_))
+    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
+
+    t = nanoTime()
     println(s"... Total ${extractedRDD.count} points")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    t = nanoTime()
 
+    t = nanoTime()
     val gt = pointRDD.filter(p => p._2.inside(sQuery) && p._2.t <= tQuery._2 && p._2.t >= tQuery._1).count
     println(s"... (Benchmark) Total $gt points")
     println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }
 
-  def gridPartition(sRange: Array[Double], gridSize: Int): Array[Rectangle] = {
-    val longInterval = (sRange(2) - sRange(0)) / gridSize
-    val latInterval = (sRange(3) - sRange(1)) / gridSize
-    val longSeparations = (0 until gridSize)
-      .map(t => (sRange(0) + t * longInterval, sRange(0) + (t + 1) * longInterval)).toArray
-    val latSeparations = (0 until gridSize)
-      .map(t => (sRange(1) + t * latInterval, sRange(1) + (t + 1) * latInterval)).toArray
-    for ((longMin, longMax) <- longSeparations;
-         (latMin, latMax) <- latSeparations)
-      yield Rectangle(Array(longMin, latMin, longMax, latMax))
-  }
+
 }

@@ -233,10 +233,10 @@ class Converter extends Serializable {
           }
         }
       }
-      val regionContents = regionMap.toArray.sortBy(_._1._1).map(_._2)
+      val regionContents = regionMap.toArray.sortBy(_._1._1).map(x => (x._1._2, x._2))
       Iterator(SpatialMap(id = partitionID.toString,
         timeStamp = (startTime + partitionID * duration, startTime + (partitionID + 1) * duration),
-        contents = regionContents.map((Rectangle(boundary), _))))
+        contents = regionContents))
     })
   }
 
