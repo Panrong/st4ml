@@ -207,14 +207,15 @@ class Converter extends Serializable {
   def point2SpatialMap(rdd: RDD[(Int, Point)],
                        startTime: Long,
                        endTime: Long,
-                       regions: Map[Int, Rectangle]): RDD[SpatialMap[Point]] = {
-    val numPartitions = rdd.getNumPartitions
+                       regions: Map[Int, Rectangle],
+                       timeInterval: Option[Int] = None): RDD[SpatialMap[Point]] = {
+    val numPartitions = if (timeInterval.isEmpty) rdd.getNumPartitions
+    else (endTime - startTime).toInt / timeInterval.get + 1
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
-    val duration = (endTime - startTime) / numPartitions + 1
+    val duration = timeInterval.getOrElse((endTime - startTime).toInt / numPartitions + 1)
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
-    repartitionedRDD.mapPartitions(iter => {
+    repartitionedRDD.mapPartitionsWithIndex { case (partitionID, iter) =>
       val pointsArray = iter.toArray
-      val partitionID = pointsArray.head._1
       val points = pointsArray.map(_._2)
       var regionMap = regions.map((_, new Array[Point](0)))
       val boundary = genBoundary(regions)
@@ -237,7 +238,7 @@ class Converter extends Serializable {
       Iterator(SpatialMap(id = partitionID.toString,
         timeStamp = (startTime + partitionID * duration, startTime + (partitionID + 1) * duration),
         contents = regionContents))
-    })
+    }
   }
 
   def timeSeries2Raster[T <: Shape : ClassTag](rdd: RDD[(Int, TimeSeries[T])], timeInterval: Int): RDD[Raster[T]] = {

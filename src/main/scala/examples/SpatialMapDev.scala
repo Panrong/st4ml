@@ -42,16 +42,16 @@ object SpatialMapDev {
 
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
-
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
     val converter = new Converter()
-    val pointRDD = converter.traj2Point(rdd1).map((0, _)).filter {
-      case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
-    }
+    val pointRDD = converter.traj2Point(rdd1).map((0, _))
+      .filter {
+        case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
+      }
     var t = nanoTime()
-    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange).cache()
+    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange, Some(30 * 60)).cache()
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** step 3: Extraction */

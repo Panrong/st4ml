@@ -49,16 +49,16 @@ object CompanionDailyDev {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, Rectangle(Array(-180,-180,180,180)), (0L,2000000000L))
+    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     //    rdd1.cache()
     println(s"size of trajRDD: ${SizeEstimator.estimate(rdd1)}")
 
     /** step 2: Conversion */
     val rdd2 = operator.converter.traj2Point(rdd1)
-//      .filter(x => {
-//      val (ts, te) = x.timeStamp
-//      ts <= tQuery._2 && te >= tQuery._1
-//    })
+      .filter(x => {
+        val (ts, te) = x.timeStamp
+        ts <= tQuery._2 && te >= tQuery._1
+      })
     rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
