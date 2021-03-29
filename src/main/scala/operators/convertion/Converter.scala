@@ -115,9 +115,9 @@ class Converter extends Serializable {
    * @param threshold : maximum projection distance from a point to a road for matching
    * @return : SpatialMap RDD
    */
-  def point2SpatialMap(rdd: RDD[(Int, Point)],
-                       roadMap: RoadGrid,
-                       threshold: Double = 50): RDD[RoadMap[Array[Point]]] = {
+  def point2RoadMap(rdd: RDD[(Int, Point)],
+                    roadMap: RoadGrid,
+                    threshold: Double = 50): RDD[RoadMap[Array[Point]]] = {
     val sc = SparkContext.getOrCreate()
     val numPartitions = rdd.getNumPartitions
     val eRDD = sc.parallelize(roadMap.edges, numPartitions)

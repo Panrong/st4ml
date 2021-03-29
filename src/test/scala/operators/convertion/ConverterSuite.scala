@@ -77,7 +77,7 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
       .map(x => x._1.setID(x._2.toString))
     println(s"--- converted to ${pointRDD.count} points")
 
-    val smRDD = converter.point2SpatialMap(pointRDD.map((0, _)), RoadGrid("preprocessing/porto.csv"))
+    val smRDD = converter.point2RoadMap(pointRDD.map((0, _)), RoadGrid("preprocessing/porto.csv"))
     smRDD.take(5).foreach(x =>
       println(x.roadID, x.attributes.length))
     assert(smRDD.map(x => x.attributes.length).reduce(_ + _) == pointRDD.count())
