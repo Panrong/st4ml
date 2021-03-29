@@ -52,11 +52,14 @@ object SpatialMapDev {
       }
     var t = nanoTime()
     val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange, Some(30 * 60)).cache()
+    spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** step 3: Extraction */
+    t = nanoTime()
     spatialMapRDD.map(_.printInfo()).foreach(println(_))
     val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
+    println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     t = nanoTime()
     println(s"... Total ${extractedRDD.count} points")
