@@ -51,7 +51,6 @@ object CompanionDailyDev {
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     //    rdd1.cache()
-    println(s"size of trajRDD: ${SizeEstimator.estimate(rdd1)}")
 
     /** step 2: Conversion */
     val rdd2 = operator.converter.traj2Point(rdd1)
@@ -62,11 +61,9 @@ object CompanionDailyDev {
     rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
-    println(s"size of pointRDD: ${SizeEstimator.estimate(rdd2)}")
 
     /** step 3: Extraction */
     val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
-    println(s"size of companionPairRDD: ${SizeEstimator.estimate(companionPairsRDD)}")
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")
