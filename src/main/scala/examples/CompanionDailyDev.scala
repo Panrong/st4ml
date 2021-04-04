@@ -67,6 +67,8 @@ object CompanionDailyDev {
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")
+    println(s"Max num companion: ${companionPairsRDD.map(_._2.size).max}")
+    println(s"Average num companion: ${companionPairsRDD.map(_._2.size).mean}")
     println("=== 5 examples: ")
     companionPairsRDD.take(5).foreach { case (q, c) => println(s"  ... $q: $c") }
 
