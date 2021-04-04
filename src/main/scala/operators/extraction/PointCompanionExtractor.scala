@@ -32,6 +32,8 @@ class PointCompanionExtractor extends Extractor with Serializable {
     //    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
     //    val repartitionedRDD = partitioner.partition(pRDD)
 
+    println(pRDD.map(x =>(x.attributes("tripID"), 1)). reduceByKey(_+_, 1000).collect.deep)
+
     // Temporal partitioner
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min, endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
     // val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
@@ -48,7 +50,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
            ) yield (p1.id, Array((p1.timeStamp._1, p2.id)))
     }.toIterator)
       .mapValues(_.toMap)
-      .reduceByKey(_ ++ _)
+      .reduceByKey(_ ++ _, 1000)
   }
 
   //find companion pairs of some queries
