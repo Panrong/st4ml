@@ -44,6 +44,17 @@ class TemporalPartitioner(startTime: Long,
       .partitionBy(new KeyPartitioner(numPartitions))
   }
 
+  /**
+   * Partition a ST RDD by both temporal information and spatial grid
+   * @param dataRDD : input rdd
+   * @param gridSize : number of grids along latitude/longitude,
+   *                 i.e. finally the whole space is partitioned into gridSize * gridSize parts
+   * @param tOverlap : overlap between temporal slots, default 0
+   * @param sOverlap : overlap between spatial slots, default 0
+   * @param spatialRange : optional input of the whole spatial range
+   * @tparam T : type of RDD content, should extends geometry.Shape
+   * @return : partitioned rdd
+   */
   def partitionGrid[T <: geometry.Shape : ClassTag](dataRDD: RDD[T],
                                                     gridSize: Int,
                                                     tOverlap: Double = 0,
@@ -68,6 +79,16 @@ class TemporalPartitioner(startTime: Long,
       .partitionBy(new KeyPartitioner(numPartitions))
   }
 
+  /**
+   * Partition a ST RDD by both temporal information and spatial STR
+   * @param dataRDD : input rdd
+   * @param tPartition : number of partitions along temporal axis
+   * @param tOverlap : overlap between temporal slots, default 0
+   * @param sOverlap : overlap between spatial slots, default 0
+   * @param samplingRate : sampling rate for finding STR boundaries, default 0.5
+   * @tparam T : type of RDD content, should extends geometry.Shape
+   * @return : partitioned rdd
+   */
   def partitionSTR[T <: geometry.Shape : ClassTag](dataRDD: RDD[T],
                                                    tPartition: Int,
                                                    tOverlap: Double = 0,
