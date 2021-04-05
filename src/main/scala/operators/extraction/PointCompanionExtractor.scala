@@ -26,7 +26,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
   }
 
   // find all companion pairs
-  def optimizedExtract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
+  def optimizedExtract(sThreshold: Double, tThreshold: Double, tPartition: Int = 4)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val numPartitions = pRDD.getNumPartitions
     //    // Spatial partitioner
     //    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
@@ -35,8 +35,8 @@ class PointCompanionExtractor extends Extractor with Serializable {
     // Temporal partitioner
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min, endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
     // val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
-    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-
+    //     val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2)
     println(s" Number of points per partition: ${repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect.deep}")
 
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)

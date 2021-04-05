@@ -7,7 +7,7 @@ object Config {
   var local: Map[String, String] = {
     Map(
       "master" -> "local[*]",
-      "numPartitions" -> "8",
+      "numPartitions" -> "16",
       "hzData" -> "datasets/traj_10000_converted.json",
       "portoData" -> "preprocessing/traj_short.csv",
       "resPath" -> "out/",
