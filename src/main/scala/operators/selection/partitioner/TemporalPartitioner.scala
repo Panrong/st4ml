@@ -46,11 +46,12 @@ class TemporalPartitioner(startTime: Long,
 
   /**
    * Partition a ST RDD by both temporal information and spatial grid
-   * @param dataRDD : input rdd
-   * @param gridSize : number of grids along latitude/longitude,
-   *                 i.e. finally the whole space is partitioned into gridSize * gridSize parts
-   * @param tOverlap : overlap between temporal slots, default 0
-   * @param sOverlap : overlap between spatial slots, default 0
+   *
+   * @param dataRDD      : input rdd
+   * @param gridSize     : number of grids along latitude/longitude,
+   *                     i.e. finally the whole space is partitioned into gridSize * gridSize parts
+   * @param tOverlap     : overlap between temporal slots, default 0
+   * @param sOverlap     : overlap between spatial slots, default 0
    * @param spatialRange : optional input of the whole spatial range
    * @tparam T : type of RDD content, should extends geometry.Shape
    * @return : partitioned rdd
@@ -81,10 +82,11 @@ class TemporalPartitioner(startTime: Long,
 
   /**
    * Partition a ST RDD by both temporal information and spatial STR
-   * @param dataRDD : input rdd
-   * @param tPartition : number of partitions along temporal axis
-   * @param tOverlap : overlap between temporal slots, default 0
-   * @param sOverlap : overlap between spatial slots, default 0
+   *
+   * @param dataRDD      : input rdd
+   * @param tPartition   : number of partitions along temporal axis
+   * @param tOverlap     : overlap between temporal slots, default 0
+   * @param sOverlap     : overlap between spatial slots, default 0
    * @param samplingRate : sampling rate for finding STR boundaries, default 0.5
    * @tparam T : type of RDD content, should extends geometry.Shape
    * @return : partitioned rdd
@@ -110,10 +112,11 @@ class TemporalPartitioner(startTime: Long,
         }
       }
     }
-    val stRanges = temporalPartitionedSamples.mapValues(points => str(points, samplingRate)).toArray.flatMap {
-      case (t, s) => s.map(x => (x._1 + t._2 * temporalRanges.length, t._1, x._2))
+    val stRanges = temporalPartitionedSamples.mapValues(points => str(points, numPartitions / tPartition, samplingRate)).toArray.flatMap {
+      case (t, s) => s.map(x => (x._1 + t._2 * s.length, t._1, x._2))
     }
-    allocateSTPartitions(dataRDD,stRanges,sOverlap)
+    stRanges.foreach(println(_))
+    allocateSTPartitions(dataRDD, stRanges, sOverlap) .partitionBy(new KeyPartitioner(numPartitions))
   }
 
   def gridPartition(sRange: Array[Double], gridSize: Int): Array[Rectangle] = {
@@ -141,7 +144,7 @@ class TemporalPartitioner(startTime: Long,
     }.map(_._2)
   }
 
-  def str[T <: Shape : ClassTag](contents: Array[T], samplingRate: Double): Array[(Int, Rectangle)] = {
+  def str[T <: Shape : ClassTag](contents: Array[T], numPartitions: Int, samplingRate: Double): Array[(Int, Rectangle)] = {
     val sc = spark.SparkContext.getOrCreate()
     val rdd = sc.parallelize(contents)
     val partitioner = new STRPartitioner(numPartitions, samplingRate = Some(samplingRate))

@@ -58,6 +58,7 @@ object CompanionDailyDev {
         val (ts, te) = x.timeStamp
         ts <= tQuery._2 && te >= tQuery._1
       })
+      .filter(x => x.inside(sQuery))
     rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")

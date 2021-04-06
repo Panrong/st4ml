@@ -26,18 +26,21 @@ class PointCompanionExtractor extends Extractor with Serializable {
   }
 
   // find all companion pairs
-  def optimizedExtract(sThreshold: Double, tThreshold: Double, tPartition: Int = 4)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
+  def optimizedExtract(sThreshold: Double, tThreshold: Double, tPartition: Int = 4)
+                      (pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     val numPartitions = pRDD.getNumPartitions
     //    // Spatial partitioner
     //    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
     //    val repartitionedRDD = partitioner.partition(pRDD)
 
     // Temporal partitioner
-    val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min, endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
-    // val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
+    val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
+      endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
+    //     val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
     //     val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2)
-    println(s" Number of points per partition: ${repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect.deep}")
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, samplingRate = 0.2)
+    println(s" Number of points per partition: " +
+      s"${repartitionedRDD.mapPartitions(iter => Iterator((iter.next._1, iter.length + 1))).collect.deep}")
 
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     repartitionedRDD.mapPartitions(x => {
