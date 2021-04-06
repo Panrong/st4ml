@@ -12,8 +12,6 @@ import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.{nextDay, parseTemporalRange}
 
-import org.apache.spark.util.SizeEstimator
-
 object CompanionDailyDev {
   def main(args: Array[String]): Unit = {
 

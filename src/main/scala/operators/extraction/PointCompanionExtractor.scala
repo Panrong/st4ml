@@ -37,19 +37,25 @@ class PointCompanionExtractor extends Extractor with Serializable {
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
       endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
     //     val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
-    //     val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, samplingRate = 0.2)
+    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
+    //    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, samplingRate = 0.2)
     println(s" Number of points per partition: " +
       s"${repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect.deep}")
 
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    repartitionedRDD.mapPartitions(x => {
-      val points = x.toStream.map(_._2)
-      for (p1 <- points;
-           p2 <- points
-           if isCompanion(tThreshold, sThreshold)(p1, p2)
-           ) yield (p1.id, Array((p1.timeStamp._1, p2.id)))
-    }.toIterator)
+    //    repartitionedRDD.mapPartitions(x => {
+    //      val points = x.toStream.map(_._2)
+    //      for (p1 <- points;
+    //           p2 <- points
+    //           if isCompanion(tThreshold, sThreshold)(p1, p2)
+    //           ) yield (p1.id, Array((p1.timeStamp._1, p2.id)))
+    //    }.toIterator)
+
+    repartitionedRDD.join(repartitionedRDD).map(_._2).filter {
+      case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
+    }.map {
+      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
+    }
       .mapValues(_.toMap)
       .reduceByKey(_ ++ _, 1000)
 
