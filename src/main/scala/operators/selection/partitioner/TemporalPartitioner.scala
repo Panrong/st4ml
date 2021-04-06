@@ -115,8 +115,7 @@ class TemporalPartitioner(startTime: Long,
     val stRanges = temporalPartitionedSamples.mapValues(points => str(points, numPartitions / tPartition, samplingRate)).toArray.flatMap {
       case (t, s) => s.map(x => (x._1 + t._2 * s.length, t._1, x._2))
     }
-    stRanges.foreach(println(_))
-    allocateSTPartitions(dataRDD, stRanges, sOverlap) .partitionBy(new KeyPartitioner(numPartitions))
+    allocateSTPartitions(dataRDD, stRanges, sOverlap).partitionBy(new KeyPartitioner(numPartitions))
   }
 
   def gridPartition(sRange: Array[Double], gridSize: Int): Array[Rectangle] = {
