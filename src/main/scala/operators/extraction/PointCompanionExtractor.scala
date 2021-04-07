@@ -40,8 +40,8 @@ class PointCompanionExtractor extends Extractor with Serializable {
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
       endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
     //    val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + grid
-    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-    //    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, Config.get("samplingRate").toDouble) //temporal + str
+    //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, Config.get("samplingRate").toDouble) //temporal + str
     println(s" Number of points per partition: " +
       s"${repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect.deep}")
 
