@@ -59,16 +59,15 @@ class PointCompanionExtractor extends Extractor with Serializable {
     //      .reduceByKey(_ ++ _, 1000)
 
     /** v2: join */
-    //    repartitionedRDD.join(repartitionedRDD).map(_._2).filter {
-    //      case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
-    //    }.map {
-    //      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
-    //    }
-    //      .mapValues(_.toMap)
-    //      .reduceByKey(_ ++ _, 1000)
+    repartitionedRDD.join(repartitionedRDD).map(_._2).filter {
+      case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
+    }.map {
+      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
+    }
+      .mapValues(_.toMap)
+      .reduceByKey(_ ++ _, 1000)
 
     /** TODO: v3: store one copy of points in memory */
-
 
 
     //    val rRDD = repartitionedRDD.map(_._2).persist(StorageLevel.MEMORY_AND_DISK_SER)
