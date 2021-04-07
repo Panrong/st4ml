@@ -6,6 +6,9 @@ import org.apache.spark.rdd.RDD
 import scala.math.abs
 import operators.selection.partitioner._
 import org.apache.spark.storage.StorageLevel
+import utils.Config
+import scala.collection.mutable
+import org.apache.spark.SparkContext
 
 class PointCompanionExtractor extends Extractor with Serializable {
 
@@ -36,13 +39,15 @@ class PointCompanionExtractor extends Extractor with Serializable {
     // Temporal partitioner
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
       endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
-    //     val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + spatial
-    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-    //    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, samplingRate = 0.2)
+    //    val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + grid
+    //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, Config.get("samplingRate").toDouble) //temporal + str
     println(s" Number of points per partition: " +
       s"${repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect.deep}")
 
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+    /** v1: for yield */
     //    repartitionedRDD.mapPartitions(x => {
     //      val points = x.toStream.map(_._2)
     //      for (p1 <- points;
@@ -50,14 +55,21 @@ class PointCompanionExtractor extends Extractor with Serializable {
     //           if isCompanion(tThreshold, sThreshold)(p1, p2)
     //           ) yield (p1.id, Array((p1.timeStamp._1, p2.id)))
     //    }.toIterator)
+    //      .mapValues(_.toMap)
+    //      .reduceByKey(_ ++ _, 1000)
 
-    repartitionedRDD.join(repartitionedRDD).map(_._2).filter {
-      case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
-    }.map {
-      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
-    }
-      .mapValues(_.toMap)
-      .reduceByKey(_ ++ _, 1000)
+    /** v2: join */
+    //    repartitionedRDD.join(repartitionedRDD).map(_._2).filter {
+    //      case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
+    //    }.map {
+    //      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
+    //    }
+    //      .mapValues(_.toMap)
+    //      .reduceByKey(_ ++ _, 1000)
+
+    /** TODO: v3: store one copy of points in memory */
+
+
 
     //    val rRDD = repartitionedRDD.map(_._2).persist(StorageLevel.MEMORY_AND_DISK_SER)
     //    rRDD.cartesian(rRDD).filter {

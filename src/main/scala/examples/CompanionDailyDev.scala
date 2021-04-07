@@ -62,7 +62,7 @@ object CompanionDailyDev {
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
 
     /** step 3: Extraction */
-    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold, 12)(rdd2)
+    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold, Config.get("tPartition").toInt)(rdd2)
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")
