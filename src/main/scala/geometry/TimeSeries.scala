@@ -16,6 +16,8 @@ case class TimeSeries[T: ClassTag](id: String,
     }.toMap
   }
 
+  def count: Int = series.map(_.length).sum
+
   def endTime: Long = startTime + timeInterval * series.length
 
   def temporalRange: (Long, Long) = (startTime, endTime)

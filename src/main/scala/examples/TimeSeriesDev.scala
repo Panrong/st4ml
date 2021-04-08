@@ -118,6 +118,7 @@ object TimeSeriesDev {
     val pointRDD = converter.traj2Point(rdd1).map((0, _))
     pointRDD.cache()
     pointRDD.take(1)
+    println(s"Number of points: ${pointRDD.count}")
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
@@ -126,19 +127,18 @@ object TimeSeriesDev {
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    println(rdd2.getNumPartitions)
+    println(s"Number of partitions: ${rdd2.getNumPartitions}")
     t = nanoTime()
 
     /** step 3: Extraction */
     val extractor = new TimeSeriesExtractor()
     val res = extractor.countTimeSlotSamplesSpatial((queryRange.head, queryRange.last))(rdd2)
     val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
-    println(res.getNumPartitions)
-    res.collect.foreach(x => println(x.deep))
     println(resCombined.sortBy(_._1._1).deep)
-    println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-
+    println(s"Total number: ${resCombined.map(_._2).sum}")
     val slots = resCombined.map(_._1)
+    println(s"Number of slots: ${slots.length}")
+    println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** benchmark */
     t = nanoTime()
@@ -149,11 +149,11 @@ object TimeSeriesDev {
         (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
       }).toIterator
     }).reduceByKey(_ + _)
+    println("=== Benchmark:")
     println(benchmark.collect.sortBy(_._1._1).deep)
     println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    println(resCombined.map(_._2).sum)
-    println(benchmark.map(_._2).sum)
-    println(slots.length)
+
+    println(s"Total number: ${benchmark.map(_._2).sum}")
 
     sc.stop()
   }

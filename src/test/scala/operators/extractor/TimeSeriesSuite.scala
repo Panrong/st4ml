@@ -3,7 +3,7 @@ package operators.extractor
 import geometry.Rectangle
 import operators.convertion.Converter
 import operators.extraction.TimeSeriesExtractor
-import operators.selection.partitioner.{FastPartitioner, STRPartitioner}
+import operators.selection.partitioner.{FastPartitioner, QuadTreePartitioner, STRPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajFile
@@ -25,13 +25,16 @@ class TimeSeriesSuite extends AnyFunSuite with SharedSparkSession {
     val converter = new Converter()
 
     val pointRDD = converter.traj2Point(queriedRDD).map((0, _))
+    println(s"Number of points: ${pointRDD.count()}")
 
-    val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100, new STRPartitioner(8, samplingRate = Some(1)))
+    val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100, new QuadTreePartitioner(8, samplingRate = Some(1)))
+    println(s"Number of points inside all time series: ${tsRDD.map(_.count).sum}")
+
     val extractor = new TimeSeriesExtractor
-    val extractedRDD = extractor.extractByTime((1597119319,1597120219))(tsRDD)
-    val c = pointRDD.map(_._2).filter(x => x.timeStamp._1 >= 1597119319 && x.timeStamp._2 <= 1597120219)
+    val extractedRDD = extractor.extractByTime((1372636854,1372637854))(tsRDD)
+    val c = pointRDD.map(_._2).filter(x => x.timeStamp._1 >= 1372636854 && x.timeStamp._2 <= 1372637854)
     assert(extractedRDD.count == c.count)
 
-    println(extractor.countTimeSlotSamples((1597119319,1597120219))(tsRDD).collect().mkString("Array(", ", ", ")"))
+    println(extractor.countTimeSlotSamples((1372636854,1372637854))(tsRDD).collect().mkString("Array(", ", ", ")"))
   }
 }
