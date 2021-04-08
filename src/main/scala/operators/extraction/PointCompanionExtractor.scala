@@ -5,10 +5,10 @@ import org.apache.spark.rdd.RDD
 
 import scala.math.abs
 import operators.selection.partitioner._
+import org.apache.spark.SparkContext
 import org.apache.spark.storage.StorageLevel
 import utils.Config
-import scala.collection.mutable
-import org.apache.spark.SparkContext
+
 
 class PointCompanionExtractor extends Extractor with Serializable {
 
@@ -18,7 +18,7 @@ class PointCompanionExtractor extends Extractor with Serializable {
       p1.attributes("tripID") != p2.attributes("tripID")
   }
 
-  // find all companion pairs
+  // find all companion pairs with native spark implementation
   def extract(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     pRDD.cartesian(pRDD).filter {
       case (p1, p2) =>
@@ -31,17 +31,14 @@ class PointCompanionExtractor extends Extractor with Serializable {
   // find all companion pairs
   def optimizedExtract(sThreshold: Double, tThreshold: Double, tPartition: Int = 4)
                       (pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
-    val numPartitions = pRDD.getNumPartitions
-    //    // Spatial partitioner
-    //    val partitioner = new STRPartitioner(numPartitions, Some(1), threshold = sThreshold * 2)
-    //    val repartitionedRDD = partitioner.partition(pRDD)
 
-    // Temporal partitioner
+    val numPartitions = pRDD.getNumPartitions
+
     val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
       endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
-    //    val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold * 2, sOverlap = sThreshold * 2) // temporal + grid
-    //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold * 2) // temporal only
-    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold * 2, sThreshold * 2, Config.get("samplingRate").toDouble) //temporal + str
+    //    val repartitionedRDD = partitioner.partitionGrid(pRDD, 2, tOverlap = tThreshold, sOverlap = sThreshold) // temporal + grid
+    //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold) // temporal only
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold, sThreshold, Config.get("samplingRate").toDouble) //temporal + str
     val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
     println("--- After partitioning:")
     println(s"... Number of points per partition: " +
@@ -69,51 +66,32 @@ class PointCompanionExtractor extends Extractor with Serializable {
       case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
     }
       .mapValues(_.toMap)
-      .reduceByKey(_ ++ _, 1000)
-
-    /** TODO: v3: store one copy of points in memory */
-
-
-    //    val rRDD = repartitionedRDD.map(_._2).persist(StorageLevel.MEMORY_AND_DISK_SER)
-    //    rRDD.cartesian(rRDD).filter {
-    //      case (p1, p2) =>
-    //        isCompanion(tThreshold, sThreshold)(p1, p2)
-    //    }
-    //      .map {
-    //        case (p1, p2) => (p1.id, Map((p1.timeStamp._1, p2.id)))
-    //      }
-    //      .reduceByKey(_ ++ _, 1000)
-
+      .reduceByKey(_ ++ _, numPartitions * 4)
   }
 
-  //find companion pairs of some queries
-  def queryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): Map[String, Array[String]] = {
-    val partitioner = new STRPartitioner(pRDD.getNumPartitions, Some(0.5), threshold = sThreshold * 2)
-    val (repartitionedRDD, repartitionedQueryRDD) = partitioner.copartition(pRDD, queryRDD)
-    repartitionedRDD.zipPartitions(repartitionedQueryRDD) {
-      (pIterator, qIterator) => {
-        val points = pIterator.toArray.map(_._2)
-        val queries = qIterator.toArray.map(_._2)
-        points.flatMap(x => queries.map(y => (x, y))).filter {
-          case (p1, p2) => isCompanion(tThreshold, sThreshold)(p1, p2)
-        }.map(x => (x._2.attributes("tripID"), x._1.attributes("tripID")))
-          .toIterator
-      }
-    }.mapValues(Array(_))
-      .reduceByKey(_ ++ _)
-      .collect
-      .toMap
-  }
-
-  def queryWithIDsFS(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): Map[String, Array[String]] = {
+  //find companion pairs of some queries with native spark implementation
+  def queryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     queryRDD.cartesian(pRDD).filter {
       case (p1, p2) =>
         isCompanion(tThreshold, sThreshold)(p1, p2)
     }.map {
-      case (p, q) => (p.attributes("tripID"), q.attributes("tripID"))
-    }.mapValues(Array(_))
-      .reduceByKey(_ ++ _)
-      .collect
-      .toMap
+      case (p1, p2) => (p1.attributes("tripID"), (p2.timeStamp._1, p2.attributes("tripID")))
+    }.groupByKey.mapValues(_.toMap).reduceByKey(_ ++ _)
+  }
+
+  //find companion pairs of some queries
+  def optimizedQueryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point],
+                                                                    queries: Array[Point],
+                                                                    tPartition: Int = 4): RDD[(String, Map[Long, String])] = {
+    val numPartitions = pRDD.getNumPartitions
+    val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
+      endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
+    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold, sThreshold, Config.get("samplingRate").toDouble) //temporal + str
+    val queriesBroadcast = SparkContext.getOrCreate().broadcast(queries)
+    repartitionedRDD.map(_._2).flatMap(p1 =>
+      queriesBroadcast.value.filter(p2 => isCompanion(tThreshold, sThreshold)(p1, p2))
+        .map(p2 => (p2.attributes("tripID"), Array((p1.timeStamp._1, p1.attributes("tripID"))))))
+      .mapValues(_.toMap)
+      .reduceByKey(_ ++ _, numPartitions * 4)
   }
 }

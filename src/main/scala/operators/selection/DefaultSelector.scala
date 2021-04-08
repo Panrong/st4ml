@@ -30,5 +30,4 @@ object DefaultSelector {
     val temporalSelector = new TemporalSelector()
     new DefaultSelector(partitioner, spatialSelector, temporalSelector)
   }
-
 }

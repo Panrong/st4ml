@@ -74,13 +74,12 @@ object PointCompanionDev {
     /** step 3.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)
     val queryPoints = converter.traj2Point(queries.map((0, _)))
-    val queried1 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints) // 500m and 10min
-    val count1 = queried1.mapValues(_.distinct.length)
-    println(mutable.ListMap(count1.toSeq.sortBy(_._1): _*))
-    val queried2 = extractor.queryWithIDsFS(500, 600)(pointRDD, queryPoints)
-    val count2 = queried2.mapValues(_.distinct.length)
-    println(mutable.ListMap(count2.toSeq.sortBy(_._1): _*))
-
+    val queried1 = extractor.optimizedQueryWithIDs(500, 600)(pointRDD, queryPoints.collect) // 500m and 10min
+    val count1 = queried1.mapValues(_.size)
+    val queried2 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints)
+    val count2 = queried2.mapValues(_.size)
+    println(count1)
+    println(count2)
     sc.stop()
   }
 }

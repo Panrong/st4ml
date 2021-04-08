@@ -161,16 +161,15 @@ class Converter extends Serializable {
       if (partition.isEmpty) {
         Iterator(TimeSeries[Point]("Empty", startTime, timeInterval, Rectangle(Array(0, 0, 0, 0)), new Array[Array[Point]](0)))
       } else {
-        val partitionArray = partition.toArray
-        val partitionID = partitionArray.head._1
+        val partitionID = partition.take(1).next._1
         val spatialRange = partitioner.partitionRange(partitionID)
-        val points = partitionArray.map(_._2)
-        val l = (points.map(_.t).max.toInt - startTime).toInt / timeInterval + 1
+        val endTime = partition.map(_._2.t).max
+        val l = (endTime - startTime).toInt / timeInterval + 1
         val slots = Array.fill[Array[Point]](l)(new Array[Point](0))
-        for (p <- points) {
+        partition.map(_._2).foreach(p => {
           val s = ((p.t - startTime) / timeInterval).toInt
           slots(s) = slots(s) :+ p
-        }
+        })
         val ts = TimeSeries(partitionID.toString, startTime, timeInterval, spatialRange, slots)
         Iterator(ts)
       }
