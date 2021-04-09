@@ -30,6 +30,7 @@ object TimeSeriesDev {
     val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
     val tQuery = parseTemporalRange(args(1))
     val queryRange = args(2).split(",").map(_.toLong)
+    val timeInterval = args(3).toInt
 
     /**
      * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 temporal
@@ -115,7 +116,12 @@ object TimeSeriesDev {
 
     /** step 2: Conversion */
     val converter = new Converter
-    val pointRDD = converter.traj2Point(rdd1).map((0, _))
+    val pointRDD = converter.traj2Point(rdd1)
+      .filter(x => {
+        val (ts, te) = x.timeStamp
+        ts <= tQuery._2 && te >= tQuery._1
+      })
+      .filter(x => x.inside(sQuery)).map((0, _))
     pointRDD.cache()
     pointRDD.take(1)
     println(s"Number of points: ${pointRDD.count}")
@@ -123,7 +129,7 @@ object TimeSeriesDev {
     println("--- start conversion")
     t = nanoTime()
     val partitioner = new QuadTreePartitioner(numPartitions)
-    val rdd2 = converter.point2TimeSeries(pointRDD, startTime = 1596038419, 15 * 60, partitioner)
+    val rdd2 = converter.point2TimeSeries(pointRDD, startTime = tQuery._1, timeInterval, partitioner)
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
