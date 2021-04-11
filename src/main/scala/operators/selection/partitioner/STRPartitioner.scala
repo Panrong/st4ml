@@ -162,7 +162,8 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
 
   /**
    * Partition spatial dataRDD with given Partition ranges
-   * @param dataRDD : data RDD
+   *
+   * @param dataRDD      : data RDD
    * @param partitionMap : Map (id -> range as rectangle)
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
@@ -236,11 +237,8 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
               case (_, v) => pointShrink.inside(v)
             })
           })
-          .map(x => (x._1, x._2.keys))
-          .flatMapValues(x => x)
-          .map {
-            case (k, v) => (v, k)
-          }
+          .map(x => (x._1, x._2.keys.head))
+          .map(_.swap)
         rddWithIndex
       case _ =>
         val rddWithIndex = dataRDD
@@ -257,9 +255,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
           })
         rddWithIndex.map(x => (x._1, x._2.keys))
           .flatMapValues(x => x)
-          .map {
-            case (k, v) => (v, k)
-          }
+          .map(_.swap)
     }
 
   }

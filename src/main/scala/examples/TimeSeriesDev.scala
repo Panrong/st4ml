@@ -4,7 +4,7 @@ import geometry.Rectangle
 import operators.convertion.Converter
 import operators.extraction.TimeSeriesExtractor
 import operators.selection.DefaultSelector
-import operators.selection.partitioner.QuadTreePartitioner
+import operators.selection.partitioner._
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -159,7 +159,7 @@ object TimeSeriesDev {
     println(benchmark.collect.sortBy(_._1._1).deep)
     println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
-    println(s"Total number: ${benchmark.map(_._2).sum}")
+    println(s"Total number: ${benchmark.map(_._2).sum.toInt}")
 
     sc.stop()
   }

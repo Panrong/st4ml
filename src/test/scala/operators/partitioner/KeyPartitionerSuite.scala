@@ -24,10 +24,10 @@ class KeyPartitionerSuite extends AnyFunSuite with SharedSparkSession {
 
     val trajectoryFile = "preprocessing/traj_short.csv"
     val queryFile = "datasets/queries.txt"
-    val numPartitions = 8
+    val numPartitions = 16
     val samplingRate = 0.5
     val rtreeCapacity = 50
-    val dataSize = 10000
+    val dataSize = 1000
     val trajRDD: RDD[geometry.Trajectory] = ReadTrajFile(trajectoryFile, num = dataSize, limit = true)
     val queryRDD = ReadQueryFile(queryFile).rdd.map(_.mbr)
 

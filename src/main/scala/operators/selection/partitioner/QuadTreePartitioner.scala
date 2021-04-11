@@ -177,11 +177,8 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
               case (_, v) => pointShrink.inside(v)
             })
           })
-          .map(x => (x._1, x._2.keys))
-          .flatMapValues(x => x)
-          .map {
-            case (k, v) => (v, k)
-          }
+          .map(x => (x._1, x._2.keys.head))
+          .map(_.swap)
         rddWithIndex
       case _ =>
         val rddWithIndex = dataRDD
@@ -198,9 +195,7 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
           })
         rddWithIndex.map(x => (x._1, x._2.keys))
           .flatMapValues(x => x)
-          .map {
-            case (k, v) => (v, k)
-          }
+          .map(_.swap)
     }
   }
 
