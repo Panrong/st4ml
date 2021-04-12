@@ -142,13 +142,13 @@ object TimeSeriesDev {
     val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
     println(resCombined.sortBy(_._1._1).deep)
     println(s"Total number: ${resCombined.map(_._2).sum}")
+    println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
     val slots = resCombined.map(_._1)
     println(s"Number of slots: ${slots.length}")
-    println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** benchmark */
     t = nanoTime()
-
     val benchmark = pointRDD.mapPartitions(iter => {
       val points = iter.map(_._2).toArray
       slots.map(slot => {
