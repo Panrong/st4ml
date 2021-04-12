@@ -128,7 +128,7 @@ object TimeSeriesDev {
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
-    val partitioner = new QuadTreePartitioner(numPartitions)
+    val partitioner = new STRPartitioner(numPartitions, Some(0.1))
     val rdd2 = converter.point2TimeSeries(pointRDD, startTime = tQuery._1, timeInterval, partitioner)
     rdd2.cache()
     rdd2.take(1)
