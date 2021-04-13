@@ -39,7 +39,7 @@ object TrajTimeSeriesDev {
      */
 
     /** read input data */
-    val trajRDD = ReadTrajJson(trajFile, numPartitions)
+    val trajRDD = ReadTrajJson(trajFile, numPartitions, clean = true)
 
     /** step 1: Selection */
     val selector = DefaultSelector(numPartitions)
