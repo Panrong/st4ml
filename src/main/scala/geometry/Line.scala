@@ -116,4 +116,41 @@ case class Line(o: Point, d: Point, ID: String = "0") extends Shape with Seriali
     timeStamp = (t, t)
     this
   }
+
+  def windowBy(rectangle: Rectangle): Line = {
+
+    // check if the line is totally inside the rectangle
+    if (o.inside(rectangle) && d.inside(rectangle)) this
+
+    // check if the line is parallel to x or y axis
+    else if (d.y == o.y) {
+      val kt = (d.t - o.t) / (d.x - o.x)
+      val xs = Array(o.x, d.x, rectangle.xMin, rectangle.xMax).sorted.slice(1, 3)
+      val (newO, newD) = if (d.x < o.x) (Point(Array(xs(1), d.y)), Point(Array(xs(0), d.y)))
+      else (Point(Array(xs(0), d.y)), Point(Array(xs(1), d.y)))
+      Line(newO.setTimeStamp(((newO.x - o.x) * kt + o.t).toLong), newD.setTimeStamp(((newD.x - o.x) * kt + o.t).toLong))
+    }
+    else if (d.x == o.x) {
+      val kt = (d.t - o.t) / (d.y - o.y)
+      val ys = Array(o.y, d.y, rectangle.yMin, rectangle.yMax).sorted.slice(1, 3)
+      val (newO, newD) = if (d.y < o.y) (Point(Array(d.x, ys(1))), Point(Array(d.x, ys(0))))
+      else (Point(Array(d.x, ys(0))), Point(Array(d.x, ys(1))))
+      Line(newO.setTimeStamp(((newO.y - o.y) * kt + o.t).toLong), newD.setTimeStamp(((newD.y - o.y) * kt + o.t).toLong))
+    }
+    else {
+      val k = (d.y - o.y) / (d.x - o.x) // y = k * (x - o.x) + o.y and x = o.x + (y - o.y) / k
+      val kt = (d.t - o.t) / (d.x - o.x)
+      // get intersections with four edges
+      val point1 = Point(Array(rectangle.xMin, k * (rectangle.xMin - o.x) + o.y))
+      val point2 = Point(Array(rectangle.xMax, k * (rectangle.xMax - o.x) + o.y))
+      val point3 = Point(Array(o.x + (rectangle.yMin - o.y) / k, rectangle.yMin))
+      val point4 = Point(Array(o.x + (rectangle.yMax - o.y) / k, rectangle.yMax))
+      val edgePoints = Array(point1, point2, point3, point4).sortBy(_.x).slice(1, 3) // get the middle two points of the four
+      val actualPoints = (edgePoints :+ o :+ d).sortBy(_.x).slice(1, 3)
+      if (o.x > d.x) Line(actualPoints(1).setTimeStamp(((actualPoints(1).x - o.x) * kt + o.t).toLong),
+        actualPoints(0).setTimeStamp(((actualPoints(0).x - o.x) * kt + o.t).toLong))
+      else Line(actualPoints(0).setTimeStamp(((actualPoints(0).x - o.x) * kt + o.t).toLong),
+        actualPoints(1).setTimeStamp(((actualPoints(1).x - o.x) * kt + o.t).toLong))
+    }
+  }
 }

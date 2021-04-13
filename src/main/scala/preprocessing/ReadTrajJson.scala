@@ -38,7 +38,7 @@ object ReadTrajJson {
         }
         traj
       })
-    val res = ds.rdd.filter(_.id != "invalid").repartition(numPartitions)
+    val res = ds.rdd.filter(x => x.id != "invalid" && x.points.length > 1).repartition(numPartitions)
     //    println(s"=== Total number of trajectories: ${res.count}")
     res
   }

@@ -6,7 +6,7 @@ import geometry.Distances.greatCircleDistance
 case class Trajectory(tripID: String,
                       startTime: Long,
                       points: Array[Point],
-                      attributes: Map[String, String] = Map()) extends Shape with Serializable {
+                      attributes: Map[String, String] = Map()) extends Shape {
 
   override var timeStamp: (Long, Long) =
     (points.map(_.timeStamp._1).min, points.map(_.timeStamp._2).max) // to avoid invalid timeStamps
@@ -77,4 +77,16 @@ case class Trajectory(tripID: String,
 
   def setID(id: String): Trajectory = this.copy(tripID = id)
 
+  def windowBy(rectangle: Rectangle): Option[Trajectory] = {
+    val lineSegments = lines.filter(_.intersect(rectangle)).map(_.windowBy(rectangle))
+    if (lineSegments.length == 0) None
+    else {
+      val points = lineSegments.flatMap(x => Array(x.o, x.d)).foldLeft(Array[Point]()) {
+        case (li, e) => if (li.isEmpty || li.last != e) li ++ Array(e) else li
+      }
+      Some(Trajectory(this.tripID, points.head.t, points))
+    }
+  }
+
+  override def toString: String = s"Trajectory(id: $id, start time: $startTime, points: ${points.mkString(",")})"
 }

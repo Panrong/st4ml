@@ -1,18 +1,20 @@
 package examples
 
 import geometry.Rectangle
+import operators.CustomOperatorSet
 import operators.convertion.Converter
-import operators.extraction.TimeSeriesExtractor
+import operators.extraction.{PointCompanionExtractor, TimeSeriesExtractor}
 import operators.selection.DefaultSelector
-import operators.selection.partitioner._
+import operators.selection.partitioner.STRPartitioner
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
 
-object TimeSeriesDev {
+object TrajTimeSeriesDev {
   def main(args: Array[String]): Unit = {
 
     /** set up Spark environment */
@@ -33,7 +35,7 @@ object TimeSeriesDev {
     val timeInterval = args(3).toInt
 
     /**
-     * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 temporal
+     * example input arguments: 118.116,29.061,120.167,30.184 1596816000,1596902400 1596841200,1596852000 900
      */
 
     /** read input data */
@@ -43,23 +45,15 @@ object TimeSeriesDev {
     val selector = DefaultSelector(numPartitions)
     val rdd1 = selector.query(trajRDD, sQuery, tQuery)
     rdd1.cache()
+    println(s"Number of trajectories: ${rdd1.count}")
 
     /** step 2: Conversion */
     val converter = new Converter
-    val pointRDD = converter.traj2Point(rdd1)
-      .filter(x => {
-        val (ts, te) = x.timeStamp
-        ts <= tQuery._2 && te >= tQuery._1
-      })
-      .filter(x => x.inside(sQuery)).map((0, _))
-    pointRDD.cache()
-    pointRDD.take(1)
-    println(s"Number of points: ${pointRDD.count}")
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
     val partitioner = new STRPartitioner(numPartitions, Some(0.1))
-    val rdd2 = converter.point2TimeSeries(pointRDD, startTime = tQuery._1, timeInterval, partitioner)
+    val rdd2 = converter.traj2TimeSeries(rdd1, startTime = tQuery._1, timeInterval, partitioner)
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
@@ -77,19 +71,6 @@ object TimeSeriesDev {
     val slots = resCombined.map(_._1)
     println(s"Number of slots: ${slots.length}")
 
-    /** benchmark */
-    t = nanoTime()
-    val benchmark = pointRDD.mapPartitions(iter => {
-      val points = iter.map(_._2).toArray
-      slots.map(slot => {
-        (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
-      }).toIterator
-    }).reduceByKey(_ + _)
-    println("=== Benchmark:")
-    println(benchmark.collect.sortBy(_._1._1).deep)
-    println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    println(s"Total number: ${benchmark.map(_._2).sum.toInt}")
     sc.stop()
   }
 }
-

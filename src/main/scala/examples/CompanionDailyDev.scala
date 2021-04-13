@@ -62,17 +62,17 @@ object CompanionDailyDev {
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
 
 
-    /** benchmark: full cartesian */
-    val companionPairsRDD = rdd2.cartesian(rdd2).filter {
-      case (x, y) => operator.extractor.isCompanion(tThreshold, sThreshold)(x, y)
-    }.map(x => (x._1.id, Array(x._2.t, x._2.id)))
-      .reduceByKey(_ ++ _)
+    //    /** benchmark: full cartesian */
+    //    val companionPairsRDD = rdd2.cartesian(rdd2).filter {
+    //      case (x, y) => operator.extractor.isCompanion(tThreshold, sThreshold)(x, y)
+    //    }.map(x => (x._1.id, Array(x._2.t, x._2.id)))
+    //      .reduceByKey(_ ++ _)
 
-    //    /** step 3: Extraction */
-    //    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold,
-    //        tThreshold,
-    //        Config.get("tPartition").toInt)(rdd2)
-    //    companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
+    /** step 3: Extraction */
+    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold,
+      tThreshold,
+      Config.get("tPartition").toInt)(rdd2)
+    companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")
     //    println(s"Max num companion: ${companionPairsRDD.map(_._2.size).max}")
