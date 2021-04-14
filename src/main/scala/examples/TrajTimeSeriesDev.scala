@@ -52,7 +52,7 @@ object TrajTimeSeriesDev {
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
-    val partitioner = new STRPartitioner(numPartitions, Some(0.1))
+    val partitioner = new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
     val rdd2 = converter.traj2TimeSeries(rdd1, startTime = tQuery._1, timeInterval, partitioner)
     rdd2.cache()
     rdd2.take(1)
@@ -71,6 +71,15 @@ object TrajTimeSeriesDev {
     val slots = resCombined.map(_._1)
     println(s"Number of slots: ${slots.length}")
 
+
+    /** benchmark */
+    println(s"coarse total count by filtering trajectory: ${trajRDD.filter(x => x.inside(sQuery) &&  temporalOverlap(x.timeStamp, tQuery)).count}")
     sc.stop()
+  }
+
+  def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
+    if(t1._1 >= t2._1 && t1._1 <= t2._2) true
+    else if (t2._1 >= t1._1 && t2._1 <= t1._2) true 
+    else false
   }
 }

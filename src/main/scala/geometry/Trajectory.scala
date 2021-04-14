@@ -2,6 +2,8 @@ package geometry
 
 import geometry.Distances.greatCircleDistance
 
+import scala.collection.mutable
+
 
 case class Trajectory(tripID: String,
                       startTime: Long,
@@ -75,16 +77,25 @@ case class Trajectory(tripID: String,
 
   override def inside(rectangle: Rectangle): Boolean = this.mbr.inside(rectangle)
 
-  def setID(id: String): Trajectory = this.copy(tripID = id)
+  def setID(i: String): Trajectory = this.copy(tripID = i)
 
-  def windowBy(rectangle: Rectangle): Option[Trajectory] = {
+  def windowBy(rectangle: Rectangle): Option[Array[Trajectory]] = {
     val lineSegments = lines.filter(_.intersect(rectangle)).map(_.windowBy(rectangle))
     if (lineSegments.length == 0) None
     else {
-      val points = lineSegments.flatMap(x => Array(x.o, x.d)).foldLeft(Array[Point]()) {
-        case (li, e) => if (li.isEmpty || li.last != e) li ++ Array(e) else li
+      val subtrajPoints = lineSegments.map(x => Array(x.o, x.d)).foldLeft(Array[Array[Point]]()) {
+        case (li, e) => if (li.isEmpty || (li.last.last.coordinates.deep != e.head.coordinates.deep && li.last.length >= 2)) li :+ e
+        else li.dropRight(1) :+ (li.last ++ e)
       }
-      Some(Trajectory(this.tripID, points.head.t, points))
+      //      println(">>>>>>")
+      //      println(this.points.map(x => (x.x, x.y)).deep)
+      //      println(rectangle)
+      //      println(lineSegments.map(x => (x.o.x, x.o.y, x.d.x, x.d.y)).deep)
+      //      println(subtrajPoints.map(i => i.map(j => (j.x, j.y))).deep)
+      //      println("<<<<<<")
+      Some(subtrajPoints.zipWithIndex.map {
+        case (points, id) => Trajectory(this.tripID + "_" + id.toString, points.head.timeStamp._1, points)
+      })
     }
   }
 

@@ -193,10 +193,10 @@ class Converter extends Serializable {
         val partitionArray = partition.toArray
         val partitionID = partitionArray.head._1
         val spatialRange = partitioner.partitionRange(partitionID)
-        val trajs = partitionArray.map(_._2).filter(_.isDefined).map(_.get)
+        val trajs = partitionArray.map(_._2).filter(_.isDefined).flatMap(_.get)
         val l = (trajs.map(_.endTime._2).max - startTime).toInt / timeInterval + 1
         val slotsMap = trajs.flatMap (traj =>
-          { val slots = ((traj.startTime - startTime) / timeInterval).toInt until ((traj.endTime._2 - startTime) / timeInterval).toInt
+          { val slots = ((traj.startTime - startTime) / timeInterval).toInt to ((traj.endTime._2 - startTime) / timeInterval).toInt
             slots.toArray.map((_, traj))
           }).groupBy(_._1).mapValues(_.map(_._2))
         val empty = Array.fill[Array[Trajectory]](l)(new Array[Trajectory](0)).zipWithIndex.map(_.swap)

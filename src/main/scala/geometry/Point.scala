@@ -79,6 +79,11 @@ case class Point(coordinates: Array[Double],
     else true
   }
 
+  def !=(other: Point): Boolean = { // timestamp not considered
+    if (coordinates.deep == other.coordinates.deep) true
+    else false
+  }
+
   def <=(other: Point): Boolean = {
     if (other.x > x || other.y > y) false
     else true
