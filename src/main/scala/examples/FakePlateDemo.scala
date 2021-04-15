@@ -20,13 +20,16 @@ object FakePlateDemo {
       .appName("SpatialMapDev")
       .getOrCreate()
 
+    /** parse inpuy arguments */
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
     val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
     val tQuery = parseTemporalRange(args(1))
-    val speedThreshold = args(2).toDouble
+    val speedThreshold = args(2).toDouble // unit: m/s
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+
+    // example input: "73,3,135,53" "2020-07-31 23:30:00,2020-08-02 00:30:00" 40
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
@@ -60,7 +63,8 @@ object FakePlateDemo {
 
     rdd4.take(5).foreach(x => {
       println(s"id: ${x._1} \nabnormal speeds:")
-      x._2.map(x => (timeLong2String(x._1), x._2 * 3.6)).foreach(x => println(s" ${x._1} ${"%.3f".format(x._2)} km/h"))
+      x._2.map(x => (timeLong2String(x._1._1), x._1._2, timeLong2String(x._2._1), x._2._2, x._3 * 3.6))
+        .foreach(x => println(s" ${x._1} ${x._2} ${x._3} ${x._4} ${"%.3f".format(x._5)} km/h"))
     })
     println(s" ... Finding suspicious fake plates takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     sc.stop()

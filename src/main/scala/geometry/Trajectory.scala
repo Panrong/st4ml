@@ -115,9 +115,12 @@ case class Trajectory(tripID: String,
 
   def hasFakePlate(speedThreshold: Double): Boolean = calSpeed().exists(_ > speedThreshold)
 
-  def findAbnormalSpeed(speedThreshold: Double): Array[(Long, Double)] = {
-    val timeStamps = points.map(_.timeStamp._1).dropRight(1)
-    timeStamps.zip(calSpeed()).filter(_._2 > speedThreshold)
+  def findAbnormalSpeed(speedThreshold: Double):
+  Array[((Long, (Double, Double)), (Long, (Double, Double)), Double)] = {
+    //( (startTime ,(startLon, startLat)), (endTime, (endLon, endLat)), speed)
+    val start = points.map(x => (x.timeStamp._1, (x.lon, x.lat))).dropRight(1)
+    val end = points.map(x => (x.timeStamp._2, (x.lon, x.lat))).drop(1)
+    (start, end, calSpeed()).zipped.toArray.filter(x => x._3 > speedThreshold && x._1 != x._2)
   }
 
   override def toString: String = s"Trajectory(id: $id, start time: $startTime, points: ${points.mkString(",")})"
