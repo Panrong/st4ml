@@ -27,11 +27,7 @@ case class Trajectory(tripID: String,
 
   def calSpeed(): Array[Double] = {
     // return speed for each gps points interval
-    var s = new Array[Double](0)
-    for (p <- 0 to points.length - 2) {
-      s = s :+ greatCircleDistance(points(p + 1), points(p)) / (points(p + 1).t - points(p).t)
-    }
-    s
+    points.sliding(2).map(x => x(1).geoDistance(x(0)) / (x(1).timeStamp._1 - x(0).timeStamp._1)).toArray
   }
 
   def genLineSeg(): Array[Line] = {
@@ -79,6 +75,7 @@ case class Trajectory(tripID: String,
 
   def setID(i: String): Trajectory = this.copy(tripID = i)
 
+  // get segments inside a spatial window
   def windowBy(rectangle: Rectangle): Option[Array[Trajectory]] = {
     val lineSegments = lines.filter(_.intersect(rectangle)).map(_.windowBy(rectangle))
     if (lineSegments.length == 0) None
@@ -97,6 +94,30 @@ case class Trajectory(tripID: String,
         case (points, id) => Trajectory(this.tripID + "_" + id.toString, points.head.timeStamp._1, points)
       })
     }
+  }
+
+  // get the segment inside a temporal window
+  def windowBy(range: (Long, Long)): Option[Array[Trajectory]] = {
+    val tStart = range._1
+    val tEnd = range._2
+    if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) None
+    else {
+      val lineSegments = lines.filter(line => temporalOverlap(range, line.timeStamp)).map(_.windowBy(range))
+      val subtrajPoints = lineSegments.map(x => Array(x.o, x.d)).foldLeft(Array[Array[Point]]()) {
+        case (li, e) => if (li.isEmpty || (li.last.last.coordinates.deep != e.head.coordinates.deep && li.last.length >= 2)) li :+ e
+        else li.dropRight(1) :+ (li.last ++ e)
+      }
+      Some(subtrajPoints.zipWithIndex.map {
+        case (points, id) => Trajectory(this.tripID + "_" + id.toString, points.head.timeStamp._1, points)
+      })
+    }
+  }
+
+  def hasFakePlate(speedThreshold: Double): Boolean = calSpeed().exists(_ > speedThreshold)
+
+  def findAbnormalSpeed(speedThreshold: Double): Array[(Long, Double)] = {
+    val timeStamps = points.map(_.timeStamp._1).dropRight(1)
+    timeStamps.zip(calSpeed()).filter(_._2 > speedThreshold)
   }
 
   override def toString: String = s"Trajectory(id: $id, start time: $startTime, points: ${points.mkString(",")})"

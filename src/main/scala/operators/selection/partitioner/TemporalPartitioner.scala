@@ -24,7 +24,8 @@ import scala.reflect.ClassTag
  */
 class TemporalPartitioner(startTime: Long,
                           endTime: Long,
-                          timeInterval: Int = 1, numPartitions: Int) extends Serializable {
+                          timeInterval: Int = 1,
+                          numPartitions: Int) extends Serializable {
   val numSlots: Int = (endTime - startTime).toInt / timeInterval + 1
   val numSlotsPerPartition: Int = numSlots / numPartitions + 1
 
@@ -34,7 +35,16 @@ class TemporalPartitioner(startTime: Long,
       .filter(_._1 < numPartitions)
       .partitionBy(new KeyPartitioner(numPartitions))
   }
-
+  //assign one object to all its overlapping partitions
+  def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+    dataRDD.flatMap(x => {
+      ((x.timeStamp._1 - startTime).toInt / timeInterval / numSlotsPerPartition to
+        (x.timeStamp._2 - startTime).toInt / timeInterval / numSlotsPerPartition)
+        .toArray.map((_,x))
+    })
+      .filter(x => x._1 < numPartitions && x._1 >= 0)
+      .partitionBy(new KeyPartitioner(numPartitions))
+  }
   //timeInterval is ignored
   def partitionWithOverlap[T <: geometry.Shape : ClassTag]
   (dataRDD: RDD[T], overlap: Double = 0, tPartition: Int = numPartitions, even: Boolean = true): RDD[(Int, T)] = {

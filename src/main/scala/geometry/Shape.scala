@@ -28,4 +28,10 @@ abstract class Shape() extends Serializable {
 
   override def equals(obj: Any): Boolean =
     this.center == obj.asInstanceOf[Shape].center && this.id == obj.asInstanceOf[Shape].id
+
+  def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
+    if(t1._1 >= t2._1 && t1._1 <= t2._2) true
+    else if (t2._1 >= t1._1 && t2._1 <= t1._2) true
+    else false
+  }
 }

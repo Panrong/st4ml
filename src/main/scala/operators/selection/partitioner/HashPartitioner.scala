@@ -10,7 +10,7 @@ class HashPartitioner(numPartitions: Int) extends SpatialPartitioner with Serial
 
   override def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val partitioner = new KeyPartitioner(numPartitions)
-    val pRDD = dataRDD.map(x => (x.hashCode.abs % numPartitions, x))
+    val pRDD = dataRDD.map(x => (x.id.hashCode.abs % numPartitions, x))
       .partitionBy(partitioner)
     pRDD
   }

@@ -14,7 +14,7 @@ case class Line(o: Point, d: Point, ID: String = "0") extends Shape with Seriali
 
   override def inside(rectangle: Rectangle): Boolean = mbr.inside(rectangle)
 
-  var timeStamp = (0L, 0L)
+  var timeStamp = (o.timeStamp._1, d.timeStamp._2)
 
   override var id = ID
 
@@ -117,6 +117,7 @@ case class Line(o: Point, d: Point, ID: String = "0") extends Shape with Seriali
     this
   }
 
+  //crop by a spatial window
   def windowBy(rectangle: Rectangle): Line = {
 
     // check if the line is totally inside the rectangle
@@ -151,6 +152,42 @@ case class Line(o: Point, d: Point, ID: String = "0") extends Shape with Seriali
         actualPoints(0).setTimeStamp(((actualPoints(0).x - o.x) * kt + o.t).toLong))
       else Line(actualPoints(0).setTimeStamp(((actualPoints(0).x - o.x) * kt + o.t).toLong),
         actualPoints(1).setTimeStamp(((actualPoints(1).x - o.x) * kt + o.t).toLong))
+    }
+  }
+
+  // crop by a temporal window
+  def windowBy(range: (Long, Long)): Line = {
+    val oInside = if (timeStamp._1 >= range._1 && timeStamp._1 <= range._2) true else false
+    val dInside = if (timeStamp._2 >= range._1 && timeStamp._2 <= range._2) true else false
+    if (oInside && dInside) this
+    else {
+      val kx = (d.x - o.x) / (timeStamp._2 - timeStamp._1)
+      val ky = (d.y - o.y) / (timeStamp._2 - timeStamp._1)
+      if (oInside) {
+        val newX = kx * (range._2 - timeStamp._1) + o.x
+        val newY = ky * (range._2 - timeStamp._1) + o.y
+        val newD = Point(Array(newX, newY), t = range._2)
+        Line(o, newD, this.id)
+      }
+      else if (dInside) {
+        val newX = kx * (range._1 - timeStamp._1) + o.x
+        val newY = ky * (range._1 - timeStamp._1) + o.y
+        val newO = Point(Array(newX, newY), t = range._1)
+        Line(newO, d, this.id)
+      }
+      else if (timeStamp._1 <= range._1 && timeStamp._2 >= range._2) {
+        val newOX = kx * (range._1 - timeStamp._1) + o.x
+        val newOY = ky * (range._1 - timeStamp._1) + o.y
+        val newO = Point(Array(newOX, newOY), t = range._1)
+        val newDX = kx * (range._2 - timeStamp._1) + o.x
+        val newDY = ky * (range._2 - timeStamp._1) + o.y
+        val newD = Point(Array(newDX, newDY), t = range._2)
+        Line(newO, newD, this.id)
+      }
+      else {
+        println(o.t, d.t, range)
+        throw new IllegalArgumentException
+      }
     }
   }
 }
