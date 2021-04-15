@@ -30,6 +30,7 @@ object TrajTimeSeriesDev {
     val tQuery = parseTemporalRange(args(1))
     val queryRange = args(2).split(",").map(_.toLong)
     val timeInterval = args(3).toInt
+
     /**
      * example input arguments: 118.116,29.061,120.167,30.184 1596816000,1596902400 1596841200,1596852000 900
      */
@@ -70,12 +71,12 @@ object TrajTimeSeriesDev {
     println(s"Number of slots: ${slots.length}")
 
     /** benchmark */
-    println(s"coarse total count by filtering trajectory: ${trajRDD.filter(x => x.inside(sQuery) &&  temporalOverlap(x.timeStamp, tQuery)).count}")
+    println(s"coarse total count by filtering trajectory: ${trajRDD.filter(x => x.inside(sQuery) && temporalOverlap(x.timeStamp, tQuery)).count}")
     sc.stop()
   }
 
   def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
-    if(t1._1 >= t2._1 && t1._1 <= t2._2) true
+    if (t1._1 >= t2._1 && t1._1 <= t2._2) true
     else if (t2._1 >= t1._1 && t2._1 <= t1._2) true
     else false
   }
