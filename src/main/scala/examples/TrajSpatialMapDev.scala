@@ -60,9 +60,6 @@ object TrajSpatialMapDev {
     t = nanoTime()
     //    rdd2.map(_.printInfo()).foreach(println(_))
     val extractedRDD = operator.extractor.rangeQuery(rdd2, sQuery, tQuery)
-    println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-
-    t = nanoTime()
     println(s"... Total ${extractedRDD.count} points")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }
