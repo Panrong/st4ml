@@ -59,6 +59,13 @@ class Converter extends Serializable {
       }))
   }
 
+  def traj2Point(rdd: RDD[(Int, Trajectory)], tRange: (Long, Long), sRange: Rectangle): RDD[Point] =
+    traj2Point(rdd).filter(x => {
+      val (ts, te) = x.timeStamp
+      ts <= tRange._2 && te >= tRange._1
+    })
+      .filter(x => x.inside(sRange))
+
   def traj2PointClean(rdd: RDD[(Int, Trajectory)], sQuery: Rectangle): RDD[Point] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
