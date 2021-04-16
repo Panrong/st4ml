@@ -59,7 +59,7 @@ class Converter extends Serializable {
       }))
   }
 
-  def traj2Point(rdd: RDD[(Int, Trajectory)], tRange: (Long, Long), sRange: Rectangle): RDD[Point] =
+  def traj2Point(rdd: RDD[(Int, Trajectory)], sRange: Rectangle, tRange: (Long, Long)): RDD[Point] =
     traj2Point(rdd).filter(x => {
       val (ts, te) = x.timeStamp
       ts <= tRange._2 && te >= tRange._1
