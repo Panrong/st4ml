@@ -1,3 +1,3 @@
 package operators.extraction
 
-abstract class Extractor()
+abstract class Extractor() extends Serializable
