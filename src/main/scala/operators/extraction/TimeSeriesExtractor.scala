@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class TimeSeriesExtractor {
+class TimeSeriesExtractor extends Extractor {
   // if the time slot intersects with the query time window, all samples are counted
   // --> may include more samples
   def extractByTimeCoarse[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[T] = {
@@ -46,14 +46,15 @@ class TimeSeriesExtractor {
   }
 
   def countTimeSlotSamplesSpatial[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[Array[((Long, Long), Int)]] = {
-    rdd.mapPartitions(iter => iter.toArray
-      .map(ts => ts.toMap
-        .filter {
-          case ((tStart, tEnd), _) => tStart <= timeRange._2 && tEnd >= timeRange._1
-        }.map {
-        case (k, v) => (k, v.length)
-      }.toArray).toIterator)
+    rdd.mapPartitions(iter => iter.map(ts => {
+      ts.toMap.filter(x => temporalOverlap(x._1, timeRange)).mapValues(_.length).toArray
+    }))
+  }
 
+  def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
+    if (t1._1 >= t2._1 && t1._1 <= t2._2) true
+    else if (t2._1 >= t1._1 && t2._1 <= t1._2) true
+    else false
   }
 }
 
