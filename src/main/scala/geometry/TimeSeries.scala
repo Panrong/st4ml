@@ -32,6 +32,7 @@ case class TimeSeries[T: ClassTag](id: String,
   }
 
   def split(num: Int): Array[TimeSeries[T]] = {
+    assert(num <= series.length, s"cannot split a time series of ${series.length} slots into $num slices")
     val subSeriesLength = series.length / num + 1
     splitByInterval(subSeriesLength)
   }
@@ -40,7 +41,7 @@ case class TimeSeries[T: ClassTag](id: String,
     series.sliding(interval, interval).zipWithIndex.map {
       case (series, id) =>
         TimeSeries(id = this.id + "-" + id.toString,
-          startTime = this.startTime + id * this.timeInterval,
+          startTime = this.startTime + id * this.timeInterval * interval,
           timeInterval = this.timeInterval,
           spatialRange = this.spatialRange,
           series = series)

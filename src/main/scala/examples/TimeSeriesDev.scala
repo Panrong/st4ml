@@ -60,6 +60,7 @@ object TimeSeriesDev {
     t = nanoTime()
     val partitioner = new STRPartitioner(numPartitions, Some(0.1))
     val rdd2 = converter.point2TimeSeries(pointRDD, startTime = tQuery._1, timeInterval, partitioner)
+      .flatMap(_.split(numPartitions))
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
