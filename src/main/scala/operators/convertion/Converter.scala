@@ -6,9 +6,8 @@ import operators.selection.partitioner.{STRPartitioner, SpatialPartitioner, Temp
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import scala.util.control.Breaks._
-import scala.math.{max, min}
 
+import scala.math.{max, min}
 import scala.reflect.ClassTag
 
 class Converter extends Serializable {
@@ -279,32 +278,30 @@ class Converter extends Serializable {
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val duration = timeInterval.getOrElse((endTime - startTime).toInt / numPartitions + 1)
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
+    val boundary = genBoundary(regions)
     repartitionedRDD.mapPartitionsWithIndex {
-      case (partitionID, iter) =>
-        val pointsArray = iter.toArray
-        val points = pointsArray.map(_._2)
-        var regionMap = regions.map((_, new Array[Point](0)))
-        val boundary = genBoundary(regions)
-        for (p <- points) {
-          breakable {
-            for (k <- regionMap.keys) {
-              val pointShrink = Point(Array(
-                min(max(p.x, boundary.head), boundary(2)),
-                min(max(p.y, boundary(1)), boundary(3))
-              ))
-              if (pointShrink.inside(k._2)) {
-                val o = regionMap(k)
-                regionMap = regionMap + (k -> (o :+ p))
-                break()
-              }
-            }
+      case (_, partition) =>
+        if (partition.isEmpty) {
+          Iterator(SpatialMap[Point]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Point])](0)))
+        } else {
+          val regionMap = scala.collection.mutable.Map[Int, scala.collection.mutable.ArrayBuffer[Point]]()
+          var partitionID = 0
+          while (partition.hasNext) {
+            val (i, point) = partition.next()
+            val pointShrink = Point(Array(
+              min(max(point.x, boundary.head), boundary(2)),
+              min(max(point.y, boundary(1)), boundary(3))))
+            val regionID = regions.filter { case (_, r) => pointShrink.inside(r) }.head._1
+            regionMap += ((regionID, if (regionMap.contains(regionID)) regionMap(regionID) ++ Array(point)
+            else scala.collection.mutable.ArrayBuffer(point)))
+            partitionID = i
           }
+          val regionContents = regionMap.toArray.sortBy(_._1).map(x => (regions(x._1), x._2.toArray))
+          Iterator(SpatialMap(id = partitionID.toString,
+            timeStamp = (startTime + partitionID * duration, startTime + (partitionID + 1) * duration),
+            contents = regionContents))
         }
-        val regionContents = regionMap.toArray.sortBy(_._1._1).map(x => (x._1._2, x._2))
-        Iterator(SpatialMap(id = partitionID.toString,
-          timeStamp = (startTime + partitionID * duration, startTime + (partitionID + 1) * duration),
-          contents = regionContents))
-    }
+    }.filter(_.id != "Empty")
   }
 
   def traj2SpatialMap(rdd: RDD[(Int, Trajectory)],
@@ -318,21 +315,28 @@ class Converter extends Serializable {
     val timeRanges = (0 until numPartitions).map(x => (startTime + x * duration, startTime + (x + 1) * duration)).toArray
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val repartitionedRDD = partitioner.partitionToMultiple(rdd.map(_._2))
-    repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).mapPartitions(partition => {
+    repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1))))
+      .filter(_._2.isDefined).map { case (id, trajs) => trajs.get.map((id, _)) }
+      .flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
       if (partition.isEmpty) {
         Iterator(SpatialMap[Trajectory]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Trajectory])](0)))
       } else {
-        val iterArray = partition.toArray
-        val partitionID = iterArray.head._1
-        val trajs = iterArray.map(_._2).filter(_.isDefined).flatMap(_.get)
-        val contents = trajs
-          .flatMap(traj => regions.values.filter(x => x.intersect(traj.mbr)).map((_, traj)))
-          .groupBy(_._1)
-          .map(x => (x._1, x._2.map(_._2)))
-          .toArray
-        Iterator(SpatialMap(id = timeRanges(partitionID).toString, timeStamp = timeRanges(partitionID), contents))
+        val regionMap = scala.collection.mutable.Map[Rectangle, scala.collection.mutable.ArrayBuffer[Trajectory]]()
+        var partitionID = 0
+        while (partition.hasNext) {
+          val (i, traj) = partition.next()
+          val subRegionMap = regions.filter(region => traj.intersect(region._2))
+          for ((k, v) <- subRegionMap) {
+            regionMap += ((v, if (regionMap.contains(v)) regionMap(v) ++ Array(traj)
+            else scala.collection.mutable.ArrayBuffer(traj)))
+          }
+          partitionID = i
+        }
+        Iterator(SpatialMap(timeRanges(partitionID).toString,
+          timeRanges(partitionID),
+          regionMap.mapValues(_.toArray).toArray))
       }
-    }).filter(x => x.id != "Empty")
+    }).filter(_.id != "Empty")
   }
 
   def timeSeries2Raster[T <: Shape : ClassTag](rdd: RDD[(Int, TimeSeries[T])], timeInterval: Int): RDD[Raster[T]] = {

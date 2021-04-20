@@ -61,6 +61,13 @@ case class Trajectory(tripID: String,
     false
   }
 
+  def strictIntersect(r: Rectangle, t: (Long, Long)): Boolean = {
+    for (i <- lines) {
+      if (i.intersect(r) && temporalOverlap(i.timeStamp, t)) return true
+    }
+    false
+  }
+
   override def coordinates: Array[Double] = mbr.coordinates
 
   override def intersect(other: Shape): Boolean = this.mbr.intersect(other)

@@ -58,9 +58,17 @@ object TrajSpatialMapDev {
 
     /** step 3: Extraction */
     t = nanoTime()
-    //    rdd2.map(_.printInfo()).foreach(println(_))
+    //        rdd2.map(_.printInfo()).foreach(println(_))
     val extractedRDD = operator.extractor.rangeQuery(rdd2, sQuery, tQuery)
-    println(s"... Total ${extractedRDD.count} points")
+    println(s"... Total ${extractedRDD.count} sub trajectories")
+    val uniqueTrajs = extractedRDD.map(x => (x.id.split("_")(0), 1)).reduceByKey(_ + _).map(_._1).count
+    println(s"... Total $uniqueTrajs unique trajectories")
+    println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
+    /** benchmark */
+    t = nanoTime()
+    val benchmark = trajRDD.filter(traj => traj.strictIntersect(sQuery, tQuery)).map(x => (x.id.split("_")(0), 1)).reduceByKey(_ + _).map(_._1).count
+    println(s"... Total $benchmark unique trajectories")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }
 }

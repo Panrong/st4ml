@@ -17,7 +17,7 @@ object TrajTimeSeriesDev {
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
-      .appName("TimeSeriesApp")
+      .appName("TrajTimeSeriesApp")
       .master(Config.get("master"))
       .getOrCreate()
     val sc = spark.sparkContext
