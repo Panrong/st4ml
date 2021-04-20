@@ -47,6 +47,7 @@ class TimeSeriesExtractor extends Extractor {
 
   def countTimeSlotSamplesSpatial[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[Array[((Long, Long), Int)]] = {
     rdd.mapPartitions(iter => iter.map(ts => {
+      println(ts.count)
       ts.toMap.filter(x => temporalOverlap(x._1, timeRange)).mapValues(_.length).toArray
     }))
   }
