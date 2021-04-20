@@ -45,12 +45,12 @@ class TimeSeriesExtractor extends Extractor {
       .filter(x => x.timeStamp._1 >= timeRange._1 && x.timeStamp._2 <= timeRange._2)
   }
 
-  def countTimeSlotSamplesSpatial[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[Array[((Long, Long), Int)]] = {
-    rdd.mapPartitions(iter => iter.map(ts => {
-      println(ts.count)
-      ts.toMap.filter(x => temporalOverlap(x._1, timeRange)).mapValues(_.length).toArray
-    }))
+  def countTimeSlotSamplesSpatial[T <: Shape : ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[Array[((Long, Long), Int)]] = {
+    rdd.filter(ts => temporalOverlap(ts.temporalRange, timeRange))
+      .map(ts => ts.toMap.filter(x => temporalOverlap(x._1, timeRange))
+        .mapValues(x => x.length).toArray)
   }
+
 
   def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
     if (t1._1 >= t2._1 && t1._1 <= t2._2) true
