@@ -54,7 +54,7 @@ object TrajTimeSeriesDev {
     t = nanoTime()
     val partitioner = new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
     val rdd2 = operator.converter.traj2TimeSeries(rdd1, startTime = tQuery._1, timeInterval, partitioner)
-      .flatMap(_.split(numPartitions))
+      .flatMap(_.split(10))
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
