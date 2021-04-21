@@ -75,7 +75,7 @@ object SelectorDev {
     println("\n==== quadTree ====")
 
     t = nanoTime()
-    val quadTreePartitioner = new QuadTreePartitioner(numPartitions)
+    val quadTreePartitioner = new QuadTreePartitioner(numPartitions, Some(0.5))
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
 
