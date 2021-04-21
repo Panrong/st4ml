@@ -28,15 +28,28 @@ object Config {
     )
   }
 
+  var aws: Map[String, String] = {
+    Map(
+      "master" -> "spark://master:7077",
+      "numPartitions" -> "256",
+      "hzData" -> "/datasets/traj_10000_converted.json",
+      "portoData" -> "/datasets/porto_traj.csv",
+      "resPath" -> "/datasets/out/",
+      "tPartition" -> "16",
+      "samplingRate" -> "0.2",
+    )
+  }
+
   val localhost: InetAddress = InetAddress.getLocalHost
   val localIpAddress: String = localhost.getHostAddress
 
   def get(key: String): String = {
     if (localIpAddress contains "11.167.227.34") {
       distributed(key)
-    } else {
-      local(key)
+    } else if (localIpAddress contains "172.31.8.79") {
+      aws(key)
     }
+    else
+      local(key)
   }
-
 }
