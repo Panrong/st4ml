@@ -5,7 +5,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 class Traj2PointConverter(sRange: Option[Rectangle] = None, tRange: Option[(Long, Long)] = None) extends Converter {
-  def convert(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
+
+  override type I = Trajectory
+  override type O = Point
+
+  override def convert(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[Trajectory],
         classOf[Point]))

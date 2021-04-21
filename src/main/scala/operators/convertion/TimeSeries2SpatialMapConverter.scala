@@ -5,9 +5,13 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class TimeSeries2SpatialMapConverter {
+class TimeSeries2SpatialMapConverter[T: ClassTag] extends Converter {
+
+  override type I = TimeSeries[T]
+  override type O = SpatialMap[T]
+
   //one time series contains several temporal slots, each slot converts to a spatial map (of one spatial region)
-  def convert[T: ClassTag](rdd: RDD[(Int, TimeSeries[T])]): RDD[SpatialMap[T]] = {
+  override def convert(rdd: RDD[(Int, TimeSeries[T])]): RDD[SpatialMap[T]] = {
     rdd.map(_._2).map(ts => {
       val slots = ts.series
       val timeStamp = (ts.startTime, ts.endTime)

@@ -20,7 +20,11 @@ class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: L
    * @tparam T : type of partitioner
    * @return : rdd of timeSeries
    */
-  def convert(rdd: RDD[(Int, Point)])
+
+  override type I = Point
+  override type O = TimeSeries[Point]
+
+  override def convert(rdd: RDD[(Int, Point)])
   : RDD[TimeSeries[Point]] = {
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect

@@ -9,8 +9,11 @@ import scala.reflect.ClassTag
 class Traj2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: Long,
                                                                    timeInterval: Int, partitioner: T) extends Converter {
   // partition the whole space into cells, find sub-trajectories inside each cell, grouping as time series
-  def convert
-  (rdd: RDD[(Int, Trajectory)]): RDD[TimeSeries[Trajectory]] = {
+
+  override type I = Trajectory
+  override type O = TimeSeries[Trajectory]
+
+  override def convert(rdd: RDD[(Int, Trajectory)]): RDD[TimeSeries[Trajectory]] = {
     val repartitionedRDD = partitioner.partition(rdd.map(_._2))
     val partitionRange = partitioner.partitionRange
     repartitionedRDD.map(x => (x._1, x._2.windowBy(partitionRange(x._1))))

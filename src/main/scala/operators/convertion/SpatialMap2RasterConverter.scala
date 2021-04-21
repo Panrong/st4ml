@@ -5,8 +5,10 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class SpatialMap2RasterConverter extends Converter{
-  def convert[T <: Shape : ClassTag]
+class SpatialMap2RasterConverter[T <: Shape : ClassTag] extends Converter{
+  override type I = SpatialMap[T]
+  override type O = Raster[T]
+  override def convert
   (rdd: RDD[(Int, SpatialMap[T])]): RDD[Raster[T]] = {
     rdd.map(_._2).mapPartitions(iter => {
       val sm = iter.toArray.head

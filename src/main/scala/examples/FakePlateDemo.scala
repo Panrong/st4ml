@@ -1,6 +1,6 @@
 package examples
 
-import geometry.Rectangle
+import geometry.{Rectangle, Trajectory}
 import operators.CustomOperatorSet
 import operators.convertion.DoNothingConverter
 import operators.extraction.FakePlateExtractor
@@ -34,7 +34,7 @@ object FakePlateDemo {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new DoNothingConverter,
+      new DoNothingConverter[Trajectory],
       new FakePlateExtractor)
 
     /** read input data */

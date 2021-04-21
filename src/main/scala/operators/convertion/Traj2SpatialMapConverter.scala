@@ -8,7 +8,11 @@ class Traj2SpatialMapConverter(startTime: Long,
                                endTime: Long,
                                regions: Map[Int, Rectangle],
                                timeInterval: Option[Int] = None) extends Converter {
-  def convert(rdd: RDD[(Int, Trajectory)]): RDD[SpatialMap[Trajectory]] = {
+
+  override type I = Trajectory
+  override type O = SpatialMap[Trajectory]
+
+  override def convert(rdd: RDD[(Int, Trajectory)]): RDD[SpatialMap[Trajectory]] = {
     val numPartitions = if (timeInterval.isEmpty) rdd.getNumPartitions
     else (endTime - startTime).toInt / timeInterval.get + 1
     val duration = timeInterval.getOrElse((endTime - startTime).toInt / numPartitions + 1)
