@@ -17,7 +17,7 @@ object FakePlateDemo {
     val spark = SparkSession
       .builder()
       .master(Config.get("master"))
-      .appName("SpatialMapDev")
+      .appName("FakePlateDemo")
       .getOrCreate()
 
     /** parse inpuy arguments */
