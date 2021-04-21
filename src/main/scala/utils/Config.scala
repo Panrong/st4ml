@@ -35,7 +35,7 @@ object Config {
       "hzData" -> "/datasets/traj_10000_converted.json",
       "portoData" -> "/datasets/porto_traj.csv",
       "resPath" -> "/datasets/out/",
-      "tPartition" -> "16",
+      "tPartition" -> "4",
       "samplingRate" -> "0.2",
     )
   }
