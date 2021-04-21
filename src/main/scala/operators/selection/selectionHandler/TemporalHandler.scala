@@ -15,7 +15,7 @@ class TemporalSelector() extends Serializable {
                                   (query: (Long, Long)): RDD[(Int, T)] =
     dataRDD.filter(x => {
       val (ts, te) = x._2.timeStamp
-      ts <= query._2 && te >= query._1
+      (ts <= query._2 && ts >= query._1) || (te <= query._2 && te >= query._1)
     })
 }
 
@@ -32,7 +32,7 @@ class TemporalBatchSelector() extends Serializable {
         .zipWithIndex
         .filter(q => {
           val (ts, te) = x._2.timeStamp
-          ts <= q._1._2 && te >= q._1._1
+          (ts <= q._1._2 && ts >= q._1._1) || (te <= q._1._2 && te >= q._1._1)
         })
         .map(x => x._2)))
       .flatMapValues(x => x)
