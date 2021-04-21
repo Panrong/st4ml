@@ -41,7 +41,7 @@ object PointAnalysisDemo {
     rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2PointClean(rdd1, sQuery)
+    val rdd2 = operator.converter.convert(rdd1)
     rdd2.cache()
 
     /** step 3: Extraction */

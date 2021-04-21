@@ -2,7 +2,7 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Traj2TimeSeriesConverter}
 import operators.extraction.TimeSeriesExtractor
 import operators.selection.DefaultSelector
 import operators.selection.partitioner.STRPartitioner
@@ -10,6 +10,7 @@ import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.parseTemporalRange
+
 import java.lang.System.nanoTime
 
 object TrajTimeSeriesDev {
@@ -38,7 +39,8 @@ object TrajTimeSeriesDev {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Converter,
+      new Traj2TimeSeriesConverter( startTime = tQuery._1,
+        timeInterval, new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))),
       new TimeSeriesExtractor)
     /** read input data */
     val trajRDD = ReadTrajJson(trajFile, numPartitions, clean = true)
@@ -52,8 +54,7 @@ object TrajTimeSeriesDev {
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
-    val partitioner = new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
-    val rdd2 = operator.converter.traj2TimeSeries(rdd1, startTime = tQuery._1, timeInterval, partitioner)
+    val rdd2 = operator.converter.convert(rdd1)
       .flatMap(_.split(10))
     rdd2.cache()
     rdd2.take(1)

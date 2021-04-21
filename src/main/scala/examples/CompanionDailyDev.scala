@@ -2,11 +2,11 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.Converter
+import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
-import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -40,7 +40,7 @@ object CompanionDailyDev {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Converter,
+      Traj2PointConverter(sQuery, tQuery),
       new PointCompanionExtractor)
 
     /** read input data */
@@ -51,7 +51,7 @@ object CompanionDailyDev {
     //    rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2Point(rdd1, sQuery, tQuery)
+    val rdd2 = operator.converter.convert(rdd1)
     rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(s"--- Total points: ${rdd2.count}")
     println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")

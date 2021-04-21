@@ -1,6 +1,6 @@
 package examples
 
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Traj2PointConverter}
 import operators.extraction.PointsAnalysisExtractor
 import geometry.Rectangle
 import org.apache.spark.sql.SparkSession
@@ -73,8 +73,8 @@ object PointAnalysisDev {
 
     println("\n==== Start Conversion")
     t = nanoTime()
-    val convertor = new Converter()
-    val pointRDD = convertor.traj2Point(queriedRDD3Hash)
+    val convertor = new Traj2PointConverter()
+    val pointRDD = convertor.convert(queriedRDD3Hash)
 
     println(s"==== converted to ${pointRDD.count} points")
     println(s"... Conversion takes ${(nanoTime() - t) * 1e-9} s.")

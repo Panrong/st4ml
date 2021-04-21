@@ -2,7 +2,7 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.Converter
+import operators.convertion.DoNothingConverter
 import operators.extraction.FakePlateExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -34,7 +34,7 @@ object FakePlateDemo {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Converter,
+      new DoNothingConverter,
       new FakePlateExtractor)
 
     /** read input data */
@@ -45,7 +45,7 @@ object FakePlateDemo {
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.doNothing(rdd1)
+    val rdd2 = operator.converter.convert(rdd1)
     rdd2.cache()
 
     /** step 3: Extraction */

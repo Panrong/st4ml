@@ -1,7 +1,7 @@
 package examples
 
 import geometry.Rectangle
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Point2TimeSeriesConverter, Traj2PointConverter}
 import operators.extraction.TimeSeriesExtractor
 import operators.selection.DefaultSelector
 import operators.selection.partitioner._
@@ -45,8 +45,8 @@ object TimeSeriesDev {
     rdd1.cache()
 
     /** step 2: Conversion */
-    val converter = new Converter
-    val pointRDD = converter.traj2Point(rdd1)
+    val converter = new Traj2PointConverter
+    val pointRDD = converter.convert(rdd1)
       .filter(x => {
         val (ts, te) = x.timeStamp
         ts <= tQuery._2 && te >= tQuery._1
@@ -59,7 +59,7 @@ object TimeSeriesDev {
     println("--- start conversion")
     t = nanoTime()
     val partitioner = new STRPartitioner(numPartitions, Some(0.1))
-    val rdd2 = converter.point2TimeSeries(pointRDD, startTime = tQuery._1, timeInterval, partitioner)
+    val rdd2 = new Point2TimeSeriesConverter(startTime = tQuery._1, timeInterval, partitioner).convert(pointRDD)
 //      .flatMap(_.split(numPartitions)) // split not effective
     rdd2.cache()
     rdd2.take(1)

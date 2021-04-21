@@ -1,7 +1,7 @@
 package examples
 
 import geometry.{Rectangle, Trajectory}
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Traj2PointConverter}
 import operators.extraction.PointCompanionExtractor
 import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
@@ -55,8 +55,8 @@ object PointCompanionDev {
     println(s"${stRDD.count} trajectories after spatio-temporal filtering")
 
     /** step 2: Conversion */
-    val converter = new Converter
-    val pointRDD = converter.traj2Point(stRDD)
+    val converter = new Traj2PointConverter()
+    val pointRDD = converter.convert(stRDD)
     println(s"${pointRDD.count} points after conversion")
 
     /** step 3: extraction */
@@ -73,7 +73,7 @@ object PointCompanionDev {
 
     /** step 3.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)
-    val queryPoints = converter.traj2Point(queries.map((0, _)))
+    val queryPoints = converter.convert(queries.map((0, _)))
     val queried1 = extractor.optimizedQueryWithIDs(500, 600)(pointRDD, queryPoints.collect) // 500m and 10min
     val count1 = queried1.mapValues(_.size)
     val queried2 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints)

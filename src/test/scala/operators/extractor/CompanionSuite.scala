@@ -1,10 +1,9 @@
 package operators.extractor
 
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Traj2PointConverter}
 import operators.extraction.{PointCompanionExtractor, TrajCompanionExtractor}
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajJson
-
 import setup.SharedSparkSession
 
 class CompanionSuite extends AnyFunSuite with SharedSparkSession {
@@ -16,9 +15,9 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
         case (traj, id) => traj.setID(id.toString)
       }
     /** find companion of queries */
-    val converter = new Converter
-    val pointRDD = converter.traj2Point(trajRDD.map((0, _))).repartition(16)
-    val queryPointRDD = converter.traj2Point(queryRDD.map((0, _)))
+    val converter = new Traj2PointConverter()
+    val pointRDD = converter.convert(trajRDD.map((0, _))).repartition(16)
+    val queryPointRDD = converter.convert(queryRDD.map((0, _)))
     val extractor1 = new PointCompanionExtractor
 
     val queried1 = extractor1.optimizedQueryWithIDs(500, 600)(pointRDD, queryPointRDD.collect()).collect().toMap // 500m and 10min
@@ -29,10 +28,10 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
 
     /** find all companion pairs by points */
     val allPairs = extractor1.optimizedExtract(500, 600)(pointRDD).collect()
-        allPairs.foreach(println(_))
+    allPairs.foreach(println(_))
     val allPairsFullScan = extractor1.extract(500, 600)(pointRDD).collect()
-        println("---")
-        allPairsFullScan.foreach(println(_))
+    println("---")
+    allPairsFullScan.foreach(println(_))
     assert(allPairs.sortBy(_._1) sameElements allPairsFullScan.sortBy(_._1), "find all companion pairs by points false")
 
     /** find companion by trajectory */

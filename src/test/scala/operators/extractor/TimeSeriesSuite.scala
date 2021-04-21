@@ -1,7 +1,7 @@
 package operators.extractor
 
 import geometry.Rectangle
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Point2TimeSeriesConverter, Traj2PointConverter}
 import operators.extraction.TimeSeriesExtractor
 import operators.selection.partitioner.{FastPartitioner, QuadTreePartitioner, STRPartitioner}
 import operators.selection.selectionHandler.RTreeHandler
@@ -22,12 +22,12 @@ class TimeSeriesSuite extends AnyFunSuite with SharedSparkSession {
     val queriedRDD = selector.query(pRDD)(sQuery)
     println(s"--- ${queriedRDD.count} trajectories")
 
-    val converter = new Converter()
+    val converter = new Traj2PointConverter()
 
-    val pointRDD = converter.traj2Point(queriedRDD).map((0, _))
+    val pointRDD = converter.convert(queriedRDD).map((0, _))
     println(s"Number of points: ${pointRDD.count()}")
 
-    val tsRDD = converter.point2TimeSeries(pointRDD, 1372636854, 100, new QuadTreePartitioner(8, samplingRate = Some(1)))
+    val tsRDD = new Point2TimeSeriesConverter( 1372636854, 100, new QuadTreePartitioner(8, samplingRate = Some(1))).convert(pointRDD)
     println(s"Number of points inside all time series: ${tsRDD.map(_.count).sum}")
 
     val extractor = new TimeSeriesExtractor

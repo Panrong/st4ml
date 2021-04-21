@@ -2,7 +2,7 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -10,6 +10,7 @@ import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.parseTemporalRange
 import utils.SpatialProcessing.gridPartition
+
 import java.lang.System.nanoTime
 
 object SpatialMapDev {
@@ -34,7 +35,7 @@ object SpatialMapDev {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Converter,
+      new LegacyConverter,
       new SpatialMapExtractor)
 
     /** read input data */
@@ -45,13 +46,14 @@ object SpatialMapDev {
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
-    val converter = new Converter()
-    val pointRDD = converter.traj2Point(rdd1).map((0, _))
+    val converter = new Traj2PointConverter()
+    val pointRDD = converter.convert(rdd1).map((0, _))
       .filter {
         case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
       }
     var t = nanoTime()
-    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange, Some(timeInterval)).cache()
+    val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)).convert(pointRDD).cache()
+
     spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 

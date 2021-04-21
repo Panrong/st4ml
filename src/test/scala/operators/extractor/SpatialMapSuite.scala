@@ -1,7 +1,7 @@
 package operators.extractor
 
 import geometry.Rectangle
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
 import operators.selection.partitioner.QuadTreePartitioner
 import operators.selection.selectionHandler.RTreeHandler
@@ -12,7 +12,7 @@ import utils.Config
 
 class SpatialMapSuite extends AnyFunSuite with SharedSparkSession {
 
-  test("spatial map range query"){
+  test("spatial map range query") {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
     val trajRDD = ReadTrajJson(trajectoryFile, 8)
@@ -23,12 +23,12 @@ class SpatialMapSuite extends AnyFunSuite with SharedSparkSession {
     val queriedRDD = selector.query(pRDD)(Rectangle(Array(-180, -180, 180, 180)))
     println(s"--- ${queriedRDD.count} trajectories")
 
-    val converter = new Converter()
+    val converter = new Traj2PointConverter()
 
-    val pointRDD = converter.traj2Point(queriedRDD).map((0, _))
+    val pointRDD = converter.convert(queriedRDD).map((0, _))
     val tStart = pointRDD.map(_._2.timeStamp).min._1
     val tEnd = pointRDD.map(_._2.timeStamp).max._2
-    val spatialMapRDD = converter.point2SpatialMap(pointRDD, tStart, tEnd, partitionRange)
+    val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange).convert(pointRDD)
 
     val extractor = new SpatialMapExtractor()
     val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))

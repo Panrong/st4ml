@@ -2,7 +2,7 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.Converter
+import operators.convertion.{LegacyConverter, Traj2PointConverter}
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -38,7 +38,7 @@ object PointCompanionDemo {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Converter,
+      new Traj2PointConverter,
       new PointCompanionExtractor)
 
     /** read input data */
@@ -49,7 +49,7 @@ object PointCompanionDemo {
     //    rdd1.cache()
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.traj2Point(rdd1)
+    val rdd2 = operator.converter.convert(rdd1)
     //    rdd2.cache()
     println(rdd2.count)
     /** step 3: Extraction */

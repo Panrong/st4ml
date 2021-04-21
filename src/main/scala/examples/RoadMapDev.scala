@@ -1,6 +1,6 @@
 package examples
 
-import operators.convertion.Converter
+import operators.convertion.LegacyConverter
 import operators.extraction.SMExtractor
 import geometry.Rectangle
 import geometry.road.RoadGrid
@@ -123,7 +123,7 @@ object RoadMapDev {
     val speedRDD = queriedRDD3.map(x => (x._1, x._2.getRoadSpeed(roadGrid)))
 
     /** test conversion */
-    val converter = new Converter
+    val converter = new LegacyConverter
     val convertedRDD = converter.trajSpeed2RoadMap(speedRDD)
 
     /** test extraction */
