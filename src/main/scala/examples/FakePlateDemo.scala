@@ -1,7 +1,7 @@
 package examples
 
 import geometry.{Rectangle, Trajectory}
-import operators.CustomOperatorSet
+import operators.{CustomOperatorSet, OperatorSet}
 import operators.convertion.DoNothingConverter
 import operators.extraction.FakePlateExtractor
 import operators.selection.DefaultSelector

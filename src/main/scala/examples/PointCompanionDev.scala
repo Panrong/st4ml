@@ -75,11 +75,12 @@ object PointCompanionDev {
     val queries = ReadTrajFile(queryFile, num = 1)
     val queryPoints = converter.convert(queries.map((0, _)))
     val queried1 = extractor.optimizedQueryWithIDs(500, 600)(pointRDD, queryPoints.collect) // 500m and 10min
-    val count1 = queried1.mapValues(_.size)
+    val count1 = queried1.mapValues(_.size).collect
     val queried2 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints)
-    val count2 = queried2.mapValues(_.size)
-    println(count1)
-    println(count2)
+    val count2 = queried2.mapValues(_.size).collect
+    println(count1.sortBy(_._1).deep)
+    println(count2.sortBy(_._1).deep)
+
     sc.stop()
   }
 }

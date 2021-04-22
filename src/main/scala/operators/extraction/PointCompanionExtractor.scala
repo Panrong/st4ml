@@ -10,7 +10,7 @@ import org.apache.spark.storage.StorageLevel
 import utils.Config
 
 
-class PointCompanionExtractor extends Extractor with Serializable {
+class PointCompanionExtractor extends BaseExtractor with Serializable {
 
   def isCompanion(tThreshold: Double, sThreshold: Double)(p1: Point, p2: Point): Boolean = {
     abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold &&
@@ -94,4 +94,16 @@ class PointCompanionExtractor extends Extractor with Serializable {
       .mapValues(_.toMap)
       .reduceByKey(_ ++ _, numPartitions * 4)
   }
+
+  //  //find companion pairs of some queries
+  //  def optimizedQueryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point],
+  //                                                                    queries: Array[Point],
+  //                                                                    tPartition: Int = 4): Array[(String, Array[(Long,String)])] = {
+  //    val numPartitions = pRDD.getNumPartitions
+  //    val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.t).min,
+  //      endTime = pRDD.map(_.t).max, numPartitions = numPartitions)
+  //    val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold, sThreshold, Config.get("samplingRate").toDouble).map(_._2) //temporal + str
+  //    val extractor = new CompanionQueryExtractor(tThreshold, sThreshold, queries)
+  //    extractor.extract(repartitionedRDD)
+  //  }
 }

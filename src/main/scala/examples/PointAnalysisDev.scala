@@ -1,6 +1,6 @@
 package examples
 
-import operators.convertion.{LegacyConverter, Traj2PointConverter}
+import operators.convertion.Traj2PointConverter
 import operators.extraction.PointsAnalysisExtractor
 import geometry.Rectangle
 import org.apache.spark.sql.SparkSession

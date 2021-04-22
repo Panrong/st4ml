@@ -23,8 +23,8 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
     val queried1 = extractor1.optimizedQueryWithIDs(500, 600)(pointRDD, queryPointRDD.collect()).collect().toMap // 500m and 10min
     val queried2 = extractor1.queryWithIDs(500, 600)(pointRDD, queryPointRDD).collect().toMap
     assert(queried1 == queried2, "find companion of queries failed")
-    val count1 = queried1.mapValues(_.size)
-    val count2 = queried2.mapValues(_.size)
+    val count1 = queried1.mapValues(_.toArray.map(_._2).distinct.length)
+    val count2 = queried2.mapValues(_.toArray.map(_._2).distinct.length)
 
     /** find all companion pairs by points */
     val allPairs = extractor1.optimizedExtract(500, 600)(pointRDD).collect()
@@ -37,9 +37,9 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
     /** find companion by trajectory */
     val extractor2 = new TrajCompanionExtractor
     val queried3 = extractor2.queryWithIDs(500, 600)(trajRDD, queryRDD)
-    val count3 = queried3.mapValues(_.distinct.length)
+    val count3 = queried3.mapValues(_.length)
     val queried4 = extractor2.queryWithIDsFS(500, 600)(trajRDD, queryRDD)
-    val count4 = queried4.mapValues(_.distinct.length)
+    val count4 = queried4.mapValues(_.length)
     println(count1)
     println(count2)
     println(count3)

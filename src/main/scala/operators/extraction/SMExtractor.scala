@@ -3,7 +3,7 @@ package operators.extraction
 import geometry.RoadMap
 import org.apache.spark.rdd.RDD
 
-class SMExtractor extends Extractor with Serializable {
+class SMExtractor extends BaseExtractor with Serializable {
   /**
    * Get average speed for each road of the whole dataset
    *

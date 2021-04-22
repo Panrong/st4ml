@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import scala.math.abs
 
 class TrajCompanionExtractor extends Serializable {
-  def companion(sThreshold: Double, tThreshold: Double)(p1: Point, p2: Point): Boolean = {
+  def isCompanion(sThreshold: Double, tThreshold: Double)(p1: Point, p2: Point): Boolean = {
     abs(p1.timeStamp._1 - p2.timeStamp._1) <= tThreshold &&
       abs(p1.geoDistance(p2)) <= sThreshold
   }
@@ -16,7 +16,7 @@ class TrajCompanionExtractor extends Serializable {
                     (pRDD: RDD[Trajectory], queryRDD: RDD[Trajectory]): Map[String, Array[String]] = {
     pRDD.cartesian(queryRDD).filter {
       case (p, q) => p.points.flatMap(x => q.points.map(y => (x, y))).exists {
-        case (x, y) => companion(sThreshold, tThreshold)(x, y)
+        case (x, y) => isCompanion(sThreshold, tThreshold)(x, y)
       }
     }.map(x => (x._2.tripID, x._1.tripID))
       .mapValues(Array(_))
@@ -35,7 +35,7 @@ class TrajCompanionExtractor extends Serializable {
         val queries = qIterator.toArray.map(_._2)
         trajs.flatMap(x => queries.map(y => (x, y))).filter {
           case (p, q) => p.points.flatMap(x => q.points.map(y => (x, y))).exists {
-            case (x, y) => companion(sThreshold, tThreshold)(x, y)
+            case (x, y) => isCompanion(sThreshold, tThreshold)(x, y)
           }
         }.map(x => (x._2.tripID, x._1.tripID))
           .toIterator

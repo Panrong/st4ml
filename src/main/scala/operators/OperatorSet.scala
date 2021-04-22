@@ -1,6 +1,5 @@
-package operators
 
-import operators.convertion.Converter
+package operators
 
 abstract class OperatorSet extends Serializable {
   val selector: Any

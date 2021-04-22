@@ -7,12 +7,18 @@ import org.apache.spark.sql.SparkSession
 import java.text.SimpleDateFormat
 import utils.TimeParsing._
 
-class PointsAnalysisExtractor extends Extractor with Serializable {
+class PointsAnalysisExtractor extends BaseExtractor with Serializable {
+
+  //  def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
+  //    pRDD.map(point => (point.id, 1))
+  //      .reduceByKey(_ + _)
+  //      .sortBy(_._2, ascending = false)
+  //      .take(n)
+  //  }
+
   def extractMostFrequentPoints(n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
-    pRDD.map(point => (point.id, 1))
-      .reduceByKey(_ + _)
-      .sortBy(_._2, ascending = false)
-      .take(n)
+    val extractor = new FreqPointExtractor(n)
+    extractor.extract(pRDD)
   }
 
   def extractMostFrequentPoints(attribute: String, n: Int)(pRDD: RDD[Point]): Array[(String, Int)] = {
@@ -106,7 +112,7 @@ class PointsAnalysisExtractor extends Extractor with Serializable {
       .reduceByKey(_ + _)
       .collect
       .sortBy(_._1).map {
-        case (date, count) => (getDate(date * (24 * 60 * 60) + startDate), count)
-      }
+      case (date, count) => (getDate(date * (24 * 60 * 60) + startDate), count)
+    }
   }
 }
