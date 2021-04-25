@@ -2,14 +2,14 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.{LegacyConverter, Traj2SpatialMapConverter}
+import operators.convertion.Traj2SpatialMapConverter
 import operators.extraction.SpatialMapExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
-import utils.TimeParsing.parseTemporalRange
 import utils.SpatialProcessing.gridPartition
+import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
 
@@ -28,14 +28,15 @@ object TrajSpatialMapDev {
     val tStart = tQuery._1
     val tEnd = tQuery._2
     val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt)
-    val timeInterval = args(3).toInt
+    val timeInterval = args(2).toInt
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
+      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
+//      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
       new SpatialMapExtractor)
 
     /** read input data */
