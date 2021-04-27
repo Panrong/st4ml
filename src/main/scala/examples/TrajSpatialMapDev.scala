@@ -75,7 +75,7 @@ object TrajSpatialMapDev {
       traj.strictIntersect(sQuery, tQuery)
     }.map(_._2.id).distinct
 
-    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
+//    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
     println(s"... Total ${benchmark.count} unique trajectories")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }

@@ -51,15 +51,17 @@ object SpatialMapDev {
       .filter {
         case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
       }
+    println(s"    <- debug: num of points before conversion: ${pointRDD.count}")
+
     var t = nanoTime()
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)).convert(pointRDD).cache()
-
+    println(s"    <- debug: num of points after conversion: ${spatialMapRDD.flatMap(_.contents).flatMap(x=>x._2).count}")
     spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** step 3: Extraction */
     t = nanoTime()
-    spatialMapRDD.map(_.printInfo()).foreach(println(_))
+//    spatialMapRDD.map(_.printInfo()).foreach(println(_))
     val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
     println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 

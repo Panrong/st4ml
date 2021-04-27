@@ -108,7 +108,6 @@ case class Trajectory(tripID: String,
     val tStart = range._1
     val tEnd = range._2
     if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) {
-      println(s"debug: ${this.id} not in any window")
       None
     }
 
