@@ -28,7 +28,7 @@ object TrajSpatialMapDev {
     val tStart = tQuery._1
     val tEnd = tQuery._2
     val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt)
-    val timeInterval = args(2).toInt
+    val timeInterval = args(3).toInt
 
 
     val sc = spark.sparkContext
@@ -74,7 +74,7 @@ object TrajSpatialMapDev {
       traj.strictIntersect(sQuery, tQuery)
     }.map(_._2.id).distinct
 
-//    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
+    //    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
     println(s"... Total ${benchmark.count} unique trajectories")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }

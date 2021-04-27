@@ -21,7 +21,7 @@ class Traj2SpatialMapConverter(startTime: Long,
     val subTrajs = repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).filter(_._2.isDefined)
       .map { case (id, trajs) => trajs.get.map((id, _)) }
 
-    println(s"num sub-trajs after windowing: ${subTrajs.flatMap(x => x).count}")
+    println(s" Num sub-trajs after windowing: ${subTrajs.flatMap(x => x).count}")
     println(s" Debug: num trajs after windowing: ${subTrajs.flatMap(x => x.map(_._2.id.split("_")(0))).distinct.count}")
 
     subTrajs.flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
