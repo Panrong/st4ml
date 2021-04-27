@@ -28,6 +28,10 @@ class TemporalPartitioner(startTime: Long,
                           numPartitions: Int) extends Serializable {
   val numSlots: Int = (endTime - startTime).toInt / timeInterval + 1
   val numSlotsPerPartition: Int = numSlots / numPartitions + 1
+  val timeRanges: Array[(Long, Long)] = (0 until numPartitions).map(x =>
+    (startTime + x * timeInterval * numSlotsPerPartition,
+      startTime + (x + 1) * numSlotsPerPartition * timeInterval))
+    .toArray
 
   def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     dataRDD.map(x =>
@@ -35,16 +39,24 @@ class TemporalPartitioner(startTime: Long,
       .filter(_._1 < numPartitions)
       .partitionBy(new KeyPartitioner(numPartitions))
   }
+
   //assign one object to all its overlapping partitions
   def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
-    dataRDD.flatMap(x => {
+    val slotsRDD = dataRDD.flatMap(x => {
       ((x.timeStamp._1 - startTime).toInt / timeInterval / numSlotsPerPartition to
         (x.timeStamp._2 - startTime).toInt / timeInterval / numSlotsPerPartition)
-        .toArray.map((_,x))
+        .toArray.map((_, x))
     })
       .filter(x => x._1 < numPartitions && x._1 >= 0)
-      .partitionBy(new KeyPartitioner(numPartitions))
+
+    val a = slotsRDD.collect
+    for(x <- a) {
+      if(!x._2.temporalOverlap(x._2.timeStamp, timeRanges(x._1))) println(x, timeRanges(x._1))
+    }
+
+    slotsRDD.partitionBy(new KeyPartitioner(numPartitions))
   }
+
   //timeInterval is ignored
   def partitionWithOverlap[T <: geometry.Shape : ClassTag]
   (dataRDD: RDD[T], overlap: Double = 0, tPartition: Int = numPartitions, even: Boolean = true): RDD[(Int, T)] = {
@@ -171,7 +183,7 @@ class TemporalPartitioner(startTime: Long,
       .map(t => (sRange(1) + t * latInterval, sRange(1) + (t + 1) * latInterval)).toArray
     for ((longMin, longMax) <- longSeparations;
          (latMin, latMax) <- latSeparations)
-      yield Rectangle(Array(longMin, latMin, longMax, latMax))
+    yield Rectangle(Array(longMin, latMin, longMax, latMax))
   }
 
   def allocateTemporalPartitions(t: Long, ranges: Array[(Long, Long)]): Array[Int] = {

@@ -47,11 +47,10 @@ object TrajSpatialMapDev {
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     println(s"--- ${rdd1.map(_._2.id).distinct.count} trajectories")
     /** step 2: Conversion */
-    val converter = operator.converter
     var t = nanoTime()
     println("--- start conversion")
     t = nanoTime()
-    val rdd2 = converter.convert(rdd1)
+    val rdd2 = operator.converter.convert(rdd1)
     rdd2.cache()
     rdd2.take(1)
     println(s"... conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")

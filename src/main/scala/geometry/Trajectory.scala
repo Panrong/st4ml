@@ -108,9 +108,10 @@ case class Trajectory(tripID: String,
     val tStart = range._1
     val tEnd = range._2
     if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) {
+      println(this)
+      println(s"is not in range $range")
       None
     }
-
     else {
       val lineSegments = lines.filter(line => temporalOverlap(range, line.timeStamp)).map(_.windowBy(range))
       val subtrajPoints = lineSegments.map(x => Array(x.o, x.d)).foldLeft(Array[Array[Point]]()) {
@@ -141,9 +142,12 @@ case class Trajectory(tripID: String,
   }
 
   def reorderTemporally(): Trajectory = {
-    if (!tOrderCheck()) scala.util.Sorting.quickSort(points)(Ordering.by[Point, Long](_.timeStamp._1))
-    this
+    if (!tOrderCheck()) {
+      scala.util.Sorting.quickSort(points)(Ordering.by[Point, Long](_.timeStamp._1))
+      Trajectory(tripID, points.head.timeStamp._1, points, attributes)
+    } else this
   }
 
-  override def toString: String = s"Trajectory(id: $id, start time: $startTime, points: ${points.mkString(",")})"
+
+  override def toString: String = s"Trajectory(id: $id, timestamps: $timeStamp, points: ${points.mkString(",")})"
 }

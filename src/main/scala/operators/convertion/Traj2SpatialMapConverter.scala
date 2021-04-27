@@ -15,14 +15,15 @@ class Traj2SpatialMapConverter(startTime: Long,
   override def convert(rdd: RDD[(Int, Trajectory)]): RDD[SpatialMap[Trajectory]] = {
     val numPartitions = if (timeInterval.isEmpty) rdd.getNumPartitions
     else (endTime - startTime).toInt / timeInterval.get + 1
-    val duration = timeInterval.getOrElse((endTime - startTime).toInt / numPartitions + 1)
-    val timeRanges = (0 until numPartitions).map(x => (startTime + x * duration, startTime + (x + 1) * duration)).toArray
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
+    val timeRanges = partitioner.timeRanges
     val repartitionedRDD = partitioner.partitionToMultiple(rdd.map(_._2))
     val subTrajs = repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).filter(_._2.isDefined)
       .map { case (id, trajs) => trajs.get.map((id, _)) }
+
     println(s"num sub-trajs after windowing: ${subTrajs.flatMap(x => x).count}")
     println(s" Debug: num trajs after windowing: ${subTrajs.flatMap(x => x.map(_._2.id.split("_")(0))).distinct.count}")
+
     subTrajs.flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
       if (partition.isEmpty) {
         Iterator(SpatialMap[Trajectory]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Trajectory])](0)))
