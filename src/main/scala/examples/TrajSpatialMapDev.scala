@@ -45,7 +45,7 @@ object TrajSpatialMapDev {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions).map(_.reorderTemporally())
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
-    println(s"--- ${rdd1.count} trajectories")
+    println(s"--- ${rdd1.map(_._2.id).distinct.count} trajectories")
     /** step 2: Conversion */
     val converter = operator.converter
     var t = nanoTime()
