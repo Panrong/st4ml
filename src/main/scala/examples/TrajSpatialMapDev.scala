@@ -37,8 +37,8 @@ object TrajSpatialMapDev {
     /** initialize operators */
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
-      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
-      //      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
+      //      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
+      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
       new SpatialMapExtractor)
 
     /** read input data */
