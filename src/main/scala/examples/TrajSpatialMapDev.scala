@@ -29,6 +29,8 @@ object TrajSpatialMapDev {
     val tEnd = tQuery._2
     val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt)
     val timeInterval = args(2).toInt
+
+
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
@@ -36,16 +38,14 @@ object TrajSpatialMapDev {
     val operator = new CustomOperatorSet(
       DefaultSelector(numPartitions),
       new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
-//      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
+      //      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
       new SpatialMapExtractor)
 
     /** read input data */
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-
+    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions).map(_.reorderTemporally())
     /** step 1: Selection */
     val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
     println(s"--- ${rdd1.count} trajectories")
-
     /** step 2: Conversion */
     val converter = operator.converter
     var t = nanoTime()
@@ -60,17 +60,23 @@ object TrajSpatialMapDev {
 
     /** step 3: Extraction */
     t = nanoTime()
-    //        rdd2.map(_.printInfo()).foreach(println(_))
+    val total = rdd2.flatMap(x => x.contents.flatMap(_._2)).collect
+    println(total.map(_.id.split("_")(0)).distinct.length)
+    //    rdd2.map(_.printInfo()).foreach(println(_))
     val extractedRDD = operator.extractor.rangeQuery(rdd2, sQuery, tQuery)
     println(s"... Total ${extractedRDD.count} sub trajectories")
-    val uniqueTrajs = extractedRDD.map(x => (x.id.split("_")(0), 1)).reduceByKey(_ + _).map(_._1).count
-    println(s"... Total $uniqueTrajs unique trajectories")
+    val uniqueTrajs = extractedRDD.map(x => (x.id.split("_")(0), 1)).reduceByKey(_ + _).map(_._1)
+    println(s"... Total ${uniqueTrajs.count} unique trajectories")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     /** benchmark */
     t = nanoTime()
-    val benchmark = trajRDD.filter(traj => traj.strictIntersect(sQuery, tQuery)).map(x => (x.id.split("_")(0), 1)).reduceByKey(_ + _).map(_._1).count
-    println(s"... Total $benchmark unique trajectories")
+    val benchmark = rdd1.filter { case (_, traj) =>
+      traj.strictIntersect(sQuery, tQuery)
+    }.map(_._2.id).distinct
+
+    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
+    println(s"... Total ${benchmark.count} unique trajectories")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }
 }

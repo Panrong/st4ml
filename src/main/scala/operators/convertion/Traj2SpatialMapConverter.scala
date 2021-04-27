@@ -19,9 +19,11 @@ class Traj2SpatialMapConverter(startTime: Long,
     val timeRanges = (0 until numPartitions).map(x => (startTime + x * duration, startTime + (x + 1) * duration)).toArray
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val repartitionedRDD = partitioner.partitionToMultiple(rdd.map(_._2))
-    repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1))))
-      .filter(_._2.isDefined).map { case (id, trajs) => trajs.get.map((id, _)) }
-      .flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
+    val subTrajs = repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).filter(_._2.isDefined)
+      .map { case (id, trajs) => trajs.get.map((id, _)) }
+    println(s"num sub-trajs after windowing: ${subTrajs.flatMap(x => x).count}")
+    println(s" Debug: num trajs after windowing: ${subTrajs.flatMap(x => x.map(_._2.id.split("_")(0))).distinct.count}")
+    subTrajs.flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
       if (partition.isEmpty) {
         Iterator(SpatialMap[Trajectory]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Trajectory])](0)))
       } else {
@@ -29,8 +31,8 @@ class Traj2SpatialMapConverter(startTime: Long,
         var partitionID = 0
         while (partition.hasNext) {
           val (i, traj) = partition.next()
-          val subRegionMap = regions.filter(region => traj.intersect(region._2))
-          for ((k, v) <- subRegionMap) {
+          val subRegionMap = regions.filter(region => traj.strictIntersect(region._2))
+          for ((_, v) <- subRegionMap) {
             regionMap += ((v, if (regionMap.contains(v)) regionMap(v) ++ Array(traj)
             else scala.collection.mutable.ArrayBuffer(traj)))
           }
