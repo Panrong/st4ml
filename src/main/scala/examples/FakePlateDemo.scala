@@ -45,7 +45,7 @@ object FakePlateDemo {
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
-    val rdd2 = operator.converter.convert(rdd1)
+    val rdd2 = operator.converter.convert(rdd1).map(_.reorderTemporally())
     rdd2.cache()
 
     /** step 3: Extraction */
