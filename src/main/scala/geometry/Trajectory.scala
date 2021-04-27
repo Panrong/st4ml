@@ -107,7 +107,10 @@ case class Trajectory(tripID: String,
   def windowBy(range: (Long, Long)): Option[Array[Trajectory]] = {
     val tStart = range._1
     val tEnd = range._2
-    if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) None
+    if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) {
+      println(s"debug: ${this.id} not in any window")
+      None
+    }
 
     else {
       val lineSegments = lines.filter(line => temporalOverlap(range, line.timeStamp)).map(_.windowBy(range))
