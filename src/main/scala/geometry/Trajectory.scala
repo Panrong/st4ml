@@ -108,6 +108,7 @@ case class Trajectory(tripID: String,
     val tStart = range._1
     val tEnd = range._2
     if (this.timeStamp._1 > tEnd || this.timeStamp._2 < tStart) None
+
     else {
       val lineSegments = lines.filter(line => temporalOverlap(range, line.timeStamp)).map(_.windowBy(range))
       val subtrajPoints = lineSegments.map(x => Array(x.o, x.d)).foldLeft(Array[Array[Point]]()) {
@@ -128,6 +129,18 @@ case class Trajectory(tripID: String,
     val start = points.map(x => (x.timeStamp._1, (x.lon, x.lat))).dropRight(1)
     val end = points.map(x => (x.timeStamp._2, (x.lon, x.lat))).drop(1)
     (start, end, calSpeed()).zipped.toArray.filter(x => x._3 > speedThreshold && x._1 != x._2)
+  }
+
+  /** check if the points are temporally ordered */
+  def tOrderCheck(): Boolean = {
+    points.sliding(2, 1).forall {
+      case Array(p1, p2) => p1.timeStamp._1 < p2.timeStamp._2
+    }
+  }
+
+  def reorderTemporally(): Trajectory = {
+    if (!tOrderCheck()) scala.util.Sorting.quickSort(points)(Ordering.by[Point, Long](_.timeStamp._1))
+    this
   }
 
   override def toString: String = s"Trajectory(id: $id, start time: $startTime, points: ${points.mkString(",")})"
