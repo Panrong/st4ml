@@ -11,6 +11,9 @@ import utils.Config
 import java.lang.System.nanoTime
 import scala.util.Random
 
+/**
+ * Compare the time usage of selection(repartition + rtree) vs filtering on different selectivities
+ */
 object selectionExp extends App {
   val spark = SparkSession.builder()
     .appName("SelectorExp")
@@ -76,8 +79,9 @@ object selectionExp extends App {
     val end = (start + length).toLong
     (start, end)
   }
+
   def temporalOverlap(t1: (Long, Long), t2: (Long, Long)): Boolean = {
-    if(t1._1 >= t2._1 && t1._1 <= t2._2) true
+    if (t1._1 >= t2._1 && t1._1 <= t2._2) true
     else if (t2._1 >= t1._1 && t2._1 <= t1._2) true
     else false
   }

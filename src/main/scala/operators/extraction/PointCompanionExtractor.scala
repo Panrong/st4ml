@@ -40,11 +40,11 @@ class PointCompanionExtractor extends BaseExtractor with Serializable {
     //    val repartitionedRDD = partitioner.partitionWithOverlap(pRDD, tThreshold) // temporal only
     val repartitionedRDD = partitioner.partitionSTR(pRDD, tPartition, tThreshold, sThreshold, Config.get("samplingRate").toDouble) //temporal + str
     val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
-    println("--- After partitioning:")
-    println(s"... Number of points per partition: " +
-      s"${pointsPerPartition.deep}")
-    println(s"... Total: ${pointsPerPartition.sum}")
-    println(s"... Distinct: ${repartitionedRDD.map(x => x._2.id + x._2.t.toString).distinct.count}")
+    //    println("--- After partitioning:")
+    //    println(s"... Number of points per partition: " +
+    //      s"${pointsPerPartition.deep}")
+    //    println(s"... Total: ${pointsPerPartition.sum}")
+    //    println(s"... Distinct: ${repartitionedRDD.map(x => x._2.id + x._2.t.toString).distinct.count}")
 
     repartitionedRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
 

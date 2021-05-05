@@ -140,10 +140,10 @@ class TemporalPartitioner(startTime: Long,
         }
       }
     }
-    println(s".... Temporal partitioning the sampled points into ${temporalPartitionedSamples.size} partitions, \n" +
-      s".... Number of points per partition: ${temporalPartitionedSamples.values.map(_.length)}\n" +
-      s".... after scaling to estimate the whole dataset," +
-      s"${temporalPartitionedSamples.values.map(x => (x.length / samplingRate).toInt)} ")
+//    println(s".... Temporal partitioning the sampled points into ${temporalPartitionedSamples.size} partitions, \n" +
+//      s".... Number of points per partition: ${temporalPartitionedSamples.values.map(_.length)}\n" +
+//      s".... after scaling to estimate the whole dataset," +
+//      s"${temporalPartitionedSamples.values.map(x => (x.length / samplingRate).toInt)} ")
     val stRanges = temporalPartitionedSamples.mapValues(points => str(points, numPartitions / tPartition, samplingRate)).toArray.flatMap {
       case (t, s) => s.map(x => (x._1 + t._2 * s.length, t._1, x._2))
     }
