@@ -1,172 +1,175 @@
 Getting Started with ST-Tool
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This chapter introduces how to use ST-Tool to run some applications. When working in a distributed system, the whole package has to be stored on the master server while the data should be stored in HDFS. All the operations are done on the master server unless otherwise specified.
 
-Map Matching
----------------
-The map matching module in the ST-Tool implements the widely used `Hidden Markov Model (HMM) <https://www.microsoft.com/en-us/research/publication/hidden-markov-map-matching-noise-sparseness/>`_ algorithm and supports data parallel execution. 
+Preparation
+-----------
 
-To run map matching, go to ``ST-TOOLHOME/run`` and run 
-``stt mapmatching mmconfig.json``
+Modify Config.scala
+>>>>>>>>>>>>>>>>>>>
 
-The ``mmconfig.json`` file should have the following fields (example: ``mmconfig-example.json``) ::
-
+Firstly, please modify ``ST-TOOL/src/main/scala/Config.scala`` accordingly. ``Config.scala`` contains information for two environments, namely *local* and *distributed*.
+Each configuration set should have the following fields ::
     {
-        "useHDFS": true, # use HDFS or not
-        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-        "master": "spark", # "local" for single machine
-        "total-executor-cores": "8", # the total cores used
-        "executor-cores": "2", # number of CPU cores per executor
-        "executor-memory": "3500M", # the memory assigned to each executor
-        "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
-        "trajfile": "/datasets/porto_traj.csv", # path to the file consisting trajectory data
-        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-        "numtraj": "10000", # number of trajectories to apply map matching
-        "resultsdir": "/datasets/tmpmmres", # directory to save the map matching results
+        "master" -> "local[*]", // the spark master url 
+        "numPartitions" -> "16", // number of partitions 
+        "hzData" -> "datasets/traj_10000_converted.json", // path to the dataset, can be a directory in HDFS
+        "resPath" -> "out/", // output path, can be a directyory in HDFS. Make sure that the path exists.
+        "tPartition" -> "4", // number of partitions in temporal dimension
+        "samplingRate" -> "0.5", // sampling rate for partitioning boundary selection and etc.
     }
 
-One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_mm_config.py``. 
-
-* Notes on file storage location:
-
-When using ST-Tool in a distributed cluster, the ``trajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name. 
-
-The ``mapfile`` is currently stored *locally* on each worker node with the same directory name since the graph reading function cannot access HDFS currently.
-
-After map matching is done, a folder is created at the specific location, which consists multiple ``.csv`` files named ``part-000...``. Each of the files is 
-the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
 
 
+Build the Application Project
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-Range Query
----------------
-ST-Tool supports range query on the road network. The user inputs a map-matched trajectory dataset and a list of query ranges, ST-Tool will output the trajectories 
-inside the query ranges. 
+Please build the project by typing 
 
-To run map matching, go to ``ST-TOOLHOME/run`` and run 
-``stt rangequery rqconfig.json``
+.. code-block:: bashscript    
 
-The ``rqconfig.json`` file should have the following fields (example: ``rqconfig-example.json``) ::
+     sbt package
 
-    {
-        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-        "master": "spark", # "local" for single machine
-        "total-executor-cores": "8", # the total cores used
-        "executor-cores": "2", # number of CPU cores per executor
-        "executor-memory": "3500M", # the memory assigned to each executor
-        "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
-        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-        "query": "../datasets/queries.txt", # path to the file consisting query ranges
-        "gridsize": "2", # to partition the map into grids with length gridsize (in km)
-        "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
-        "rtreecapacity": 1000 # RTree capacity, should not be less than square root of total number of trajectories
-        "resultsdir": "/datasets/tmprqres", # temporory directory to save the range query results in HDFS
-    }
+at the root directory of ``ST-TOOL/``.
 
-One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_rq_config.py``. 
+sbt uses ``ST-TOOL/build.sbt`` to build the project. You may modify it accordingly. The compiled ``.jar`` file is located at 
+``ST-TOOL/target/scala-2.12/classes/st-tool-app_2.12-0.1.jar``
 
-* Notes on file storage location:
+The examples below are all based on **PointAnalysisApp** and the code is located at ``ST-TOOL/src/main/scala/PointAnalysisApp``. 
 
-When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name. 
+Submit Example Job Using spark-submit
+--------------------------------------
 
-The ``mapfile`` is currently stored *locally* on **each** worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+An example bashscript file for submitting the spark task can be found at ``ST-TOOL/scripts/example-spark-submit.sh``. 
 
-The ``queryfile`` should *locally* stored on the master node.
+It is basically a common ``spark-submit`` command and you may adjust the parameters according to the acutal distributed environment.
 
-After map matching is done, a folder is created at the specific location, which consists multiple folders that one for each query. Each folder consists of multiple ``.csv`` files named ``part-000...``. Each of the files is 
-the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
+The explamentation of the parameters can be found at `Spark Documentation <https://spark.apache.org/docs/latest/submitting-applications.html>`_.
+
+Example output of **PointAnalysisApp** ::
+
+    ... before selection 7486 trajectories
+    === Analysing Results:
+     ... Total number of trajectories: 836
+    ... Total number of points: 26900
+     ... Top 3 most frequent:
+    ....  (c1a6b0b2-20f9-34bd-ba6e-7127a9bc916b,996)
+    ....  (808a52d1-9ac9-30a5-8506-85c5e32d8a20,493)
+    ....  (74d8398a-dac5-335f-a21a-e28dc5af8e29,368)
 
 
-OD Query
----------------
+Submit Example Job Using Spark REST API
+----------------------------------------
 
-The OD query returns all the trajectories that traverse from the given origin (*O*) to the given destination (*D*).
+Users can also submit jobs remotely using the Spark REST API.
 
-Two options are available: 
+Write Your First Application with ST-Tool
+----------------------------------------
 
-1) OD query on given OD pairs
-2) query thoroughly on all possible OD pairs
+``ST-TOOL/src/main/scala/PointAnalysisApp`` can be used as a template for application writing. 
 
-To run OD query, go to ``ST-TOOLHOME/run`` and run 
-``stt odquery odconfig.json``
+Following is a step-by-step example of writing a CompanionExtractionApp (can be found at ``ST-TOOL/src/main/scala/CompanionApp``)
 
-The ``odconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
+- Set up Spark environment 
 
-    {
-        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-        "master": "spark", # "local" for single machine
-        "total-executor-cores": "8", # the total cores used
-        "executor-cores": "2", # number of CPU cores per executor
-        "executor-memory": "3500M", # the memory assigned to each executor
-        "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
-        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-        "query": "../datasets/odqueries.txt", # path to the file consisting query ODs OR "all" for generating the thorough OD matrix 
-        "numpartition": "8" # number of partitions. It can be set to be the same as number of CPU cores in the cluster. 
-        "resultsdir": "/datasets/tmpodres", # temporory directory to save the range query results in HDFS
-    }
+.. code-block:: scala    
 
-One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_od_config.py``. 
+    // common practice, only the appName needs to be changed
+    val spark = SparkSession
+        .builder()
+        .appName("PointAnalysisApp")
+        .master(Config.get("master"))
+        .getOrCreate()
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
 
-* Notes on file storage location:
 
-When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name. 
+- Parse input arguments 
 
-The ``mapfile`` is currently stored *locally* on **each** worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+.. code-block:: scala    
 
-The ``queryfile`` should *locally* stored on the master node.
+    // application specific;
+    // the arguments are read from Config.scala 
+    // or input by the user during spark-submit
+    val trajectoryFile = Config.get("hzData") // path to the trajectory file
+    val numPartitions = Config.get("numPartitions").toInt // number of partitions
+    val sQuery = Rectangle(args(0).split(",").map(_.toDouble)) // spatial range of selection
+    val tQuery = parseTemporalRange(args(1)) //temporal range of selection, should be one day with some margin (e.g. half an hour)
+    val queryThreshold = args(2).split(",").map(_.toDouble) // (spatial threshold, temporal threshold) for defining companion (unit: meter and second)
+    val sThreshold = queryThreshold.head
+    val tThreshold = queryThreshold.last
 
-After map matching is done, a folder is created at the specific location, which consists multiple ``.csv`` files named ``part-000...``. Each of the files is 
-the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
+    /**
+    * example input arguments: "118.35,29.183,120.5,30.55" "2020-07-31 23:30:00,2020-08-02 00:30:00" "500,600"
+    */
+    
 
-Speed Query
----------------
+- Initialize operators
 
-The ST-Tool supports two kinds of speed queries:
-    1) to find all trajectories within a **range** and within a speed limit
-    2) to find all trajectories with a specified **OD** and within a speed limit
+.. code-block:: scala    
 
-The map-matched trajectories are seperated into sub-trajectories implicitly where each subtrajectory corresponds to a road segment
-and the average speed of that subtrajectory is estimated. 
+    // the operator set consists of three components;
+    // default selector is normally used;
+    // st-tool provides most common convertors;
+    // the extractor is customized and in customExtractor package
+    val operator = new CustomOperatorSet(
+        DefaultSelector(numPartitions),
+        new Traj2PointConverter(Some(sQuery), Some(tQuery)),
+        new CompanionExtractor)
 
-To run speed query, go to ``ST-TOOLHOME/run`` and run 
-``stt speedquery speedconfig.json``
+- Read input data
 
-The ``speedconfig.json`` file should have the following fields (example: ``rqconfig-example.json``)::
+.. code-block:: scala    
 
-    {
-        "hadoopHome": "/usr/lib/hadoop-3.2.1" # path to Hadoop home
-        "master": "spark", # "local" for single machine
-        "total-executor-cores": "8", # the total cores used
-        "executor-cores": "2", # number of CPU cores per executor
-        "executor-memory": "3500M", # the memory assigned to each executor
-        "sparkmaster": "spark://Master:7077", # address of Spark master
-        "jarpackage": "../jars/st-tool-1.0.jar", # path to the .jar
-        "mmtrajfile": "/datasets/mm100000.csv", # path to the file consisting map-matched trajectory data (from the ST-Tool)
-        "mapfile": "../preprocessing/porto.csv",  # path to the file consisting road map data
-        "query": "../datasets/queries.txt", # path to the file consisting query ranges OR road IDs for mode "range" OR "id" respectively 
-        "mode": "range" # either "range" or "id", has to correspond to the query file
-        "speedrange": "120,200" # lower and higher limit of the query speed, seperated with a ","
-        "numpartition": "8" # number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster. 
-        "resultsdir": "/datasets/tmpspeedres", # temporory directory to save the range query results in HDFS
-    }
+        // use st-tool build-in function to read the trajectory data;
+        // if the data is with different format, a customized function can be applied;
+        // make sure that the result is RDD[Point] or RDD[Trajectory]
+        val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
-One way to generate this configuration file is using ``ST-TOOLHOME/run/gen_speed_config.py``. 
+        
 
-* Notes on file storage location:
 
-When using ST-Tool in a distributed cluster, the ``mmtrajfile`` is better to be stored in *HDFS* so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name. 
+- The three steps of calculation
+  
+.. code-block:: scala    
 
-The ``mapfile`` is currently stored *locally* on **each** worker node with the same directory name since the graph and text reading function cannot access HDFS currently.
+        // normally no need of changes
 
-The ``queryfile`` should *locally* stored on the master node.
+        /** step 1: Selection */
+        val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+        
+        /** step 2: Conversion */
+        val rdd2 = operator.converter.convert(rdd1)
 
-After map matching is done, a folder is created at the specific location, which consists multiple ``.csv`` files named ``part-000...``. Each of the files is 
-the production of an executor. To combine the files into a single file, a helper function ``ST-TOOLHOME/run/helper/combine.py`` can be used.
+        // optional
+        rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
+        println(s"--- Total points: ${rdd2.count}")
+        println(s"... Total ids: ${rdd2.map(_.attributes("tripID")).distinct.count}")
+        
+        /** step 3: Extraction */
+        val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold,
+         tThreshold, Config.get("tPartition").toInt)(rdd2)
+         
+        // optional
+        companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
+        rdd2.unpersist()
+        println("=== Start companion analysis: ")
+        
+        // print 5 examples
+        println("=== 5 examples: ")
+        companionPairsRDD.take(5).foreach { case (q, c) => println(s"  ... $q: $c") }
+        
+- Save results to HDFS as Json files
+
+.. code-block:: scala    
+
+        val schema = StructType(
+         Seq(
+           StructField("ID", StringType, nullable = false),
+           StructField("companion", MapType(LongType, StringType, valueContainsNull = false), nullable = false)
+         )
+
+        val resDF = spark.createDataFrame(companionPairsRDD.map(x => Row(x._1, x._2)), schema)
+        resDF.write.json(Config.get("resPath") + nextDay(tQuery._1))
+        
+

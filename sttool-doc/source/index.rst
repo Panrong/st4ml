@@ -6,15 +6,14 @@
 
 Welcome to ST-Tool's documentation!
 =======================================
-Version 1
+Version 2
 
 .. toctree::
    :maxdepth: 2
 
    installation
-   dataformat
    gettingstarted
-   benchmark
+   internal
 
 
 

@@ -24,18 +24,18 @@ class Traj2SpatialMapConverter(startTime: Long,
     println(s" Num sub-trajs after windowing: ${subTrajs.flatMap(x => x).count}")
     println(s" Debug: num trajs after windowing: ${subTrajs.flatMap(x => x.map(_._2.id.split("_")(0))).distinct.count}")
 
-    subTrajs.flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
+    val res = subTrajs.flatMap(x => x).mapPartitions(partition => { // now each (sub) trajectory only belongs to one partition
       if (partition.isEmpty) {
         Iterator(SpatialMap[Trajectory]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Trajectory])](0)))
       } else {
-        val regionMap = scala.collection.mutable.Map[Rectangle, scala.collection.mutable.ArrayBuffer[Trajectory]]()
+        var regionMap = scala.collection.mutable.Map[Rectangle, scala.collection.mutable.ArrayBuffer[Trajectory]]()
         var partitionID = 0
         while (partition.hasNext) {
           val (i, traj) = partition.next()
           val subRegionMap = regions.filter(region => traj.strictIntersect(region._2))
           for ((_, v) <- subRegionMap) {
             regionMap += ((v, if (regionMap.contains(v)) regionMap(v) ++ Array(traj)
-            else scala.collection.mutable.ArrayBuffer(traj)))
+            else collection.mutable.ArrayBuffer(traj)))
           }
           partitionID = i
         }
@@ -44,5 +44,6 @@ class Traj2SpatialMapConverter(startTime: Long,
           regionMap.mapValues(_.toArray).toArray))
       }
     }).filter(_.id != "Empty")
+    res
   }
 }

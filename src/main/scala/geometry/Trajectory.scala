@@ -118,9 +118,16 @@ case class Trajectory(tripID: String,
         case (li, e) => if (li.isEmpty || (li.last.last.coordinates.deep != e.head.coordinates.deep && li.last.length >= 2)) li :+ e
         else li.dropRight(1) :+ (li.last ++ e)
       }
-      Some(subtrajPoints.zipWithIndex.map {
-        case (points, id) => Trajectory(this.tripID + "_" + id.toString, points.head.timeStamp._1, points)
+      val res = Some(subtrajPoints.zipWithIndex.map {
+        case (points, id) => Trajectory(this.tripID + "_" + range.toString() + "_" + id.toString, points.head.timeStamp._1, points)
       })
+      //      println(this.id)
+      //      println(this.points.map(_.x).deep)
+      //      println(this.points.map(_.y).deep)
+      //      println(res.get.flatMap(_.points.map(_.x)).deep)
+      //      println(res.get.flatMap(_.points.map(_.y)).deep)
+
+      res
     }
   }
 

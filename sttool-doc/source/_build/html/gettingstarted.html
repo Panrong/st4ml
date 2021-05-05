@@ -3,9 +3,9 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>Getting Started with ST-Tool &mdash; ST-Tool 1.0 documentation</title>
   
@@ -16,7 +16,10 @@
 
   
   
+
   
+  
+
   
 
   
@@ -29,15 +32,14 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
     
     <script type="text/javascript" src="_static/js/theme.js"></script>
 
     
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Benchmark" href="benchmark.html" />
-    <link rel="prev" title="Data Format" href="dataformat.html" /> 
+    <link rel="next" title="ST-Tool Internals" href="internal.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -51,7 +53,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home" alt="Documentation Home"> ST-Tool
+            <a href="index.html" class="icon icon-home"> ST-Tool
           
 
           
@@ -84,15 +86,18 @@
             
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Data Format</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started with ST-Tool</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#map-matching">Map Matching</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#range-query">Range Query</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#od-query">OD Query</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#speed-query">Speed Query</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#preparation">Preparation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#modify-config-scala">Modify Config.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-the-application-project">Build the Application Project</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="benchmark.html">Benchmark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submit-example-job-using-spark-submit">Submit Example Job Using spark-submit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submit-example-job-using-spark-rest-api">Submit Example Job Using Spark REST API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#write-your-first-application-with-st-tool">Write Your First Application with ST-Tool</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="internal.html">ST-Tool Internals</a></li>
 </ul>
 
             
@@ -133,6 +138,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -144,7 +151,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/gettingstarted.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -160,154 +167,158 @@
             
   <div class="section" id="getting-started-with-st-tool">
 <h1>Getting Started with ST-Tool<a class="headerlink" href="#getting-started-with-st-tool" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="map-matching">
-<h2>Map Matching<a class="headerlink" href="#map-matching" title="Permalink to this headline">¶</a></h2>
-<p>The map matching module in the ST-Tool implements the widely used <a class="reference external" href="https://www.microsoft.com/en-us/research/publication/hidden-markov-map-matching-noise-sparseness/">Hidden Markov Model (HMM)</a> algorithm and supports data parallel execution.</p>
-<p>To run map matching, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
-<code class="docutils literal notranslate"><span class="pre">stt</span> <span class="pre">mapmatching</span> <span class="pre">mmconfig.json</span></code></p>
-<p>The <code class="docutils literal notranslate"><span class="pre">mmconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">mmconfig-example.json</span></code>)</p>
+<p>This chapter introduces how to use ST-Tool to run some applications. When working in a distributed system, the whole package has to be stored on the master server while the data should be stored in HDFS. All the operations are done on the master server unless otherwise specified.</p>
+<div class="section" id="preparation">
+<h2>Preparation<a class="headerlink" href="#preparation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modify-config-scala">
+<h3>Modify Config.scala<a class="headerlink" href="#modify-config-scala" title="Permalink to this headline">¶</a></h3>
+<p>Firstly, please modify <code class="docutils literal notranslate"><span class="pre">ST-TOOL/src/main/scala/Config.scala</span></code> accordingly. <code class="docutils literal notranslate"><span class="pre">Config.scala</span></code> contains information for two environments, namely <em>local</em> and <em>distributed</em>.
+Each configuration set should have the following fields</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;useHDFS&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span> <span class="c1"># use HDFS or not</span>
-    <span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
-    <span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
-    <span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
-    <span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
-    <span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
-    <span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
-    <span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../jars/st-tool-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
-    <span class="s2">&quot;trajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/porto_traj.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting trajectory data</span>
-    <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
-    <span class="s2">&quot;numtraj&quot;</span><span class="p">:</span> <span class="s2">&quot;10000&quot;</span><span class="p">,</span> <span class="c1"># number of trajectories to apply map matching</span>
-    <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpmmres&quot;</span><span class="p">,</span> <span class="c1"># directory to save the map matching results</span>
+    <span class="s2">&quot;master&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;local[*]&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">the</span> <span class="n">spark</span> <span class="n">master</span> <span class="n">url</span>
+    <span class="s2">&quot;numPartitions&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;16&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">number</span> <span class="n">of</span> <span class="n">partitions</span>
+    <span class="s2">&quot;hzData&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;datasets/traj_10000_converted.json&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">path</span> <span class="n">to</span> <span class="n">the</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">can</span> <span class="n">be</span> <span class="n">a</span> <span class="n">directory</span> <span class="ow">in</span> <span class="n">HDFS</span>
+    <span class="s2">&quot;resPath&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;out/&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">output</span> <span class="n">path</span><span class="p">,</span> <span class="n">can</span> <span class="n">be</span> <span class="n">a</span> <span class="n">directyory</span> <span class="ow">in</span> <span class="n">HDFS</span><span class="o">.</span> <span class="n">Make</span> <span class="n">sure</span> <span class="n">that</span> <span class="n">the</span> <span class="n">path</span> <span class="n">exists</span><span class="o">.</span>
+    <span class="s2">&quot;tPartition&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;4&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">number</span> <span class="n">of</span> <span class="n">partitions</span> <span class="ow">in</span> <span class="n">temporal</span> <span class="n">dimension</span>
+    <span class="s2">&quot;samplingRate&quot;</span> <span class="o">-&gt;</span> <span class="s2">&quot;0.5&quot;</span><span class="p">,</span> <span class="o">//</span> <span class="n">sampling</span> <span class="n">rate</span> <span class="k">for</span> <span class="n">partitioning</span> <span class="n">boundary</span> <span class="n">selection</span> <span class="ow">and</span> <span class="n">etc</span><span class="o">.</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_mm_config.py</span></code>.</p>
-<ul class="simple">
-<li><p>Notes on file storage location:</p></li>
-</ul>
-<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">trajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on each worker node with the same directory name since the graph reading function cannot access HDFS currently.</p>
-<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
-the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
-<div class="section" id="range-query">
-<h2>Range Query<a class="headerlink" href="#range-query" title="Permalink to this headline">¶</a></h2>
-<p>ST-Tool supports range query on the road network. The user inputs a map-matched trajectory dataset and a list of query ranges, ST-Tool will output the trajectories
-inside the query ranges.</p>
-<p>To run map matching, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
-<code class="docutils literal notranslate"><span class="pre">stt</span> <span class="pre">rangequery</span> <span class="pre">rqconfig.json</span></code></p>
-<p>The <code class="docutils literal notranslate"><span class="pre">rqconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">rqconfig-example.json</span></code>)</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
-    <span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
-    <span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
-    <span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
-    <span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
-    <span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
-    <span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../jars/st-tool-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
-    <span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
-    <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
-    <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges</span>
-    <span class="s2">&quot;gridsize&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># to partition the map into grids with length gridsize (in km)</span>
-    <span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions. It can be set to be the same as number of CPU cores in the cluster.</span>
-    <span class="s2">&quot;rtreecapacity&quot;</span><span class="p">:</span> <span class="mi">1000</span> <span class="c1"># RTree capacity, should not be less than square root of total number of trajectories</span>
-    <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmprqres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
-<span class="p">}</span>
+<div class="section" id="build-the-application-project">
+<h3>Build the Application Project<a class="headerlink" href="#build-the-application-project" title="Permalink to this headline">¶</a></h3>
+<p>Please build the project by typing</p>
+<div class="highlight-bashscript notranslate"><div class="highlight"><pre><span></span>sbt package
 </pre></div>
 </div>
-<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_rq_config.py</span></code>.</p>
-<ul class="simple">
-<li><p>Notes on file storage location:</p></li>
-</ul>
-<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">mmtrajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on <strong>each</strong> worker node with the same directory name since the graph and text reading function cannot access HDFS currently.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">queryfile</span></code> should <em>locally</em> stored on the master node.</p>
-<p>After map matching is done, a folder is created at the specific location, which consists multiple folders that one for each query. Each folder consists of multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
-the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
+<p>at the root directory of <code class="docutils literal notranslate"><span class="pre">ST-TOOL/</span></code>.</p>
+<p>sbt uses <code class="docutils literal notranslate"><span class="pre">ST-TOOL/build.sbt</span></code> to build the project. You may modify it accordingly. The compiled <code class="docutils literal notranslate"><span class="pre">.jar</span></code> file is located at
+<code class="docutils literal notranslate"><span class="pre">ST-TOOL/target/scala-2.12/classes/st-tool-app_2.12-0.1.jar</span></code></p>
+<p>The examples below are all based on <strong>PointAnalysisApp</strong> and the code is located at <code class="docutils literal notranslate"><span class="pre">ST-TOOL/src/main/scala/PointAnalysisApp</span></code>.</p>
 </div>
-<div class="section" id="od-query">
-<h2>OD Query<a class="headerlink" href="#od-query" title="Permalink to this headline">¶</a></h2>
-<p>The OD query returns all the trajectories that traverse from the given origin (<em>O</em>) to the given destination (<em>D</em>).</p>
-<p>Two options are available:</p>
-<ol class="arabic simple">
-<li><p>OD query on given OD pairs</p></li>
-<li><p>query thoroughly on all possible OD pairs</p></li>
-</ol>
-<p>To run OD query, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
-<code class="docutils literal notranslate"><span class="pre">stt</span> <span class="pre">odquery</span> <span class="pre">odconfig.json</span></code></p>
-<p>The <code class="docutils literal notranslate"><span class="pre">odconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">rqconfig-example.json</span></code>):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
-    <span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
-    <span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
-    <span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
-    <span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
-    <span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
-    <span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../jars/st-tool-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
-    <span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
-    <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
-    <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/odqueries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ODs OR &quot;all&quot; for generating the thorough OD matrix</span>
-    <span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions. It can be set to be the same as number of CPU cores in the cluster.</span>
-    <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpodres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
-<span class="p">}</span>
+</div>
+<div class="section" id="submit-example-job-using-spark-submit">
+<h2>Submit Example Job Using spark-submit<a class="headerlink" href="#submit-example-job-using-spark-submit" title="Permalink to this headline">¶</a></h2>
+<p>An example bashscript file for submitting the spark task can be found at <code class="docutils literal notranslate"><span class="pre">ST-TOOL/scripts/example-spark-submit.sh</span></code>.</p>
+<p>It is basically a common <code class="docutils literal notranslate"><span class="pre">spark-submit</span></code> command and you may adjust the parameters according to the acutal distributed environment.</p>
+<p>The explamentation of the parameters can be found at <a class="reference external" href="https://spark.apache.org/docs/latest/submitting-applications.html">Spark Documentation</a>.</p>
+<p>Example output of <strong>PointAnalysisApp</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">...</span> <span class="n">before</span> <span class="n">selection</span> <span class="mi">7486</span> <span class="n">trajectories</span>
+<span class="o">===</span> <span class="n">Analysing</span> <span class="n">Results</span><span class="p">:</span>
+ <span class="o">...</span> <span class="n">Total</span> <span class="n">number</span> <span class="n">of</span> <span class="n">trajectories</span><span class="p">:</span> <span class="mi">836</span>
+<span class="o">...</span> <span class="n">Total</span> <span class="n">number</span> <span class="n">of</span> <span class="n">points</span><span class="p">:</span> <span class="mi">26900</span>
+ <span class="o">...</span> <span class="n">Top</span> <span class="mi">3</span> <span class="n">most</span> <span class="n">frequent</span><span class="p">:</span>
+<span class="o">....</span>  <span class="p">(</span><span class="n">c1a6b0b2</span><span class="o">-</span><span class="mi">20</span><span class="n">f9</span><span class="o">-</span><span class="mi">34</span><span class="n">bd</span><span class="o">-</span><span class="n">ba6e</span><span class="o">-</span><span class="mi">7127</span><span class="n">a9bc916b</span><span class="p">,</span><span class="mi">996</span><span class="p">)</span>
+<span class="o">....</span>  <span class="p">(</span><span class="mi">808</span><span class="n">a52d1</span><span class="o">-</span><span class="mi">9</span><span class="n">ac9</span><span class="o">-</span><span class="mi">30</span><span class="n">a5</span><span class="o">-</span><span class="mi">8506</span><span class="o">-</span><span class="mi">85</span><span class="n">c5e32d8a20</span><span class="p">,</span><span class="mi">493</span><span class="p">)</span>
+<span class="o">....</span>  <span class="p">(</span><span class="mi">74</span><span class="n">d8398a</span><span class="o">-</span><span class="n">dac5</span><span class="o">-</span><span class="mi">335</span><span class="n">f</span><span class="o">-</span><span class="n">a21a</span><span class="o">-</span><span class="n">e28dc5af8e29</span><span class="p">,</span><span class="mi">368</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_od_config.py</span></code>.</p>
-<ul class="simple">
-<li><p>Notes on file storage location:</p></li>
-</ul>
-<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">mmtrajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on <strong>each</strong> worker node with the same directory name since the graph and text reading function cannot access HDFS currently.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">queryfile</span></code> should <em>locally</em> stored on the master node.</p>
-<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
-the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
 </div>
-<div class="section" id="speed-query">
-<h2>Speed Query<a class="headerlink" href="#speed-query" title="Permalink to this headline">¶</a></h2>
-<dl class="simple">
-<dt>The ST-Tool supports two kinds of speed queries:</dt><dd><ol class="arabic simple">
-<li><p>to find all trajectories within a <strong>range</strong> and within a speed limit</p></li>
-<li><p>to find all trajectories with a specified <strong>OD</strong> and within a speed limit</p></li>
-</ol>
-</dd>
-</dl>
-<p>The map-matched trajectories are seperated into sub-trajectories implicitly where each subtrajectory corresponds to a road segment
-and the average speed of that subtrajectory is estimated.</p>
-<p>To run speed query, go to <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run</span></code> and run
-<code class="docutils literal notranslate"><span class="pre">stt</span> <span class="pre">speedquery</span> <span class="pre">speedconfig.json</span></code></p>
-<p>The <code class="docutils literal notranslate"><span class="pre">speedconfig.json</span></code> file should have the following fields (example: <code class="docutils literal notranslate"><span class="pre">rqconfig-example.json</span></code>):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;hadoopHome&quot;</span><span class="p">:</span> <span class="s2">&quot;/usr/lib/hadoop-3.2.1&quot;</span> <span class="c1"># path to Hadoop home</span>
-    <span class="s2">&quot;master&quot;</span><span class="p">:</span> <span class="s2">&quot;spark&quot;</span><span class="p">,</span> <span class="c1"># &quot;local&quot; for single machine</span>
-    <span class="s2">&quot;total-executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span><span class="p">,</span> <span class="c1"># the total cores used</span>
-    <span class="s2">&quot;executor-cores&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="c1"># number of CPU cores per executor</span>
-    <span class="s2">&quot;executor-memory&quot;</span><span class="p">:</span> <span class="s2">&quot;3500M&quot;</span><span class="p">,</span> <span class="c1"># the memory assigned to each executor</span>
-    <span class="s2">&quot;sparkmaster&quot;</span><span class="p">:</span> <span class="s2">&quot;spark://Master:7077&quot;</span><span class="p">,</span> <span class="c1"># address of Spark master</span>
-    <span class="s2">&quot;jarpackage&quot;</span><span class="p">:</span> <span class="s2">&quot;../jars/st-tool-1.0.jar&quot;</span><span class="p">,</span> <span class="c1"># path to the .jar</span>
-    <span class="s2">&quot;mmtrajfile&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/mm100000.csv&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting map-matched trajectory data (from the ST-Tool)</span>
-    <span class="s2">&quot;mapfile&quot;</span><span class="p">:</span> <span class="s2">&quot;../preprocessing/porto.csv&quot;</span><span class="p">,</span>  <span class="c1"># path to the file consisting road map data</span>
-    <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;../datasets/queries.txt&quot;</span><span class="p">,</span> <span class="c1"># path to the file consisting query ranges OR road IDs for mode &quot;range&quot; OR &quot;id&quot; respectively</span>
-    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;range&quot;</span> <span class="c1"># either &quot;range&quot; or &quot;id&quot;, has to correspond to the query file</span>
-    <span class="s2">&quot;speedrange&quot;</span><span class="p">:</span> <span class="s2">&quot;120,200&quot;</span> <span class="c1"># lower and higher limit of the query speed, seperated with a &quot;,&quot;</span>
-    <span class="s2">&quot;numpartition&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span> <span class="c1"># number of partitions for RTree indexing. It can be set to be the same as number of CPU cores in the cluster.</span>
-    <span class="s2">&quot;resultsdir&quot;</span><span class="p">:</span> <span class="s2">&quot;/datasets/tmpspeedres&quot;</span><span class="p">,</span> <span class="c1"># temporory directory to save the range query results in HDFS</span>
-<span class="p">}</span>
+<div class="section" id="submit-example-job-using-spark-rest-api">
+<h2>Submit Example Job Using Spark REST API<a class="headerlink" href="#submit-example-job-using-spark-rest-api" title="Permalink to this headline">¶</a></h2>
+<p>Users can also submit jobs remotely using the Spark REST API.</p>
+</div>
+<div class="section" id="write-your-first-application-with-st-tool">
+<h2>Write Your First Application with ST-Tool<a class="headerlink" href="#write-your-first-application-with-st-tool" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ST-TOOL/src/main/scala/PointAnalysisApp</span></code> can be used as a template for application writing.</p>
+<p>Following is a step-by-step example of writing a CompanionExtractionApp (can be found at <code class="docutils literal notranslate"><span class="pre">ST-TOOL/src/main/scala/CompanionApp</span></code>)</p>
+<ul class="simple">
+<li><p>Set up Spark environment</p></li>
+</ul>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// common practice, only the appName needs to be changed</span>
+<span class="k">val</span> <span class="n">spark</span> <span class="o">=</span> <span class="nc">SparkSession</span>
+    <span class="o">.</span><span class="n">builder</span><span class="o">()</span>
+    <span class="o">.</span><span class="n">appName</span><span class="o">(</span><span class="s">&quot;PointAnalysisApp&quot;</span><span class="o">)</span>
+    <span class="o">.</span><span class="n">master</span><span class="o">(</span><span class="nc">Config</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;master&quot;</span><span class="o">))</span>
+    <span class="o">.</span><span class="n">getOrCreate</span><span class="o">()</span>
+<span class="k">val</span> <span class="n">sc</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">sparkContext</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">setLogLevel</span><span class="o">(</span><span class="s">&quot;ERROR&quot;</span><span class="o">)</span>
 </pre></div>
 </div>
-<p>One way to generate this configuration file is using <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/gen_speed_config.py</span></code>.</p>
 <ul class="simple">
-<li><p>Notes on file storage location:</p></li>
+<li><p>Parse input arguments</p></li>
 </ul>
-<p>When using ST-Tool in a distributed cluster, the <code class="docutils literal notranslate"><span class="pre">mmtrajfile</span></code> is better to be stored in <em>HDFS</em> so that all the workers can access it easily.
-Otherwise, the workers should have the same file with the same directory name.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">mapfile</span></code> is currently stored <em>locally</em> on <strong>each</strong> worker node with the same directory name since the graph and text reading function cannot access HDFS currently.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">queryfile</span></code> should <em>locally</em> stored on the master node.</p>
-<p>After map matching is done, a folder is created at the specific location, which consists multiple <code class="docutils literal notranslate"><span class="pre">.csv</span></code> files named <code class="docutils literal notranslate"><span class="pre">part-000...</span></code>. Each of the files is
-the production of an executor. To combine the files into a single file, a helper function <code class="docutils literal notranslate"><span class="pre">ST-TOOLHOME/run/helper/combine.py</span></code> can be used.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// application specific;</span>
+<span class="c1">// the arguments are read from Config.scala</span>
+<span class="c1">// or input by the user during spark-submit</span>
+<span class="k">val</span> <span class="n">trajectoryFile</span> <span class="o">=</span> <span class="nc">Config</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;hzData&quot;</span><span class="o">)</span> <span class="c1">// path to the trajectory file</span>
+<span class="k">val</span> <span class="n">numPartitions</span> <span class="o">=</span> <span class="nc">Config</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;numPartitions&quot;</span><span class="o">).</span><span class="n">toInt</span> <span class="c1">// number of partitions</span>
+<span class="k">val</span> <span class="n">sQuery</span> <span class="o">=</span> <span class="nc">Rectangle</span><span class="o">(</span><span class="n">args</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="n">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">toDouble</span><span class="o">))</span> <span class="c1">// spatial range of selection</span>
+<span class="k">val</span> <span class="n">tQuery</span> <span class="o">=</span> <span class="n">parseTemporalRange</span><span class="o">(</span><span class="n">args</span><span class="o">(</span><span class="mi">1</span><span class="o">))</span> <span class="c1">//temporal range of selection, should be one day with some margin (e.g. half an hour)</span>
+<span class="k">val</span> <span class="n">queryThreshold</span> <span class="o">=</span> <span class="n">args</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="n">split</span><span class="o">(</span><span class="s">&quot;,&quot;</span><span class="o">).</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">toDouble</span><span class="o">)</span> <span class="c1">// (spatial threshold, temporal threshold) for defining companion (unit: meter and second)</span>
+<span class="k">val</span> <span class="n">sThreshold</span> <span class="o">=</span> <span class="n">queryThreshold</span><span class="o">.</span><span class="n">head</span>
+<span class="k">val</span> <span class="n">tThreshold</span> <span class="o">=</span> <span class="n">queryThreshold</span><span class="o">.</span><span class="n">last</span>
+
+<span class="cm">/**</span>
+<span class="cm">* example input arguments: &quot;118.35,29.183,120.5,30.55&quot; &quot;2020-07-31 23:30:00,2020-08-02 00:30:00&quot; &quot;500,600&quot;</span>
+<span class="cm">*/</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Initialize operators</p></li>
+</ul>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// the operator set consists of three components;</span>
+<span class="c1">// default selector is normally used;</span>
+<span class="c1">// st-tool provides most common convertors;</span>
+<span class="c1">// the extractor is customized and in customExtractor package</span>
+<span class="k">val</span> <span class="n">operator</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">CustomOperatorSet</span><span class="o">(</span>
+    <span class="nc">DefaultSelector</span><span class="o">(</span><span class="n">numPartitions</span><span class="o">),</span>
+    <span class="k">new</span> <span class="nc">Traj2PointConverter</span><span class="o">(</span><span class="nc">Some</span><span class="o">(</span><span class="n">sQuery</span><span class="o">),</span> <span class="nc">Some</span><span class="o">(</span><span class="n">tQuery</span><span class="o">)),</span>
+    <span class="k">new</span> <span class="nc">CompanionExtractor</span><span class="o">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Read input data</p></li>
+</ul>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// use st-tool build-in function to read the trajectory data;</span>
+<span class="c1">// if the data is with different format, a customized function can be applied;</span>
+<span class="c1">// make sure that the result is RDD[Point] or RDD[Trajectory]</span>
+<span class="k">val</span> <span class="n">trajRDD</span> <span class="o">=</span> <span class="nc">ReadTrajJson</span><span class="o">(</span><span class="n">trajectoryFile</span><span class="o">,</span> <span class="n">numPartitions</span><span class="o">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>The three steps of calculation</p></li>
+</ul>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="c1">// normally no need of changes</span>
+
+<span class="cm">/** step 1: Selection */</span>
+<span class="k">val</span> <span class="n">rdd1</span> <span class="o">=</span> <span class="n">operator</span><span class="o">.</span><span class="n">selector</span><span class="o">.</span><span class="n">query</span><span class="o">(</span><span class="n">trajRDD</span><span class="o">,</span> <span class="n">sQuery</span><span class="o">,</span> <span class="n">tQuery</span><span class="o">)</span>
+
+<span class="cm">/** step 2: Conversion */</span>
+<span class="k">val</span> <span class="n">rdd2</span> <span class="o">=</span> <span class="n">operator</span><span class="o">.</span><span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="o">(</span><span class="n">rdd1</span><span class="o">)</span>
+
+<span class="c1">// optional</span>
+<span class="n">rdd2</span><span class="o">.</span><span class="n">persist</span><span class="o">(</span><span class="nc">StorageLevel</span><span class="o">.</span><span class="nc">MEMORY_AND_DISK_SER</span><span class="o">)</span>
+<span class="n">println</span><span class="o">(</span><span class="s">s&quot;--- Total points: </span><span class="si">${</span><span class="n">rdd2</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s">&quot;</span><span class="o">)</span>
+<span class="n">println</span><span class="o">(</span><span class="s">s&quot;... Total ids: </span><span class="si">${</span><span class="n">rdd2</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">attributes</span><span class="o">(</span><span class="s">&quot;tripID&quot;</span><span class="o">)).</span><span class="n">distinct</span><span class="o">.</span><span class="n">count</span><span class="si">}</span><span class="s">&quot;</span><span class="o">)</span>
+
+<span class="cm">/** step 3: Extraction */</span>
+<span class="k">val</span> <span class="n">companionPairsRDD</span> <span class="o">=</span> <span class="n">operator</span><span class="o">.</span><span class="n">extractor</span><span class="o">.</span><span class="n">optimizedExtract</span><span class="o">(</span><span class="n">sThreshold</span><span class="o">,</span>
+ <span class="n">tThreshold</span><span class="o">,</span> <span class="nc">Config</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;tPartition&quot;</span><span class="o">).</span><span class="n">toInt</span><span class="o">)(</span><span class="n">rdd2</span><span class="o">)</span>
+
+<span class="c1">// optional</span>
+<span class="n">companionPairsRDD</span><span class="o">.</span><span class="n">persist</span><span class="o">(</span><span class="nc">StorageLevel</span><span class="o">.</span><span class="nc">MEMORY_AND_DISK_SER</span><span class="o">)</span>
+<span class="n">rdd2</span><span class="o">.</span><span class="n">unpersist</span><span class="o">()</span>
+<span class="n">println</span><span class="o">(</span><span class="s">&quot;=== Start companion analysis: &quot;</span><span class="o">)</span>
+
+<span class="c1">// print 5 examples</span>
+<span class="n">println</span><span class="o">(</span><span class="s">&quot;=== 5 examples: &quot;</span><span class="o">)</span>
+<span class="n">companionPairsRDD</span><span class="o">.</span><span class="n">take</span><span class="o">(</span><span class="mi">5</span><span class="o">).</span><span class="n">foreach</span> <span class="o">{</span> <span class="k">case</span> <span class="o">(</span><span class="n">q</span><span class="o">,</span> <span class="n">c</span><span class="o">)</span> <span class="o">=&gt;</span> <span class="n">println</span><span class="o">(</span><span class="s">s&quot;  ... </span><span class="si">$q</span><span class="s">: </span><span class="si">$c</span><span class="s">&quot;</span><span class="o">)</span> <span class="o">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Save results to HDFS as Json files</p></li>
+</ul>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">schema</span> <span class="o">=</span> <span class="nc">StructType</span><span class="o">(</span>
+ <span class="nc">Seq</span><span class="o">(</span>
+   <span class="nc">StructField</span><span class="o">(</span><span class="s">&quot;ID&quot;</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="n">nullable</span> <span class="o">=</span> <span class="kc">false</span><span class="o">),</span>
+   <span class="nc">StructField</span><span class="o">(</span><span class="s">&quot;companion&quot;</span><span class="o">,</span> <span class="nc">MapType</span><span class="o">(</span><span class="nc">LongType</span><span class="o">,</span> <span class="nc">StringType</span><span class="o">,</span> <span class="n">valueContainsNull</span> <span class="o">=</span> <span class="kc">false</span><span class="o">),</span> <span class="n">nullable</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+ <span class="o">)</span>
+
+<span class="k">val</span> <span class="n">resDF</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">createDataFrame</span><span class="o">(</span><span class="n">companionPairsRDD</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">x</span> <span class="o">=&gt;</span> <span class="nc">Row</span><span class="o">(</span><span class="n">x</span><span class="o">.</span><span class="n">_1</span><span class="o">,</span> <span class="n">x</span><span class="o">.</span><span class="n">_2</span><span class="o">)),</span> <span class="n">schema</span><span class="o">)</span>
+<span class="n">resDF</span><span class="o">.</span><span class="n">write</span><span class="o">.</span><span class="n">json</span><span class="o">(</span><span class="nc">Config</span><span class="o">.</span><span class="n">get</span><span class="o">(</span><span class="s">&quot;resPath&quot;</span><span class="o">)</span> <span class="o">+</span> <span class="n">nextDay</span><span class="o">(</span><span class="n">tQuery</span><span class="o">.</span><span class="n">_1</span><span class="o">))</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -316,37 +327,29 @@ the production of an executor. To combine the files into a single file, a helper
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="benchmark.html" class="btn btn-neutral float-right" title="Benchmark" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="dataformat.html" class="btn btn-neutral float-left" title="Data Format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="internal.html" class="btn btn-neutral float-right" title="ST-Tool Internals" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2020, Tong Panrong, Liu Kaiqi
+        &#169; Copyright 2020, Tong Panrong, Liu Kaiqi.
 
     </p>
   </div>
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
