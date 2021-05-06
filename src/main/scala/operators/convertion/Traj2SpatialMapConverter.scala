@@ -12,12 +12,12 @@ class Traj2SpatialMapConverter(startTime: Long,
   override type I = Trajectory
   override type O = SpatialMap[Trajectory]
 
-  override def convert(rdd: RDD[(Int, Trajectory)]): RDD[SpatialMap[Trajectory]] = {
+  override def convert(rdd: RDD[Trajectory]): RDD[SpatialMap[Trajectory]] = {
     val numPartitions = if (timeInterval.isEmpty) rdd.getNumPartitions
     else (endTime - startTime).toInt / timeInterval.get + 1
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val timeRanges = partitioner.timeRanges
-    val repartitionedRDD = partitioner.partitionToMultiple(rdd.map(_._2))
+    val repartitionedRDD = partitioner.partitionToMultiple(rdd).zipWithIndex().map(x => (x._2.toInt, x._1))
     val subTrajs = repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).filter(_._2.isDefined)
       .map { case (id, trajs) => trajs.get.map((id, _)) }
 
@@ -28,7 +28,7 @@ class Traj2SpatialMapConverter(startTime: Long,
       if (partition.isEmpty) {
         Iterator(SpatialMap[Trajectory]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Trajectory])](0)))
       } else {
-        var regionMap = scala.collection.mutable.Map[Rectangle, scala.collection.mutable.ArrayBuffer[Trajectory]]()
+        val regionMap = scala.collection.mutable.Map[Rectangle, scala.collection.mutable.ArrayBuffer[Trajectory]]()
         var partitionID = 0
         while (partition.hasNext) {
           val (i, traj) = partition.next()

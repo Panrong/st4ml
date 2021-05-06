@@ -4,7 +4,7 @@ import geometry.Rectangle
 import operators.CustomOperatorSet
 import operators.convertion.Traj2SpatialMapConverter
 import operators.extraction.SpatialMapExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -36,7 +36,7 @@ object TrajSpatialMapDev {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      DefaultSelectorOld(numPartitions, sQuery, tQuery),
       //      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
       new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
       new SpatialMapExtractor)
@@ -44,8 +44,8 @@ object TrajSpatialMapDev {
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions).map(_.reorderTemporally())
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
-    println(s"--- ${rdd1.map(_._2.id).distinct.count} trajectories")
+    val rdd1 = operator.selector.query(trajRDD)
+    println(s"--- ${rdd1.map(_.id).distinct.count} trajectories")
     /** step 2: Conversion */
     var t = nanoTime()
     println("--- start conversion")
@@ -70,9 +70,9 @@ object TrajSpatialMapDev {
 
     /** benchmark */
     t = nanoTime()
-    val benchmark = rdd1.filter { case (_, traj) =>
+    val benchmark = rdd1.filter { traj =>
       traj.strictIntersect(sQuery, tQuery)
-    }.map(_._2.id).distinct
+    }.map(_.id).distinct
 
     //    println(benchmark.collect.filterNot(uniqueTrajs.collect().contains(_)).mkString("Array(", ", ", ")"))
     println(s"... Total ${benchmark.count} unique trajectories")

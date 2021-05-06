@@ -1,17 +1,16 @@
 package examples
 
-import operators.convertion.LegacyConverter
-import operators.extraction.SMExtractor
 import geometry.Rectangle
 import geometry.road.RoadGrid
-import org.apache.spark.sql.SparkSession
-import preprocessing.ReadMMTrajFile
+import operators.convertion.LegacyConverter
+import operators.extraction.SMExtractor
 import operators.selection.partitioner.{HashPartitioner, STRPartitioner}
 import operators.selection.selectionHandler.{FilterHandler, RTreeHandler, TemporalSelector}
+import org.apache.spark.sql.SparkSession
+import preprocessing.ReadMMTrajFile
+import utils.Config
 
 import java.lang.System.nanoTime
-import scala.io.Source
-import utils.Config
 
 object RoadMapDev {
   def main(args: Array[String]) {
@@ -64,7 +63,7 @@ object RoadMapDev {
     val pRDD = partitioner.partition(trajRDD)
     val partitionRange = partitioner.partitionRange
     val filterSelector = new FilterHandler(partitionRange)
-    val rtreeSelector = new RTreeHandler(partitionRange)
+    val rtreeSelector = RTreeHandler(partitionRange)
 
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
@@ -120,7 +119,7 @@ object RoadMapDev {
 
     /** add speed info */
     val roadGrid = RoadGrid(mapFile)
-    val speedRDD = queriedRDD3.map(x => (x._1, x._2.getRoadSpeed(roadGrid)))
+    val speedRDD = queriedRDD3.map(x => x.getRoadSpeed(roadGrid))
 
     /** test conversion */
     val converter = new LegacyConverter

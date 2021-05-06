@@ -9,14 +9,11 @@ import scala.reflect.ClassTag
 
 class FilterHandler(override val partitionRange: Map[Int, Rectangle]) extends SpatialHandler {
 
-  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
-                                           (queryRange: Rectangle): RDD[(Int, T)] = {
-    val spark = SparkContext.getOrCreate()
-    spark.broadcast(queryRange)
-    dataRDD
-      .filter(x =>
-        x._2.intersect(queryRange)
-          && queryRange.referencePoint(x._2).get.inside(partitionRange(x._1))
-      ) // filter by reference point
+  override def query[T <: Shape : ClassTag](dataRDD: RDD[T])
+                                           (queryRange: Rectangle): RDD[T] = {
+
+    dataRDD.zipWithIndex.filter(x => x._1.intersect(queryRange)
+      && queryRange.referencePoint(x._1).get.inside(partitionRange(x._2.toInt))
+    ).map(_._1)
   }
 }

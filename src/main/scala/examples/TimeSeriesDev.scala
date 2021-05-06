@@ -1,9 +1,9 @@
 package examples
 
 import geometry.Rectangle
-import operators.convertion.{LegacyConverter, Point2TimeSeriesConverter, Traj2PointConverter}
+import operators.convertion.{Point2TimeSeriesConverter, Traj2PointConverter}
 import operators.extraction.TimeSeriesExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import operators.selection.partitioner._
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
@@ -40,8 +40,8 @@ object TimeSeriesDev {
     val trajRDD = ReadTrajJson(trajFile, numPartitions)
 
     /** step 1: Selection */
-    val selector = DefaultSelector(numPartitions)
-    val rdd1 = selector.query(trajRDD, sQuery, tQuery)
+    val selector = DefaultSelectorOld(numPartitions, sQuery, tQuery)
+    val rdd1 = selector.query(trajRDD)
     rdd1.cache()
 
     /** step 2: Conversion */
@@ -51,7 +51,7 @@ object TimeSeriesDev {
         val (ts, te) = x.timeStamp
         ts <= tQuery._2 && te >= tQuery._1
       })
-      .filter(x => x.inside(sQuery)).map((0, _))
+      .filter(x => x.inside(sQuery))
     pointRDD.cache()
     pointRDD.take(1)
     println(s"Number of points: ${pointRDD.count}")
@@ -81,7 +81,7 @@ object TimeSeriesDev {
     /** benchmark */
     t = nanoTime()
     val benchmark = pointRDD.mapPartitions(iter => {
-      val points = iter.map(_._2).toArray
+      val points = iter.toArray
       slots.map(slot => {
         (slot, points.count(x => x.timeStamp._1 >= slot._1 && x.timeStamp._1 < slot._2))
       }).toIterator

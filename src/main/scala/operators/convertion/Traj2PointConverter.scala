@@ -9,12 +9,12 @@ class Traj2PointConverter(sRange: Option[Rectangle] = None, tRange: Option[(Long
   override type I = Trajectory
   override type O = Point
 
-  override def convert(rdd: RDD[(Int, Trajectory)]): RDD[Point] = {
+  override def convert(rdd: RDD[Trajectory]): RDD[Point] = {
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[Trajectory],
         classOf[Point]))
 
-    val res1 = rdd.map(_._2).flatMap(
+    val res1 = rdd.flatMap(
       traj => traj.points.map(p => {
         p.setAttributes(Map("tripID" -> traj.id))
       }))

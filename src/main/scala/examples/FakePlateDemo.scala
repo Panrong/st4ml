@@ -1,7 +1,7 @@
 package examples
 
 import geometry.{Rectangle, Trajectory}
-import operators.{CustomOperatorSet, OperatorSet}
+import operators.CustomOperatorSet
 import operators.convertion.DoNothingConverter
 import operators.extraction.FakePlateExtractor
 import operators.selection.DefaultSelector
@@ -33,7 +33,7 @@ object FakePlateDemo {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      new DefaultSelector(sQuery, tQuery),
       new DoNothingConverter[Trajectory],
       new FakePlateExtractor)
 
@@ -41,7 +41,7 @@ object FakePlateDemo {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */

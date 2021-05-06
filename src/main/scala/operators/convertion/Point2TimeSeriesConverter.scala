@@ -6,27 +6,26 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
+/**
+ * Convert points to timeSeries, where the dataset is spatially partitioned
+ * and each partition consists of one time series.
+ *
+ * @param startTime    : start time of all time series
+ * @param timeInterval : the length for temporal slicing
+ * @param partitioner  : extends spatial partitioner
+ * @tparam T : type of partitioner
+ * @return : rdd of timeSeries
+ */
 class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: Long,
                                                                     timeInterval: Int,
                                                                     partitioner: T) extends Converter {
-  /**
-   * Convert points to timeSeries, where the dataset is spatially partitioned
-   * and each partition consists of one time series.
-   *
-   * @param rdd          : point rdd after conversion
-   * @param startTime    : start time of all time series
-   * @param timeInterval : the length for temporal slicing
-   * @param partitioner  : extends spatial partitioner
-   * @tparam T : type of partitioner
-   * @return : rdd of timeSeries
-   */
 
   override type I = Point
   override type O = TimeSeries[Point]
 
-  override def convert(rdd: RDD[(Int, Point)])
+  override def convert(rdd: RDD[Point])
   : RDD[TimeSeries[Point]] = {
-    val repartitionedRDD = partitioner.partition(rdd.map(_._2))
+    val repartitionedRDD = partitioner.partition(rdd).zipWithIndex().mapValues(_.toInt)
     val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
     println(s"... Number of points per partition: " + s"${pointsPerPartition.deep}")
     repartitionedRDD.mapPartitions(partition =>
@@ -36,7 +35,7 @@ class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: L
         val slotMap = scala.collection.mutable.Map[Int, scala.collection.mutable.ArrayBuffer[Point]]()
         var partitionID = 0
         while (partition.hasNext) {
-          val (i, point) = partition.next()
+          val (point, i) = partition.next()
           val slot = ((point.timeStamp._1 - startTime) / timeInterval).toInt
           slotMap += ((slot, if (slotMap.contains(slot)) slotMap(slot) ++ Array(point) else scala.collection.mutable.ArrayBuffer(point)))
           partitionID = i

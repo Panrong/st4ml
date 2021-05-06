@@ -16,14 +16,13 @@ case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
       classOf[Rectangle],
       classOf[Shape]))
 
-  override def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])
-                                           (queryRange: Rectangle): RDD[(Int, T)] = {
+  override def query[T <: Shape : ClassTag](dataRDD: RDD[T])
+                                           (queryRange: Rectangle): RDD[T] = {
     val c = capacity.getOrElse({
       val dataSize = dataRDD.count
       max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
     }) // rule for capacity calculation if not given
     val dataRDDWithIndex = dataRDD
-      .map(x => x._2)
       .mapPartitionsWithIndex {
         (index, partitionIterator) => {
           val partitionsMap = scala.collection.mutable.Map[Int, List[T]]()
@@ -52,7 +51,7 @@ case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
       }
       .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
         .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
-        .map(x => (partitionID, x._1))
+        .map(x => x._1)
       }
   }
 }

@@ -4,7 +4,7 @@ import geometry.Rectangle
 import operators.CustomOperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.storage.StorageLevel
@@ -39,7 +39,7 @@ object CompanionDailyDev {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      DefaultSelectorOld(numPartitions, sQuery, tQuery),
       Traj2PointConverter(sQuery, tQuery),
       new PointCompanionExtractor)
 
@@ -47,7 +47,7 @@ object CompanionDailyDev {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     //    rdd1.cache()
 
     /** step 2: Conversion */

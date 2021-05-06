@@ -1,15 +1,12 @@
 package experiments
 
-import geometry.{Rectangle, Trajectory}
+import geometry.Rectangle
 import operators.CustomOperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
-import operators.selection.partitioner.HashPartitioner
-import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import preprocessing.{ReadTrajFile, ReadTrajJson}
+import preprocessing.ReadTrajJson
 import utils.Config
 import utils.TimeParsing.parseTemporalRange
 
@@ -42,7 +39,7 @@ object CompanionExp {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      new DefaultSelector(sQuery, tQuery),
       new Traj2PointConverter,
       new PointCompanionExtractor)
 
@@ -50,7 +47,7 @@ object CompanionExp {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     //    rdd1.cache()
 
     /** step 2: Conversion */

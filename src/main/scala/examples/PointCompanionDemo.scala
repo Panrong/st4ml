@@ -2,13 +2,13 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.{LegacyConverter, Traj2PointConverter}
+import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
-import utils.TimeParsing._
 import utils.Config
+import utils.TimeParsing._
 
 object PointCompanionDemo {
   def main(args: Array[String]): Unit = {
@@ -37,7 +37,7 @@ object PointCompanionDemo {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      DefaultSelectorOld(numPartitions, sQuery, tQuery),
       new Traj2PointConverter,
       new PointCompanionExtractor)
 
@@ -45,7 +45,7 @@ object PointCompanionDemo {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     //    rdd1.cache()
 
     /** step 2: Conversion */

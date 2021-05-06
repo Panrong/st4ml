@@ -11,8 +11,8 @@ class TimeSeries2SpatialMapConverter[T: ClassTag] extends Converter {
   override type O = SpatialMap[T]
 
   //one time series contains several temporal slots, each slot converts to a spatial map (of one spatial region)
-  override def convert(rdd: RDD[(Int, TimeSeries[T])]): RDD[SpatialMap[T]] = {
-    rdd.map(_._2).map(ts => {
+  override def convert(rdd: RDD[TimeSeries[T]]): RDD[SpatialMap[T]] = {
+    rdd.map(ts => {
       val slots = ts.series
       val timeStamp = (ts.startTime, ts.endTime)
       val spatialRange = ts.spatialRange

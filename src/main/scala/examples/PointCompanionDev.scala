@@ -49,7 +49,7 @@ object PointCompanionDev {
 
     /** step 1: selection */
 
-    val sRDD: RDD[(Int, Trajectory)] = spatialSelector.query(pRDD)(sQuery)
+    val sRDD = spatialSelector.query(pRDD)(sQuery)
     val stRDD = temporalSelector.query(sRDD)(tQuery)
 
     println(s"${stRDD.count} trajectories after spatio-temporal filtering")
@@ -73,7 +73,7 @@ object PointCompanionDev {
 
     /** step 3.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)
-    val queryPoints = converter.convert(queries.map((0, _)))
+    val queryPoints = converter.convert(queries)
     val queried1 = extractor.optimizedQueryWithIDs(500, 600)(pointRDD, queryPoints.collect) // 500m and 10min
     val count1 = queried1.mapValues(_.size).collect
     val queried2 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints)

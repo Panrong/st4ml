@@ -1,12 +1,12 @@
 package operators.extractor
 
 import geometry.Rectangle
-import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
+import operators.convertion.{Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
 import operators.selection.partitioner.QuadTreePartitioner
 import operators.selection.selectionHandler.RTreeHandler
 import org.scalatest.funsuite.AnyFunSuite
-import preprocessing.{ReadTrajFile, ReadTrajJson}
+import preprocessing.ReadTrajJson
 import setup.SharedSparkSession
 import utils.Config
 
@@ -14,7 +14,6 @@ class SpatialMapSuite extends AnyFunSuite with SharedSparkSession {
 
   test("spatial map range query") {
     val trajectoryFile = Config.get("hzData")
-    val numPartitions = Config.get("numPartitions").toInt
     val trajRDD = ReadTrajJson(trajectoryFile, 8)
     val partitioner = new QuadTreePartitioner(8, Some(0.5))
     val pRDD = partitioner.partition(trajRDD)
@@ -25,16 +24,16 @@ class SpatialMapSuite extends AnyFunSuite with SharedSparkSession {
 
     val converter = new Traj2PointConverter()
 
-    val pointRDD = converter.convert(queriedRDD).map((0, _))
-    val tStart = pointRDD.map(_._2.timeStamp).min._1
-    val tEnd = pointRDD.map(_._2.timeStamp).max._2
+    val pointRDD = converter.convert(queriedRDD)
+    val tStart = pointRDD.map(_.timeStamp).min._1
+    val tEnd = pointRDD.map(_.timeStamp).max._2
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange).convert(pointRDD)
 
     val extractor = new SpatialMapExtractor()
     val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
     val tQuery = (1597000000L, 1598000000L)
     val extractedRDD = extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
-    val gt = pointRDD.filter(p => p._2.inside(sQuery) && p._2.t <= tQuery._2 && p._2.t >= tQuery._1).count
+    val gt = pointRDD.filter(p => p.inside(sQuery) && p.t <= tQuery._2 && p.t >= tQuery._1).count
     println(extractedRDD.count)
     println(gt)
     assert(extractedRDD.count == gt)

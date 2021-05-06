@@ -8,11 +8,11 @@ import scala.reflect.ClassTag
 class HashPartitioner(numPartitions: Int) extends SpatialPartitioner with Serializable {
   override var samplingRate: Option[Double] = None
 
-  override def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  override def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val partitioner = new KeyPartitioner(numPartitions)
     val pRDD = dataRDD.map(x => (x.id.hashCode.abs % numPartitions, x))
       .partitionBy(partitioner)
-    pRDD
+    pRDD.map(_._2)
   }
 
   var partitionRange: Map[Int, Rectangle] =

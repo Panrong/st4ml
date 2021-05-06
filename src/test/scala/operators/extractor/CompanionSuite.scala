@@ -1,6 +1,6 @@
 package operators.extractor
 
-import operators.convertion.{LegacyConverter, Traj2PointConverter}
+import operators.convertion.Traj2PointConverter
 import operators.extraction.{PointCompanionExtractor, TrajCompanionExtractor}
 import org.scalatest.funsuite.AnyFunSuite
 import preprocessing.ReadTrajJson
@@ -16,8 +16,8 @@ class CompanionSuite extends AnyFunSuite with SharedSparkSession {
       }
     /** find companion of queries */
     val converter = new Traj2PointConverter()
-    val pointRDD = converter.convert(trajRDD.map((0, _))).repartition(16)
-    val queryPointRDD = converter.convert(queryRDD.map((0, _)))
+    val pointRDD = converter.convert(trajRDD).repartition(16)
+    val queryPointRDD = converter.convert(queryRDD)
     val extractor1 = new PointCompanionExtractor
 
     val queried1 = extractor1.optimizedQueryWithIDs(500, 600)(pointRDD, queryPointRDD.collect()).collect().toMap // 500m and 10min

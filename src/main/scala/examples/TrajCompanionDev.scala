@@ -47,13 +47,13 @@ object TrajCompanionDev {
 
     /** step 1: selection */
 
-    val sRDD: RDD[(Int, Trajectory)] = spatialSelector.query(pRDD)(sQuery)
+    val sRDD: RDD[Trajectory] = spatialSelector.query(pRDD)(sQuery)
     val stRDD = temporalSelector.query(sRDD)(tQuery)
 
     println(s"${stRDD.count} trajectories after spatio-temporal filtering")
 
     /** step 2: Conversion */
-    val rdd = stRDD.map(_._2)
+    val rdd = stRDD
 
     /** step 3: extraction */
     t = nanoTime()

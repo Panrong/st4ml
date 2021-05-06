@@ -30,14 +30,14 @@ object PointAnalysisDemo {
      */
 
     /** initialize operators */
-    val operator = new SttDefault(numPartitions)
+    val operator = new SttDefault(sQuery, tQuery)
 
     /** read input data */
     val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
     println(s" ... before selection ${trajRDD.count} trajectories")
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     rdd1.cache()
 
     /** step 2: Conversion */

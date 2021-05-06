@@ -2,9 +2,9 @@ package examples
 
 import geometry.Rectangle
 import operators.CustomOperatorSet
-import operators.convertion.{LegacyConverter, Traj2TimeSeriesConverter}
+import operators.convertion.Traj2TimeSeriesConverter
 import operators.extraction.TimeSeriesExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import operators.selection.partitioner.STRPartitioner
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
@@ -38,15 +38,15 @@ object TrajTimeSeriesDev {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
-      new Traj2TimeSeriesConverter( startTime = tQuery._1,
+      DefaultSelectorOld(numPartitions, sQuery, tQuery),
+      new Traj2TimeSeriesConverter(startTime = tQuery._1,
         timeInterval, new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))),
       new TimeSeriesExtractor)
     /** read input data */
     val trajRDD = ReadTrajJson(trajFile, numPartitions, clean = true)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     rdd1.cache()
     println(s"Number of trajectories: ${rdd1.count}")
 

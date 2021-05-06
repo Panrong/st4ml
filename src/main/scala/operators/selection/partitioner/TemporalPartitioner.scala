@@ -2,7 +2,6 @@ package operators.selection.partitioner
 
 import geometry.{Rectangle, Shape}
 import org.apache.spark
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -41,7 +40,7 @@ class TemporalPartitioner(startTime: Long,
   }
 
   //assign one object to all its overlapping partitions
-  def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val slotsRDD = dataRDD.flatMap(x => {
       ((x.timeStamp._1 - startTime).toInt / timeInterval / numSlotsPerPartition to
         (x.timeStamp._2 - startTime).toInt / timeInterval / numSlotsPerPartition)
@@ -50,16 +49,16 @@ class TemporalPartitioner(startTime: Long,
       .filter(x => x._1 < numPartitions && x._1 >= 0)
 
     val a = slotsRDD.collect
-    for(x <- a) {
-      if(!x._2.temporalOverlap(x._2.timeStamp, timeRanges(x._1))) println(x, timeRanges(x._1))
+    for (x <- a) {
+      if (!x._2.temporalOverlap(x._2.timeStamp, timeRanges(x._1))) println(x, timeRanges(x._1))
     }
 
-    slotsRDD.partitionBy(new KeyPartitioner(numPartitions))
+    slotsRDD.partitionBy(new KeyPartitioner(numPartitions)).map(_._2)
   }
 
   //timeInterval is ignored
   def partitionWithOverlap[T <: geometry.Shape : ClassTag]
-  (dataRDD: RDD[T], overlap: Double = 0, tPartition: Int = numPartitions, even: Boolean = true): RDD[(Int, T)] = {
+  (dataRDD: RDD[T], overlap: Double = 0, tPartition: Int = numPartitions, even: Boolean = true): RDD[T] = {
     val temporalRanges = if (even) {
       getTemporalRange(dataRDD, Config.get("samplingRate").toDouble, tPartition, overlap)
     } else {
@@ -67,7 +66,7 @@ class TemporalPartitioner(startTime: Long,
     }
     dataRDD.map(x => allocateTemporalPartitions(x.timeStamp._1, temporalRanges).map((_, x)))
       .flatMap(x => x)
-      .partitionBy(new KeyPartitioner(tPartition))
+      .partitionBy(new KeyPartitioner(tPartition)).map(_._2)
   }
 
   /**
@@ -86,7 +85,7 @@ class TemporalPartitioner(startTime: Long,
                                                     gridSize: Int,
                                                     tOverlap: Double = 0,
                                                     sOverlap: Double = 0,
-                                                    spatialRange: Option[Array[Double]] = None): RDD[(Int, T)] = {
+                                                    spatialRange: Option[Array[Double]] = None): RDD[T] = {
     val sRange = spatialRange.getOrElse {
       val coordinatesRDD = dataRDD.map(_.mbr.coordinates)
       Array(coordinatesRDD.map(x => x(0)).min,
@@ -96,14 +95,14 @@ class TemporalPartitioner(startTime: Long,
     val sPartitions = gridPartition(sRange, gridSize)
     val tPartition = numPartitions / gridSize / gridSize
     assert(tPartition >= 2, "the square of gridSize should be less than half of numPartitions")
-    val tPartitionedRDD = partitionWithOverlap(dataRDD, tOverlap, tPartition)
+    val tPartitionedRDD = partitionWithOverlap(dataRDD, tOverlap, tPartition).zipWithIndex()
     tPartitionedRDD.map {
-      case (tId, x) => {
+      case (x, tId) =>
         allocateSpatialPartitions(x, sPartitions, sOverlap)
           .map(sId => (tId * gridSize * gridSize + sId, x))
-      }
     }.flatMap(x => x)
       .partitionBy(new KeyPartitioner(numPartitions))
+      .map(_._2)
   }
 
   /**
@@ -140,10 +139,10 @@ class TemporalPartitioner(startTime: Long,
         }
       }
     }
-//    println(s".... Temporal partitioning the sampled points into ${temporalPartitionedSamples.size} partitions, \n" +
-//      s".... Number of points per partition: ${temporalPartitionedSamples.values.map(_.length)}\n" +
-//      s".... after scaling to estimate the whole dataset," +
-//      s"${temporalPartitionedSamples.values.map(x => (x.length / samplingRate).toInt)} ")
+    //    println(s".... Temporal partitioning the sampled points into ${temporalPartitionedSamples.size} partitions, \n" +
+    //      s".... Number of points per partition: ${temporalPartitionedSamples.values.map(_.length)}\n" +
+    //      s".... after scaling to estimate the whole dataset," +
+    //      s"${temporalPartitionedSamples.values.map(x => (x.length / samplingRate).toInt)} ")
     val stRanges = temporalPartitionedSamples.mapValues(points => str(points, numPartitions / tPartition, samplingRate)).toArray.flatMap {
       case (t, s) => s.map(x => (x._1 + t._2 * s.length, t._1, x._2))
     }

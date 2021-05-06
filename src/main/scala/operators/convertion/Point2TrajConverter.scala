@@ -9,12 +9,12 @@ class Point2TrajConverter(timeSplit: Double = 600) extends Converter {
   override type I = Point
   override type O = Trajectory
 
-  override def convert(rdd: RDD[(Int, Point)]): RDD[Trajectory] = {
+  override def convert(rdd: RDD[Point]): RDD[Trajectory] = {
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[Trajectory],
         classOf[Point]))
     val numPartitions = rdd.getNumPartitions
-    rdd.map(p => (p._2.attributes("tripID"), p._2))
+    rdd.map(p => (p.attributes("tripID"), p))
       .groupByKey()
       .coalesce(numPartitions)
       .mapValues(points => {

@@ -10,7 +10,7 @@ class Raster2TimeSeriesConverter[T: ClassTag] extends Converter {
   override type O = TimeSeries[T]
 
   // convert the raster elements inside one partition to one time series
-  override def convert(rdd: RDD[(Int, Raster[T])]): RDD[TimeSeries[T]] = rdd.map(_._2).mapPartitions(
+  override def convert(rdd: RDD[Raster[T]]): RDD[TimeSeries[T]] = rdd.mapPartitions(
     iter => {
       val rasters = iter.toArray
       val combinedRaster = rasters.head.aggregateSpatial(rasters.drop(1))

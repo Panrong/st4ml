@@ -8,5 +8,6 @@ import scala.reflect.ClassTag
 abstract class SpatialPartitioner extends Serializable {
   var partitionRange: Map[Int, Rectangle]
   var samplingRate: Option[Double]
-  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)]
+
+  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T]
 }

@@ -8,7 +8,5 @@ class DoNothingConverter[T: ClassTag] extends Converter {
   override type I = T
   override type O = T
 
-  override def convert(rdd: RDD[(Int, T)]): RDD[T] = {
-    rdd.map(_._2)
-  }
+  override def convert(rdd: RDD[T]): RDD[T] = rdd
 }

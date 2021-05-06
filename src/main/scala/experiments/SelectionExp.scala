@@ -2,10 +2,9 @@ package experiments
 
 import geometry.{Point, Rectangle, Shape}
 import operators.convertion.Traj2PointConverter
-import operators.selection.DefaultSelector
 import operators.selection.indexer.RTree
 import operators.selection.partitioner.HashPartitioner
-import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
+import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
@@ -36,7 +35,7 @@ object SelectionExp extends App {
     .persist(StorageLevel.MEMORY_AND_DISK)
   val dataSize = trajRDD.count
   val converter = new Traj2PointConverter()
-  val pointRDD = converter.convert(trajRDD.map((0, _)))
+  val pointRDD = converter.convert(trajRDD)
   pointRDD.cache()
   pointRDD.take(1)
 
@@ -137,13 +136,12 @@ object SelectionExp extends App {
 
     var rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
 
-    def genRTreeRDD(dataRDD: RDD[(Int, Point)]): RDD[(Int, RTree[Point])] = {
+    def genRTreeRDD(dataRDD: RDD[Point]): RDD[(Int, RTree[Point])] = {
       val c = capacity.getOrElse({
         val dataSize = dataRDD.count
         max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
       }) // rule for capacity calculation if not given
       val dataRDDWithIndex = dataRDD
-        .map(x => x._2)
         .mapPartitionsWithIndex {
           (index, partitionIterator) => {
             val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()
@@ -168,7 +166,7 @@ object SelectionExp extends App {
         })
     }
 
-    def query(dataRDD: RDD[(Int, Point)])(queryRange: Rectangle): RDD[(Int, Point)] = {
+    def query(dataRDD: RDD[Point])(queryRange: Rectangle): RDD[Point] = {
       rTreeRDD.getOrElse {
         println("generated RTree RDD")
         rTreeRDD = Some(genRTreeRDD(dataRDD))
@@ -179,7 +177,7 @@ object SelectionExp extends App {
         }
         .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
           .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
-          .map(x => (partitionID, x._1))
+          .map(x => x._1)
         }
     }
   }

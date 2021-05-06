@@ -54,8 +54,8 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
     println(trajRDD.count)
     println(s"Average length:  ${trajRDD.map(_.points.length).aggregate(0)(_ + _, _ + _) / trajRDD.count}")
     val converter = new Traj2PointConverter()
-    val pointRDD = converter.convert(trajRDD.map((0, _)))
-    val convertedTrajRDD = new Point2TrajConverter().convert(pointRDD.map((0, _)))
+    val pointRDD = converter.convert(trajRDD)
+    val convertedTrajRDD = new Point2TrajConverter().convert(pointRDD)
     println(convertedTrajRDD.count)
     println(s"Average length:  ${convertedTrajRDD.map(_.points.length).aggregate(0)(_ + _, _ + _) / trajRDD.count}")
   }
@@ -117,13 +117,13 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
 
     val converter = new Traj2PointConverter
 
-    val pointRDD = converter.convert(queriedRDD).map((0, _))
+    val pointRDD = converter.convert(queriedRDD)
 
     val tsRDD = new Point2TimeSeriesConverter(1372636854, 100, new QuadTreePartitioner(8, samplingRate = Some(1))).convert(pointRDD)
     println(tsRDD.count)
     tsRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
     assert(tsRDD.map(_.series.flatten.length).reduce(_ + _) == pointRDD.count)
-    val convertBack = new TimeSeries2PointConverter().convert(tsRDD.map((0, _))).count
+    val convertBack = new TimeSeries2PointConverter().convert(tsRDD).count
     assert(convertBack == pointRDD.count)
   }
 
@@ -140,13 +140,13 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
 
     val converter = new Traj2PointConverter
 
-    val pointRDD = converter.convert(queriedRDD).map((0, _))
-    val tStart = pointRDD.map(_._2.timeStamp).min._1
-    val tEnd = pointRDD.map(_._2.timeStamp).max._2
+    val pointRDD = converter.convert(queriedRDD)
+    val tStart = pointRDD.map(_.timeStamp).min._1
+    val tEnd = pointRDD.map(_.timeStamp).max._2
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange).convert(pointRDD)
     val totalPoints = spatialMapRDD.flatMap(sm => sm.contents).map(_._2.length).reduce(_ + _)
     assert(totalPoints == pointRDD.count)
-    val convertedBack = new SpatialMap2PointConverter().convert(spatialMapRDD.map((0, _))).count
+    val convertedBack = new SpatialMap2PointConverter().convert(spatialMapRDD).count
     assert(convertedBack == totalPoints)
   }
 
@@ -163,16 +163,16 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
 
     val converter = new Traj2PointConverter()
 
-    val pointRDD = converter.convert(queriedRDD).map((0, _))
-    val tStart = pointRDD.map(_._2.timeStamp).min._1
-    val tEnd = pointRDD.map(_._2.timeStamp).max._2
+    val pointRDD = converter.convert(queriedRDD)
+    val tStart = pointRDD.map(_.timeStamp).min._1
+    val tEnd = pointRDD.map(_.timeStamp).max._2
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange).convert(pointRDD)
     val totalPoints = spatialMapRDD.flatMap(sm => sm.contents).map(_._2.length).reduce(_ + _)
     assert(totalPoints == pointRDD.count)
-    val convertedBack = new SpatialMap2PointConverter().convert(spatialMapRDD.map((0, _))).count
+    val convertedBack = new SpatialMap2PointConverter().convert(spatialMapRDD).count
     assert(convertedBack == totalPoints)
 
-    val rasterRDD = new SpatialMap2RasterConverter().convert(spatialMapRDD.map((0, _)))
+    val rasterRDD = new SpatialMap2RasterConverter().convert(spatialMapRDD)
     for (raster <- rasterRDD.collect) {
       //      println("Raster : " + raster.id)
       //      println(" spatial range: " + raster.spatialRange())
@@ -183,7 +183,7 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
       assert(raster.contents.head.temporalRange == raster.temporalRange())
     }
     val convertedTSRDD = rasterRDD.flatMap(x => x.contents)
-    val convertBack = new TimeSeries2PointConverter().convert(convertedTSRDD.map((0, _))).count
+    val convertBack = new TimeSeries2PointConverter().convert(convertedTSRDD).count
     assert(convertBack == totalPoints)
   }
 
@@ -200,16 +200,16 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
 
     val converter = new Traj2PointConverter()
 
-    val pointRDD = converter.convert(queriedRDD).map((0, _))
+    val pointRDD = converter.convert(queriedRDD)
 
     val tsRDD = new Point2TimeSeriesConverter(1372636854, 100, new QuadTreePartitioner(8, samplingRate = Some(1))).convert(pointRDD)
     println(tsRDD.count)
     tsRDD.take(5).foreach(x => println(s"${x.id}, ${x.startTime}, ${x.timeInterval}, ${x.series.map(i => i.map(j => j.t)).deep}"))
     assert(tsRDD.map(_.series.flatten.length).reduce(_ + _) == pointRDD.count)
-    val convertBack = new TimeSeries2PointConverter().convert(tsRDD.map((0, _))).count
+    val convertBack = new TimeSeries2PointConverter().convert(tsRDD).count
     assert(convertBack == pointRDD.count)
 
-    val rasterRDD = new TimeSeries2RasterConverter(100).convert(tsRDD.map((0, _)))
+    val rasterRDD = new TimeSeries2RasterConverter(100).convert(tsRDD)
     for (raster <- rasterRDD.collect) {
       //      println("Raster : " + raster.id)
       //      println(" spatial range: " + raster.spatialRange())
@@ -220,7 +220,7 @@ class ConverterSuite extends AnyFunSuite with SharedSparkSession {
       assert(raster.contents.head.temporalRange == raster.temporalRange())
     }
     val convertedTSRDD = rasterRDD.flatMap(x => x.contents)
-    val convertBack2 = new TimeSeries2PointConverter().convert(convertedTSRDD.map((0, _))).count
+    val convertBack2 = new TimeSeries2PointConverter().convert(convertedTSRDD).count
     assert(convertBack2 == pointRDD.count)
   }
 }

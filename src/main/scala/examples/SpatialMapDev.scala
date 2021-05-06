@@ -4,7 +4,7 @@ import geometry.Rectangle
 import operators.CustomOperatorSet
 import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
-import operators.selection.DefaultSelector
+import operators.selection.DefaultSelectorOld
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -34,7 +34,7 @@ object SpatialMapDev {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelector(numPartitions),
+      DefaultSelectorOld(numPartitions, sQuery, tQuery),
       new LegacyConverter,
       new SpatialMapExtractor)
 
@@ -42,15 +42,13 @@ object SpatialMapDev {
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
 
     /** step 1: Selection */
-    val rdd1 = operator.selector.query(trajRDD, sQuery, tQuery)
+    val rdd1 = operator.selector.query(trajRDD)
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
     val converter = new Traj2PointConverter()
-    val pointRDD = converter.convert(rdd1).map((0, _))
-      .filter {
-        case (_, p) => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd
-      }
+    val pointRDD = converter.convert(rdd1)
+      .filter(p => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd)
     println(s"    <- debug: num of points before conversion: ${pointRDD.count}")
 
     var t = nanoTime()
@@ -75,7 +73,7 @@ object SpatialMapDev {
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     t = nanoTime()
-    val gt = pointRDD.filter(p => p._2.inside(sQuery) && p._2.t <= tQuery._2 && p._2.t >= tQuery._1).count
+    val gt = pointRDD.filter(p => p.inside(sQuery) && p.t <= tQuery._2 && p.t >= tQuery._1).count
     println(s"... (Benchmark) Total $gt points")
     println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }

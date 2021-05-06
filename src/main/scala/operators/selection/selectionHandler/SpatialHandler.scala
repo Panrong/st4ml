@@ -7,7 +7,7 @@ import scala.reflect.ClassTag
 
 abstract class SpatialHandler extends Serializable {
   val partitionRange: Map[Int, Rectangle]
-  def query[T <: Shape : ClassTag](dataRDD: RDD[(Int, T)])(queryRange: Rectangle): RDD[(Int, T)]
+  def query[T <: Shape : ClassTag](dataRDD: RDD[T])(queryRange: Rectangle): RDD[T]
 }
 
 

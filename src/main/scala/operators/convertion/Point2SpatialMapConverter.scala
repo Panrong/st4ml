@@ -13,12 +13,12 @@ class Point2SpatialMapConverter(startTime: Long,
   override type I = Point
   override type O = SpatialMap[Point]
 
-  override def convert(rdd: RDD[(Int, Point)]): RDD[SpatialMap[Point]] = {
+  override def convert(rdd: RDD[Point]): RDD[SpatialMap[Point]] = {
     val numPartitions = if (timeInterval.isEmpty) rdd.getNumPartitions
     else (endTime - startTime).toInt / timeInterval.get + 1
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val duration = timeInterval.getOrElse((endTime - startTime).toInt / numPartitions + 1)
-    val repartitionedRDD = partitioner.partition(rdd.map(_._2))
+    val repartitionedRDD = partitioner.partition(rdd)
     val boundary = genBoundary(regions)
     repartitionedRDD.mapPartitionsWithIndex {
       case (_, partition) =>

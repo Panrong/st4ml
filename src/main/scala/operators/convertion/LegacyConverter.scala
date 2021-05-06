@@ -27,7 +27,7 @@ class LegacyConverter extends Serializable {
       .map(x => RoadMap(roadID = x._1, attributes = x._2))
   }
 
-  def trajSpeed2RoadMap(rdd: RDD[(Int, mmTrajectory)]):
+  def trajSpeed2RoadMap(rdd: RDD[mmTrajectory]):
   RDD[RoadMap[Array[(Long, String, Double)]]] = {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
@@ -36,7 +36,7 @@ class LegacyConverter extends Serializable {
 
     val numPartitions = rdd.getNumPartitions
     rdd.flatMap {
-      case (_, traj) =>
+      traj =>
         traj.roads.map(x => (x, traj.id)) zip traj.speed.map(_._2)
     }
       .map(x => (x._1._1._1, (x._1._1._2, x._1._2, x._2))) // (roadID, (timeStamp, trajID, speed))
@@ -79,31 +79,6 @@ class LegacyConverter extends Serializable {
         case (edge, points) => RoadMap(edge, points.toArray.distinct)
       }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

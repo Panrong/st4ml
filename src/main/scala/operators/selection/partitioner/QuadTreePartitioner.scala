@@ -12,14 +12,14 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
 
   override var partitionRange: Map[Int, Rectangle] = Map()
 
-  override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  override def partition[T <: Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     partitionRange = getPartitionRange(dataRDD)
     //    partitionRange.keys.foreach(x => println(partitionRange(x)))
     val partitioner = new KeyPartitioner(exactNumPartitions)
     val boundary = genBoundary(partitionRange)
     val pRDD = assignPartition(dataRDD, partitionRange, boundary)
       .partitionBy(partitioner)
-    pRDD
+    pRDD.map(_._2)
   }
 
   var exactNumPartitions: Int = ((numPartitions - 1) / 3) * 3 + 1

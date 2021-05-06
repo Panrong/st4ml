@@ -9,8 +9,8 @@ class TimeSeries2RasterConverter[T <: Shape : ClassTag](timeInterval: Int) exten
   override type I = TimeSeries[T]
   override type O = Raster[T]
 
-  override def convert(rdd: RDD[(Int, TimeSeries[T])]): RDD[Raster[T]] = {
-    rdd.map(_._2).mapPartitions(iter => {
+  override def convert(rdd: RDD[TimeSeries[T]]): RDD[Raster[T]] = {
+    rdd.mapPartitions(iter => {
       val ts = iter.toArray.head
       val subTimeSeries = ts.splitByInterval(timeInterval)
       subTimeSeries.zipWithIndex.map {
