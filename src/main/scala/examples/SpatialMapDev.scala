@@ -54,17 +54,22 @@ object SpatialMapDev {
     println(s"    <- debug: num of points before conversion: ${pointRDD.count}")
 
     var t = nanoTime()
+    println(partitionRange)
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)).convert(pointRDD).cache()
-    println(s"    <- debug: num of points after conversion: ${spatialMapRDD.flatMap(_.contents).flatMap(x=>x._2).count}")
+    println(s"    <- debug: num of points after conversion: ${spatialMapRDD.flatMap(_.contents).flatMap(x => x._2).count}")
     spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
-    /** step 3: Extraction */
+    /** step 3.1: Extraction.GenHeatMap */
     t = nanoTime()
-//    spatialMapRDD.map(_.printInfo()).foreach(println(_))
-    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
+    //    spatialMapRDD.map(_.printInfo()).foreach(println(_))
+    val countPerRegion = operator.extractor.countPerRegion(spatialMapRDD, tQuery).collect
+    //    println(countPerRegion.map(_._2).sum)
+    countPerRegion.foreach(println(_))
     println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
 
+    /** step 3.2: Extraction.RangeQuery */
     t = nanoTime()
     println(s"... Total ${extractedRDD.count} points")
     println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")

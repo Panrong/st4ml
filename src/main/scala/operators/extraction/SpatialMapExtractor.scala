@@ -35,4 +35,14 @@ class SpatialMapExtractor extends Extractor {
     else false
   }
 
+  //to generate a heatmap
+  def countPerRegion[T <: Shape : ClassTag](rdd: RDD[SpatialMap[T]], t: (Long, Long)): RDD[(Rectangle, Int)] = {
+    rdd.filter(x => temporalOverlap(x.timeStamp, t))
+      .flatMap(_.contents)
+      .mapValues(_.map(x => x.id))
+      .reduceByKey(_ ++ _)
+      .map(x => (x._1.coordinates.toList, x._2.length))
+      .reduceByKey(_ + _)
+      .map(x => (Rectangle(x._1.toArray), x._2))
+  }
 }

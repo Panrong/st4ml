@@ -14,7 +14,7 @@ import scala.util.Random
 /**
  * Compare the time usage of selection(repartition + rtree) vs filtering on different selectivities
  */
-object selectionExp extends App {
+object SelectionExp extends App {
   val spark = SparkSession.builder()
     .appName("SelectorExp")
     .master(Config.get("master"))
