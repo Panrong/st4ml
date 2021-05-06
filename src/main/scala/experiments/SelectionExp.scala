@@ -130,7 +130,7 @@ object SelectionExp extends App {
         classOf[Rectangle],
         classOf[Shape]))
 
-    val rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
+    var rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
 
     def genRTreeRDD(dataRDD: RDD[(Int, Point)]): RDD[(Int, RTree[Point])] = {
       val c = capacity.getOrElse({
@@ -164,7 +164,11 @@ object SelectionExp extends App {
     }
 
     def query(dataRDD: RDD[(Int, Point)])(queryRange: Rectangle): RDD[(Int, Point)] = {
-      rTreeRDD.getOrElse(genRTreeRDD(dataRDD))
+      rTreeRDD.getOrElse {
+        println("generated RTree RDD")
+        rTreeRDD = Some(genRTreeRDD(dataRDD))
+        rTreeRDD.get
+      }
         .filter {
           case (_, rtree) => rtree.numEntries != 0 && rtree.root.m_mbr.intersect(queryRange)
         }
