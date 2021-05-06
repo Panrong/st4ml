@@ -20,7 +20,7 @@ object FakePlateDemo {
       .appName("FakePlateDemo")
       .getOrCreate()
 
-    /** parse inpuy arguments */
+    /** parse input arguments */
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
     val sQuery = Rectangle(args(0).split(",").map(_.toDouble))

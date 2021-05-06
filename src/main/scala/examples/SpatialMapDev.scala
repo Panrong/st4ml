@@ -4,12 +4,12 @@ import geometry.Rectangle
 import operators.CustomOperatorSet
 import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
-import operators.selection.DefaultSelectorOld
+import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
-import utils.TimeParsing.parseTemporalRange
 import utils.SpatialProcessing.gridPartition
+import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
 
@@ -34,7 +34,7 @@ object SpatialMapDev {
 
     /** initialize operators */
     val operator = new CustomOperatorSet(
-      DefaultSelectorOld(numPartitions, sQuery, tQuery),
+      new DefaultSelector(sQuery, tQuery),
       new LegacyConverter,
       new SpatialMapExtractor)
 
@@ -62,20 +62,32 @@ object SpatialMapDev {
     t = nanoTime()
     //    spatialMapRDD.map(_.printInfo()).foreach(println(_))
     val countPerRegion = operator.extractor.countPerRegion(spatialMapRDD, tQuery).collect
-    //    println(countPerRegion.map(_._2).sum)
-    countPerRegion.foreach(println(_))
+    println(countPerRegion.map(_._2).sum)
+    countPerRegion.sortBy(_._2).foreach(println(_))
     println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
-
-    /** step 3.2: Extraction.RangeQuery */
-    t = nanoTime()
-    println(s"... Total ${extractedRDD.count} points")
-    println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     t = nanoTime()
-    val gt = pointRDD.filter(p => p.inside(sQuery) && p.t <= tQuery._2 && p.t >= tQuery._1).count
-    println(s"... (Benchmark) Total $gt points")
+    val resB = pointRDD.filter(_.temporalOverlap(tQuery)).flatMap(point => {
+      partitionRange.filter {
+        case (_, rectangle) => point.inside(rectangle)
+      }.keys.map((_, 1)).toList
+    }).reduceByKey(_ + _).map {
+      case (k, v) => (partitionRange(k), v)
+    }
+    println(resB.map(_._2).sum)
+    resB.collect.sortBy(_._2).foreach(println(_))
     println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
+    //    /** step 3.2: Extraction.RangeQuery */
+    //    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
+    //    t = nanoTime()
+    //    println(s"... Total ${extractedRDD.count} points")
+    //    println(s"... Extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+    //
+    //    t = nanoTime()
+    //    val gt = pointRDD.filter(p => p.inside(sQuery) && p.t <= tQuery._2 && p.t >= tQuery._1).count
+    //    println(s"... (Benchmark) Total $gt points")
+    //    println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   }
 
 
