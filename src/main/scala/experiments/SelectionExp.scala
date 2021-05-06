@@ -69,6 +69,7 @@ object SelectionExp extends App {
 
   var t = nanoTime()
   for (selectivity <- List(0.5, 0.1, 0.01)) {
+    t = nanoTime()
     println(s"\n=== Selectivity: $selectivity")
     val tQuery = genTQuery(temporalRange, selectivity)
     val sQuery = genSQuery(spatialRange, selectivity)
@@ -76,18 +77,22 @@ object SelectionExp extends App {
       spatialSelector.query(pRDD)(sQuery)
     )(tQuery)
     println(s"--- ${selected.count} points selected ")
-  }
-  println(s"... ST-Tool takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+    println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
+  }
+
+  println("\nBenchmark: ==")
   t = nanoTime()
   for (selectivity <- List(0.5, 0.1, 0.01)) {
+    t = nanoTime()
     println(s"\n=== Selectivity: $selectivity")
     val tQuery = genTQuery(temporalRange, selectivity)
     val sQuery = genSQuery(spatialRange, selectivity)
     val benchmark = pointRDD.filter(_.inside(sQuery)).filter(x => temporalOverlap(x.timeStamp, tQuery))
     println(s"--- ${benchmark.count} points selected ")
+    println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
   }
-  println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
   sc.stop()
 
 
