@@ -32,6 +32,7 @@ object SelectionExp extends App {
   val dataSize = trajRDD.count
   val converter = new Traj2PointConverter()
   val pointRDD = converter.convert(trajRDD.map((0, _)))
+  pointRDD.cache()
   pointRDD.take(1)
 
   val spatialRange = Rectangle(Array(118.35, 29.183, 120.5, 30.55))
