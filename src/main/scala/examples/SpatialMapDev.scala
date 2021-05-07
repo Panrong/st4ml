@@ -12,6 +12,7 @@ import utils.SpatialProcessing.gridPartition
 import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
+import scala.collection.mutable
 
 object SpatialMapDev {
   def main(args: Array[String]): Unit = {
@@ -52,31 +53,31 @@ object SpatialMapDev {
     println(s"    <- debug: num of points before conversion: ${pointRDD.count}")
 
     var t = nanoTime()
-    println(partitionRange)
+    //    println(partitionRange)
     val spatialMapRDD = new Point2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)).convert(pointRDD).cache()
     println(s"    <- debug: num of points after conversion: ${spatialMapRDD.flatMap(_.contents).flatMap(x => x._2).count}")
     spatialMapRDD.take(1)
     println(s"... Conversion takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
-    /** step 3.1: Extraction.GenHeatMap */
-    t = nanoTime()
-    //    spatialMapRDD.map(_.printInfo()).foreach(println(_))
-    val countPerRegion = operator.extractor.countPerRegion(spatialMapRDD, tQuery).collect
-    println(countPerRegion.map(_._2).sum)
-    countPerRegion.sortBy(_._2).foreach(println(_))
-    println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
-
-    t = nanoTime()
-    val resB = pointRDD.filter(_.temporalOverlap(tQuery)).flatMap(point => {
-      partitionRange.filter {
-        case (_, rectangle) => point.inside(rectangle)
-      }.keys.map((_, 1)).toList
-    }).reduceByKey(_ + _).map {
-      case (k, v) => (partitionRange(k), v)
-    }
-    println(resB.map(_._2).sum)
-    resB.collect.sortBy(_._2).foreach(println(_))
-    println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+    //    /** step 3.1: Extraction.GenHeatMap */
+    //    t = nanoTime()
+    //    //    spatialMapRDD.map(_.printInfo()).foreach(println(_))
+    //    val countPerRegion = operator.extractor.countPerRegion(spatialMapRDD, tQuery).collect
+    //    println(countPerRegion.map(_._2).sum)
+    //    countPerRegion.sortBy(_._2).foreach(println(_))
+    //    println(s"... Getting aggregation info takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+    //
+    //    t = nanoTime()
+    //    val resB = pointRDD.filter(_.temporalOverlap(tQuery)).flatMap(point => {
+    //      partitionRange.filter {
+    //        case (_, rectangle) => point.inside(rectangle)
+    //      }.keys.map((_, 1)).toList
+    //    }).reduceByKey(_ + _).map {
+    //      case (k, v) => (partitionRange(k), v)
+    //    }
+    //    println(resB.map(_._2).sum)
+    //    resB.collect.sortBy(_._2).foreach(println(_))
+    //    println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     //    /** step 3.2: Extraction.RangeQuery */
     //    val extractedRDD = operator.extractor.rangeQuery(spatialMapRDD, sQuery, tQuery)
@@ -88,6 +89,25 @@ object SpatialMapDev {
     //    val gt = pointRDD.filter(p => p.inside(sQuery) && p.t <= tQuery._2 && p.t >= tQuery._1).count
     //    println(s"... (Benchmark) Total $gt points")
     //    println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
+    /** step 3.1: Extraction.GenHeatMap */
+    t = nanoTime()
+    val heatMaps = operator.extractor.genHeatMap(spatialMapRDD).collect
+    println(heatMaps.deep)
+    println(s"... Generating heat maps takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
+    val timeSlots = spatialMapRDD.map(_.timeStamp).collect
+    t = nanoTime()
+    val elementRDD = pointRDD.map(x => {
+      val ts = timeSlots.filter(t => x.temporalOverlap(t)).head
+      val ss = partitionRange.values.filter(_.intersect(x)).head
+      (ts, (ss, 1))
+    })
+    val bc = elementRDD.groupByKey.mapValues(x => x.toArray.groupBy(_._1).map(x => (x._1, x._2.length))).collect
+    println(bc.deep)
+    println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+
+    sc.stop()
   }
 
 
