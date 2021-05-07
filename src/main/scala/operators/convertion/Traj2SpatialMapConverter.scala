@@ -17,7 +17,7 @@ class Traj2SpatialMapConverter(startTime: Long,
     else (endTime - startTime).toInt / timeInterval.get + 1
     val partitioner = new TemporalPartitioner(startTime, endTime, numPartitions = numPartitions)
     val timeRanges = partitioner.timeRanges
-    val repartitionedRDD = partitioner.partitionToMultiple(rdd).zipWithIndex().map(x => (x._2.toInt, x._1))
+    val repartitionedRDD = partitioner.partitionToMultiple(rdd)
     val subTrajs = repartitionedRDD.map(traj => (traj._1, traj._2.windowBy(timeRanges(traj._1)))).filter(_._2.isDefined)
       .map { case (id, trajs) => trajs.get.map((id, _)) }
 

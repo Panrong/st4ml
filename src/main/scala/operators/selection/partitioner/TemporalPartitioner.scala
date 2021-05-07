@@ -39,8 +39,8 @@ class TemporalPartitioner(startTime: Long,
       .partitionBy(new KeyPartitioner(numPartitions))
   }
 
-  //assign one object to all its overlapping partitions
-  def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+  //assign one object to all its overlapping partitions, recorded the partition ID as well
+  def partitionToMultiple[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
     val slotsRDD = dataRDD.flatMap(x => {
       ((x.timeStamp._1 - startTime).toInt / timeInterval / numSlotsPerPartition to
         (x.timeStamp._2 - startTime).toInt / timeInterval / numSlotsPerPartition)
@@ -53,7 +53,7 @@ class TemporalPartitioner(startTime: Long,
       if (!x._2.temporalOverlap(x._2.timeStamp, timeRanges(x._1))) println(x, timeRanges(x._1))
     }
 
-    slotsRDD.partitionBy(new KeyPartitioner(numPartitions)).map(_._2)
+    slotsRDD.partitionBy(new KeyPartitioner(numPartitions))
   }
 
   //timeInterval is ignored
