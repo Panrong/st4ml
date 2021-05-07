@@ -93,7 +93,7 @@ object SpatialMapDev {
     /** step 3.1: Extraction.GenHeatMap */
     t = nanoTime()
     val heatMaps = operator.extractor.genHeatMap(spatialMapRDD).collect.map(x=> (x._1, x._2.toMap))
-    println(heatMaps.sortBy(_._1._1).deep)
+    println(heatMaps.sortBy(_._1._1).head)
     println(s"... Generating heat maps takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     val timeSlots = spatialMapRDD.map(_.timeStamp).collect
@@ -104,7 +104,7 @@ object SpatialMapDev {
       (ts, (ss, 1))
     })
     val bc = elementRDD.groupByKey.mapValues(x => x.toArray.groupBy(_._1).map(x => (partitionRange(x._1), x._2.length))).collect
-    println(bc.sortBy(_._1._1).deep)
+    println(bc.sortBy(_._1._1).head)
     println(s"... Benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
     sc.stop()
