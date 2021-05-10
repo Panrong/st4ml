@@ -1,8 +1,8 @@
 package examples
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
-import operators.convertion.{LegacyConverter, Point2SpatialMapConverter, Traj2PointConverter}
+import geometry.{Rectangle, SpatialMap, Trajectory}
+import operators.OperatorSet
+import operators.convertion.{Point2SpatialMapConverter, Traj2PointConverter}
 import operators.extraction.SpatialMapExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -12,7 +12,6 @@ import utils.SpatialProcessing.gridPartition
 import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
-import scala.collection.mutable
 
 object SpatialMapDev {
   def main(args: Array[String]): Unit = {
@@ -34,10 +33,13 @@ object SpatialMapDev {
     sc.setLogLevel("ERROR")
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      new DefaultSelector(sQuery, tQuery),
-      new LegacyConverter,
-      new SpatialMapExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = SpatialMap[Trajectory]
+      override val selector =  new DefaultSelector[I](sQuery, tQuery)
+      override val converter = new Traj2PointConverter
+      override val extractor = new SpatialMapExtractor[I]
+    }
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
@@ -47,8 +49,7 @@ object SpatialMapDev {
     println(s"--- ${rdd1.count} trajectories")
 
     /** step 2: Conversion */
-    val converter = new Traj2PointConverter()
-    val pointRDD = converter.convert(rdd1)
+    val pointRDD = operator.converter.convert(rdd1)
       .filter(p => p.inside(sQuery) && p.timeStamp._1 >= tStart && p.timeStamp._2 <= tEnd)
     println(s"    <- debug: num of points before conversion: ${pointRDD.count}")
 

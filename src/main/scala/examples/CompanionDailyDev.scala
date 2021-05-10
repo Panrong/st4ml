@@ -1,10 +1,11 @@
 package examples
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
+import geometry.{Point, Rectangle, Trajectory}
+import operators.OperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.selection.DefaultSelectorOld
+import operators.repartitioner.TSTRRepartitioner
+import operators.selection.DefaultSelector
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.storage.StorageLevel
@@ -38,10 +39,15 @@ object CompanionDailyDev {
      */
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      DefaultSelectorOld(numPartitions, sQuery, tQuery),
-      Traj2PointConverter(sQuery, tQuery),
-      new PointCompanionExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = Point
+      override val selector = new DefaultSelector[I](sQuery, tQuery)
+      override val converter = new Traj2PointConverter(Some(sQuery), Some(tQuery))
+      override val repartitioner = new TSTRRepartitioner[O](Config.get("tPartition").toInt,
+        500, 600, Config.get("samplingRate").toDouble)
+      override val extractor = new PointCompanionExtractor
+    }
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
@@ -64,9 +70,7 @@ object CompanionDailyDev {
     //      .reduceByKey(_ ++ _)
 
     /** step 3: Extraction */
-    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold,
-      tThreshold,
-      Config.get("tPartition").toInt)(rdd2)
+    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")

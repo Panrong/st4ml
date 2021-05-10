@@ -2,9 +2,7 @@ package operators.convertion
 
 import org.apache.spark.rdd.RDD
 
-import scala.reflect.ClassTag
-
-class DoNothingConverter[T: ClassTag] extends Converter {
+class DoNothingConverter[T] extends Converter {
   override type I = T
   override type O = T
 

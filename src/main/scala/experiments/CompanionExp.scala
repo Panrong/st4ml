@@ -1,7 +1,7 @@
 package experiments
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
+import geometry.{Point, Rectangle, Trajectory}
+import operators.OperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
 import operators.selection.DefaultSelector
@@ -38,10 +38,14 @@ object CompanionExp {
      */
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      new DefaultSelector(sQuery, tQuery),
-      new Traj2PointConverter,
-      new PointCompanionExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = Point
+      override val selector = new DefaultSelector[Trajectory](sQuery, tQuery)
+      override val converter = new Traj2PointConverter
+      override val extractor = new PointCompanionExtractor
+    }
+
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)

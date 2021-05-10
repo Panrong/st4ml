@@ -1,8 +1,9 @@
 package examples
 
-import geometry.{Rectangle, Trajectory}
-import operators.convertion.{LegacyConverter, Traj2PointConverter}
+import geometry.{Point, Rectangle}
+import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
+import operators.repartitioner.TSTRRepartitioner
 import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.rdd.RDD
@@ -11,7 +12,6 @@ import preprocessing.ReadTrajFile
 import utils.Config
 
 import java.lang.System.nanoTime
-import scala.collection.mutable
 
 object PointCompanionDev {
   def main(args: Array[String]): Unit = {
@@ -59,24 +59,29 @@ object PointCompanionDev {
     val pointRDD = converter.convert(stRDD)
     println(s"${pointRDD.count} points after conversion")
 
-    /** step 3: extraction */
+    /** step 3: repartition */
     t = nanoTime()
-    val extractor = new PointCompanionExtractor
-    //    val extractedO = extractor.optimizedExtract(500, 100)(pointRDD)
-    //    println(s"${extractedO.length} pairs have companion relationship (optimized)")
-    //    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
-    //    //    println(extracted2.sorted.deep)
-    //    val extracted = extractor.extract(500, 100)(pointRDD)
-    //    println(s"${extracted.length} pairs have companion relationship (full scan)")
-    //    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
-    //    //    println(extracted.sorted.deep)
+    val repartitioner = new TSTRRepartitioner[Point](Config.get("tPartition").toInt,
+      100, 600, Config.get("samplingRate").toDouble)
+    val rpRDD = repartitioner.repartition(pointRDD)
 
-    /** step 3.1: Querying companion with IDs */
+    /** step 4: extraction */
+    val extractor = new PointCompanionExtractor
+    val extractedO = extractor.optimizedExtract(100, 600)(rpRDD)
+    println(s"${extractedO.map(_._2.size).sum} pairs have companion relationship (optimized)")
+    println(s"... Optimized scanning takes ${(nanoTime() - t) * 1e-9} s.")
+    //    println(extracted2.sorted.deep)
+    val extracted = extractor.extract(100, 600)(pointRDD)
+    println(s"${extracted.map(_._2.size).sum} pairs have companion relationship (full scan)")
+    println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.")
+    //    println(extracted.sorted.deep)
+
+    /** step 4.1: Querying companion with IDs */
     val queries = ReadTrajFile(queryFile, num = 1)
     val queryPoints = converter.convert(queries)
-    val queried1 = extractor.optimizedQueryWithIDs(500, 600)(pointRDD, queryPoints.collect) // 500m and 10min
+    val queried1 = extractor.optimizedQueryWithIDs(100, 600)(rpRDD, queryPoints.collect) // 500m and 10min
     val count1 = queried1.mapValues(_.size).collect
-    val queried2 = extractor.queryWithIDs(500, 600)(pointRDD, queryPoints)
+    val queried2 = extractor.queryWithIDs(100, 600)(rpRDD, queryPoints)
     val count2 = queried2.mapValues(_.size).collect
     println(count1.sortBy(_._1).deep)
     println(count2.sortBy(_._1).deep)

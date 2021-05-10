@@ -14,7 +14,7 @@ class Traj2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: Lo
   override type O = TimeSeries[Trajectory]
 
   override def convert(rdd: RDD[Trajectory]): RDD[TimeSeries[Trajectory]] = {
-    val repartitionedRDD = partitioner.partition(rdd).zipWithIndex().map(x => (x._2.toInt, x._1))
+    val repartitionedRDD = partitioner.partition(rdd).mapPartitionsWithIndex((id, p) => p.map((id, _)))
     val partitionRange = partitioner.partitionRange
     repartitionedRDD.map(x => (x._1, x._2.windowBy(partitionRange(x._1))))
       .filter(_._2.isDefined)

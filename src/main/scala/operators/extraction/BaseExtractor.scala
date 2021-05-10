@@ -1,3 +1,5 @@
 package operators.extraction
 
-abstract class BaseExtractor() extends Serializable
+abstract class BaseExtractor[T] extends Serializable{
+
+}

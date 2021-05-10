@@ -9,8 +9,8 @@ import scala.reflect.ClassTag
 
 class DefaultSelectorOld
 (partitioner: HashPartitioner, var spatialSelector: RTreeHandler, temporalSelector: TemporalSelector)
-(sQuery: Rectangle, tQuery: (Long, Long)) extends Selector {
-  override def query[R <: Shape : ClassTag](dataRDD: RDD[R]): RDD[R] = {
+(sQuery: Rectangle, tQuery: (Long, Long)) {
+  def query[R <: Shape : ClassTag](dataRDD: RDD[R]): RDD[R] = {
     val pRDD = partitioner.partition(dataRDD)
     spatialSelector = spatialSelector.copy(partitionRange = partitioner.partitionRange)
     temporalSelector.query(
@@ -25,6 +25,6 @@ object DefaultSelectorOld {
     val partitionRange = partitioner.partitionRange
     val spatialSelector = RTreeHandler(partitionRange)
     val temporalSelector = new TemporalSelector()
-    new DefaultSelectorOld(partitioner, spatialSelector, temporalSelector)(sQuery,tQuery)
+    new DefaultSelectorOld(partitioner, spatialSelector, temporalSelector)(sQuery, tQuery)
   }
 }

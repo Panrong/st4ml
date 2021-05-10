@@ -1,4 +1,4 @@
 package operators.extraction
 
-abstract class Extractor extends Serializable {
+abstract class Extractor[T] extends Serializable {
 }

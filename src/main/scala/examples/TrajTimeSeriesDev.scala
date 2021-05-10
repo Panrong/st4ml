@@ -1,10 +1,10 @@
 package examples
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
-import operators.convertion.Traj2TimeSeriesConverter
-import operators.extraction.TimeSeriesExtractor
-import operators.selection.DefaultSelectorOld
+import geometry.{Rectangle, TimeSeries, Trajectory}
+import operators.OperatorSet
+import operators.convertion.{Converter, Traj2TimeSeriesConverter}
+import operators.extraction.{BaseExtractor, TimeSeriesExtractor}
+import operators.selection.{DefaultSelector, DefaultSelectorOld, Selector}
 import operators.selection.partitioner.STRPartitioner
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
@@ -37,11 +37,15 @@ object TrajTimeSeriesDev {
      */
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      DefaultSelectorOld(numPartitions, sQuery, tQuery),
-      new Traj2TimeSeriesConverter(startTime = tQuery._1,
-        timeInterval, new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))),
-      new TimeSeriesExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = TimeSeries[Trajectory]
+      override val selector = new DefaultSelector[I](sQuery, tQuery)
+      override val converter = new Traj2TimeSeriesConverter(startTime = tQuery._1,
+        timeInterval, new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble)))
+      override val extractor= new TimeSeriesExtractor[I]
+    }
+
     /** read input data */
     val trajRDD = ReadTrajJson(trajFile, numPartitions, clean = true)
 

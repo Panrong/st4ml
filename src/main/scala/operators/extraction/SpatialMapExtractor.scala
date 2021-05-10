@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class SpatialMapExtractor extends Extractor {
+class SpatialMapExtractor[T] extends BaseExtractor[SpatialMap[T]] {
 
   // only filter at raster level
   def rangeQueryCoarse[T: ClassTag](rdd: RDD[SpatialMap[T]],

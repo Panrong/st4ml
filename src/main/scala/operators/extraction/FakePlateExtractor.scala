@@ -3,7 +3,7 @@ package operators.extraction
 import geometry.Trajectory
 import org.apache.spark.rdd.RDD
 
-class FakePlateExtractor extends BaseExtractor {
+class FakePlateExtractor extends BaseExtractor[Trajectory] {
   def extract(rdd: RDD[Trajectory], speedThreshold: Double): RDD[String] = {
     rdd.filter(traj => traj.hasFakePlate(speedThreshold)).map(_.id)
   }

@@ -1,10 +1,10 @@
 package examples
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
+import geometry.{Rectangle, SpatialMap, Trajectory}
+import operators.OperatorSet
 import operators.convertion.Traj2SpatialMapConverter
 import operators.extraction.SpatialMapExtractor
-import operators.selection.DefaultSelectorOld
+import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -35,11 +35,14 @@ object TrajSpatialMapDev {
     sc.setLogLevel("ERROR")
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      DefaultSelectorOld(numPartitions, sQuery, tQuery),
-      //      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange),
-      new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval)),
-      new SpatialMapExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = SpatialMap[Trajectory]
+      override val selector = new DefaultSelector[I](sQuery, tQuery)
+      override val converter = new Traj2SpatialMapConverter(tStart, tEnd, partitionRange, Some(timeInterval))
+      override val extractor= new SpatialMapExtractor[Trajectory]
+    }
+
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions).map(_.reorderTemporally())

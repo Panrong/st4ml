@@ -21,14 +21,14 @@ class Point2SpatialMapConverter(startTime: Long,
     val repartitionedRDD = partitioner.partition(rdd)
     val boundary = genBoundary(regions)
     repartitionedRDD.mapPartitionsWithIndex {
-      case (_, partition) =>
+      case (i, partition) =>
         if (partition.isEmpty) {
           Iterator(SpatialMap[Point]("Empty", (startTime, endTime), new Array[(Rectangle, Array[Point])](0)))
         } else {
           val regionMap = scala.collection.mutable.Map[Int, scala.collection.mutable.ArrayBuffer[Point]]()
           var partitionID = 0
           while (partition.hasNext) {
-            val (i, point) = partition.next()
+            val point = partition.next()
             val pointShrink = Point(Array(
               min(max(point.x, boundary.head), boundary(2)),
               min(max(point.y, boundary(1)), boundary(3))))

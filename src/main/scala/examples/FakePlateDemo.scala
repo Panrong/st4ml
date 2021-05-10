@@ -1,8 +1,8 @@
 package examples
 
 import geometry.{Rectangle, Trajectory}
-import operators.CustomOperatorSet
-import operators.convertion.DoNothingConverter
+import operators.OperatorSet
+import operators.convertion.{Converter, DoNothingConverter}
 import operators.extraction.FakePlateExtractor
 import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -32,10 +32,13 @@ object FakePlateDemo {
     // example input: "73,3,135,53" "2020-07-31 23:30:00,2020-08-02 00:30:00" 40
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      new DefaultSelector(sQuery, tQuery),
-      new DoNothingConverter[Trajectory],
-      new FakePlateExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = Trajectory
+      override val selector = new DefaultSelector[Trajectory](sQuery, tQuery)
+      override val converter = new DoNothingConverter[I]
+      override val extractor = new FakePlateExtractor
+    }
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)

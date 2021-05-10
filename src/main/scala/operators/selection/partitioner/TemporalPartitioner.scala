@@ -32,11 +32,11 @@ class TemporalPartitioner(startTime: Long,
       startTime + (x + 1) * numSlotsPerPartition * timeInterval))
     .toArray
 
-  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[(Int, T)] = {
+  def partition[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     dataRDD.map(x =>
       ((x.timeStamp._1 - startTime).toInt / timeInterval / numSlotsPerPartition, x))
       .filter(_._1 < numPartitions)
-      .partitionBy(new KeyPartitioner(numPartitions))
+      .partitionBy(new KeyPartitioner(numPartitions)).map(_._2)
   }
 
   //assign one object to all its overlapping partitions, recorded the partition ID as well
@@ -122,7 +122,7 @@ class TemporalPartitioner(startTime: Long,
                                                    tOverlap: Double = 0,
                                                    sOverlap: Double = 0,
                                                    samplingRate: Double = 0.5,
-                                                   even: Boolean = true): RDD[(Int, T)] = {
+                                                   even: Boolean = true): RDD[T] = {
     val temporalRanges = if (even) {
       getTemporalRange(dataRDD, samplingRate, tPartition, tOverlap).zipWithIndex
     } else {
@@ -146,7 +146,7 @@ class TemporalPartitioner(startTime: Long,
     val stRanges = temporalPartitionedSamples.mapValues(points => str(points, numPartitions / tPartition, samplingRate)).toArray.flatMap {
       case (t, s) => s.map(x => (x._1 + t._2 * s.length, t._1, x._2))
     }
-    allocateSTPartitions(dataRDD, stRanges, sOverlap).partitionBy(new KeyPartitioner(numPartitions))
+    allocateSTPartitions(dataRDD, stRanges, sOverlap).partitionBy(new KeyPartitioner(numPartitions)).map(_._2)
   }
 
 

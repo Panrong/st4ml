@@ -25,7 +25,7 @@ class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: L
 
   override def convert(rdd: RDD[Point])
   : RDD[TimeSeries[Point]] = {
-    val repartitionedRDD = partitioner.partition(rdd).zipWithIndex().mapValues(_.toInt)
+    val repartitionedRDD = partitioner.partition(rdd).mapPartitionsWithIndex((id, p) => p.map((id, _)))
     val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
     println(s"... Number of points per partition: " + s"${pointsPerPartition.deep}")
     repartitionedRDD.mapPartitions(partition =>
@@ -35,7 +35,7 @@ class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: L
         val slotMap = scala.collection.mutable.Map[Int, scala.collection.mutable.ArrayBuffer[Point]]()
         var partitionID = 0
         while (partition.hasNext) {
-          val (point, i) = partition.next()
+          val (i, point) = partition.next()
           val slot = ((point.timeStamp._1 - startTime) / timeInterval).toInt
           slotMap += ((slot, if (slotMap.contains(slot)) slotMap(slot) ++ Array(point) else scala.collection.mutable.ArrayBuffer(point)))
           partitionID = i

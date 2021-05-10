@@ -1,10 +1,11 @@
 package examples
 
-import geometry.Rectangle
-import operators.CustomOperatorSet
+import geometry.{Point, Rectangle, Trajectory}
+import operators.OperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.selection.DefaultSelectorOld
+import operators.repartitioner.TSTRRepartitioner
+import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -36,10 +37,15 @@ object PointCompanionDemo {
      */
 
     /** initialize operators */
-    val operator = new CustomOperatorSet(
-      DefaultSelectorOld(numPartitions, sQuery, tQuery),
-      new Traj2PointConverter,
-      new PointCompanionExtractor)
+    val operator = new OperatorSet {
+      override type I = Trajectory
+      override type O = Point
+      override val selector = new DefaultSelector[I](sQuery, tQuery)
+      override val converter = new Traj2PointConverter
+      override val repartitioner = new TSTRRepartitioner[O](Config.get("tPartition").toInt,
+        sThreshold, tThreshold, Config.get("samplingRate").toDouble)
+      override val extractor = new PointCompanionExtractor
+    }
 
     /** read input data */
     val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
@@ -52,8 +58,12 @@ object PointCompanionDemo {
     val rdd2 = operator.converter.convert(rdd1)
     //    rdd2.cache()
     println(rdd2.count)
-    /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+
+    /** step 3: Repartition */
+    val rdd3 = operator.repartitioner.repartition(rdd2)
+
+    /** step 4: Extraction */
+    val companionPairs = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd3)
     println("=== Companion Analysis done: ")
     companionPairs.foreach { case (q, c) => println(s"  ... $q: ${c.size}") }
     sc.stop()
