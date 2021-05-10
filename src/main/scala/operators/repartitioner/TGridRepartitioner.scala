@@ -6,13 +6,17 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class TSTRRepartitioner[T <: Shape : ClassTag](tPartition: Int, sThreshold: Double, tThreshold: Double, samplingRate: Double)
-  extends Repartitioner[T] {
+class TGridRepartitioner[T <: Shape : ClassTag](
+                                                 gridSize: Int,
+                                                 sThreshold: Double,
+                                                 tThreshold: Double,
+                                               ) extends Repartitioner[T] {
   def partition(rdd: RDD[T]): RDD[T] = {
     val numPartitions = rdd.getNumPartitions
     val partitioner = new TemporalPartitioner(startTime = rdd.map(_.timeStamp._1).min,
       endTime = rdd.map(_.timeStamp._2).max, numPartitions = numPartitions)
-    val res = partitioner.partitionSTR[T](rdd, tPartition, tThreshold, sThreshold, samplingRate)
+    val res = partitioner.partitionGrid[T](rdd,
+      gridSize, tThreshold, sThreshold)
 
     //    /** for debug */
     //    val rddWIndex = rdd.zipWithIndex().map(_.swap)

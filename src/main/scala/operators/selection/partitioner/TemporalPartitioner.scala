@@ -83,8 +83,8 @@ class TemporalPartitioner(startTime: Long,
    */
   def partitionGrid[T <: geometry.Shape : ClassTag](dataRDD: RDD[T],
                                                     gridSize: Int,
-                                                    tOverlap: Double = 0,
                                                     sOverlap: Double = 0,
+                                                    tOverlap: Double = 0,
                                                     spatialRange: Option[Array[Double]] = None): RDD[T] = {
     val sRange = spatialRange.getOrElse {
       val coordinatesRDD = dataRDD.map(_.mbr.coordinates)
@@ -95,9 +95,9 @@ class TemporalPartitioner(startTime: Long,
     val sPartitions = gridPartition(sRange, gridSize)
     val tPartition = numPartitions / gridSize / gridSize
     assert(tPartition >= 2, "the square of gridSize should be less than half of numPartitions")
-    val tPartitionedRDD = partitionWithOverlap(dataRDD, tOverlap, tPartition).zipWithIndex()
+    val tPartitionedRDD = partitionWithOverlap(dataRDD, tOverlap, tPartition).mapPartitionsWithIndex((id, p) => p.map((id, _)))
     tPartitionedRDD.map {
-      case (x, tId) =>
+      case (tId, x) =>
         allocateSpatialPartitions(x, sPartitions, sOverlap)
           .map(sId => (tId * gridSize * gridSize + sId, x))
     }.flatMap(x => x)

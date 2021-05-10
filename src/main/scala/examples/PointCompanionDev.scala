@@ -63,7 +63,7 @@ object PointCompanionDev {
     t = nanoTime()
     val repartitioner = new TSTRRepartitioner[Point](Config.get("tPartition").toInt,
       100, 600, Config.get("samplingRate").toDouble)
-    val rpRDD = repartitioner.repartition(pointRDD)
+    val rpRDD = repartitioner.partition(pointRDD)
 
     /** step 4: extraction */
     val extractor = new PointCompanionExtractor
