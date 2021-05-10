@@ -4,9 +4,7 @@ import geometry.{Point, Rectangle, Trajectory}
 import operators.OperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.repartitioner.{Repartitioner, TGridRepartitioner, TSTRRepartitioner}
-import operators.selection.DefaultSelector
-import operators.selection.partitioner.QuadTreePartitioner
+import operators.repartitioner.TGridRepartitioner
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config
@@ -38,16 +36,15 @@ object PointCompanionDemo {
      */
 
     /** initialize operators */
-    val operator = new OperatorSet {
-      override type I = Trajectory
-      override type O = Point
-      override val selector = new DefaultSelector[I](sQuery, tQuery)
-      override val converter = new Traj2PointConverter
+    val operator = new OperatorSet(sQuery, tQuery) {
+       type I = Trajectory
+       type O = Point
+       val converter = new Traj2PointConverter
       //      override val repartitioner = new TSTRRepartitioner[O](Config.get("tPartition").toInt,
       //        sThreshold, tThreshold, Config.get("samplingRate").toDouble)
       override val repartitioner = new TGridRepartitioner[O](2, sThreshold, tThreshold)
 
-      override val extractor = new PointCompanionExtractor
+       val extractor = new PointCompanionExtractor
     }
 
     /** read input data */

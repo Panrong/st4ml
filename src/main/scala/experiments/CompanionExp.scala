@@ -38,12 +38,11 @@ object CompanionExp {
      */
 
     /** initialize operators */
-    val operator = new OperatorSet {
-      override type I = Trajectory
-      override type O = Point
-      override val selector = new DefaultSelector[Trajectory](sQuery, tQuery)
-      override val converter = new Traj2PointConverter
-      override val extractor = new PointCompanionExtractor
+    val operator = new OperatorSet(sQuery, tQuery) {
+      type I = Trajectory
+      type O = Point
+      val converter = new Traj2PointConverter
+      val extractor = new PointCompanionExtractor
     }
 
 

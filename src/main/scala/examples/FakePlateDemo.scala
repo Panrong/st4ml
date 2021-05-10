@@ -32,12 +32,11 @@ object FakePlateDemo {
     // example input: "73,3,135,53" "2020-07-31 23:30:00,2020-08-02 00:30:00" 40
 
     /** initialize operators */
-    val operator = new OperatorSet {
-      override type I = Trajectory
-      override type O = Trajectory
-      override val selector = new DefaultSelector[Trajectory](sQuery, tQuery)
-      override val converter = new DoNothingConverter[I]
-      override val extractor = new FakePlateExtractor
+    val operator = new OperatorSet(sQuery, tQuery) {
+      type I = Trajectory
+      type O = Trajectory
+      val converter = new DoNothingConverter[I]
+      val extractor = new FakePlateExtractor
     }
 
     /** read input data */
