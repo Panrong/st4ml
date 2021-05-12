@@ -4,7 +4,6 @@ import geometry.{Point, Rectangle, Trajectory}
 import operators.OperatorSet
 import operators.convertion.Traj2PointConverter
 import operators.extraction.PointCompanionExtractor
-import operators.selection.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
 import utils.Config

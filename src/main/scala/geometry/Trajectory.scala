@@ -38,17 +38,17 @@ case class Trajectory(tripID: String,
     l
   }
 
-  def calAvgSpeed(range: Rectangle): Double = {
+  def calAvgSpeed(range: Rectangle = mbr): Double = {
     val lineSegs = genLineSeg()
     var dist: Double = 0
     var time: Double = 0
     for (l <- lineSegs) {
       if (l.intersect(range)) {
         dist += l.length
-        time += l.d.t - l.o.t
+        time += l.d.timeStamp._2 - l.o.timeStamp._1
       }
     }
-    dist / time
+    if (time == 0) 0 else dist / time
   }
 
 

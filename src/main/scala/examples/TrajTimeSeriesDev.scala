@@ -2,9 +2,9 @@ package examples
 
 import geometry.{Rectangle, TimeSeries, Trajectory}
 import operators.OperatorSet
-import operators.convertion.{Converter, Traj2TimeSeriesConverter}
-import operators.extraction.{BaseExtractor, TimeSeriesExtractor}
-import operators.selection.{DefaultSelector, DefaultSelectorOld, Selector}
+import operators.convertion.Traj2TimeSeriesConverter
+import operators.extraction.TimeSeriesExtractor
+import operators.selection.DefaultSelector
 import operators.selection.partitioner.STRPartitioner
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadTrajJson
@@ -43,7 +43,7 @@ object TrajTimeSeriesDev {
       override val selector = new DefaultSelector[I](sQuery, tQuery)
       override val converter = new Traj2TimeSeriesConverter(startTime = tQuery._1,
         timeInterval, new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble)))
-      override val extractor= new TimeSeriesExtractor[I]
+      override val extractor= new TimeSeriesExtractor[O]
     }
 
     /** read input data */

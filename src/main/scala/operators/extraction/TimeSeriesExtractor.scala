@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class TimeSeriesExtractor[T <: Shape] extends BaseExtractor[TimeSeries[T]] {
+class TimeSeriesExtractor[U] extends BaseExtractor[U] {
   // if the time slot intersects with the query time window, all samples are counted
   // --> may include more samples
   def extractByTimeCoarse[T: ClassTag](timeRange: (Long, Long))(rdd: RDD[TimeSeries[T]]): RDD[T] = {

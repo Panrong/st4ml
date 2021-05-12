@@ -38,7 +38,7 @@ object SpatialMapDev {
       override type O = SpatialMap[Trajectory]
       override val selector =  new DefaultSelector[I](sQuery, tQuery)
       override val converter = new Traj2PointConverter
-      override val extractor = new SpatialMapExtractor[I]
+      override val extractor = new SpatialMapExtractor[O]
     }
 
     /** read input data */
