@@ -33,7 +33,7 @@ object TimeSeriesDev {
     val timeInterval = args(3).toInt
 
     /**
-     * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 temporal
+     * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 900
      */
 
     /** read input data */
@@ -71,7 +71,7 @@ object TimeSeriesDev {
     val extractor = new TimeSeriesExtractor()
     val res = extractor.countTimeSlotSamplesSpatial((queryRange.head, queryRange.last))(rdd2)
     val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
-    println(resCombined.sortBy(_._1._1).deep)
+    println(resCombined.take(5).sortBy(_._1._1).deep)
     println(s"Total number: ${resCombined.map(_._2).sum}")
     println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
@@ -87,7 +87,7 @@ object TimeSeriesDev {
       }).toIterator
     }).reduceByKey(_ + _)
     println("=== Benchmark:")
-    println(benchmark.collect.sortBy(_._1._1).deep)
+    println(benchmark.take(5).sortBy(_._1._1).deep)
     println(s"... benchmark takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     println(s"Total number: ${benchmark.map(_._2).sum.toInt}")
     sc.stop()
