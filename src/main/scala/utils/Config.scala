@@ -13,6 +13,7 @@ object Config {
       "resPath" -> "out/",
       "tPartition" -> "4",
       "samplingRate" -> "0.5",
+      "queryFile" -> "datasets/queries.txt"
     )
   }
 
@@ -25,6 +26,7 @@ object Config {
       "resPath" -> "/datasets/out/",
       "tPartition" -> "16",
       "samplingRate" -> "0.2",
+      "queryFile" -> "/home/kaiqi.liu/st-tool/datasets/queries.txt"
     )
   }
 
