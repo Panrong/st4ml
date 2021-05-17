@@ -44,8 +44,6 @@ object CompanionDailyDev {
       override type O = Point
       override val selector = new DefaultSelector[I](sQuery, tQuery)
       override val converter = new Traj2PointConverter(Some(sQuery), Some(tQuery))
-      override val repartitioner = new TSTRRepartitioner[O](Config.get("tPartition").toInt,
-        500, 600, Config.get("samplingRate").toDouble)
       override val extractor = new PointCompanionExtractor
     }
 

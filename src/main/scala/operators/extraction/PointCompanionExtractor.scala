@@ -1,6 +1,7 @@
 package operators.extraction
 
 import geometry.Point
+import operators.repartitioner.TSTRRepartitioner
 import org.apache.spark.rdd.RDD
 
 import scala.math.abs
@@ -34,7 +35,10 @@ class PointCompanionExtractor extends BaseExtractor[Point] with Serializable {
 
     val numPartitions = pRDD.getNumPartitions
 
-    val rdd = pRDD.mapPartitionsWithIndex((id, p) => p.map((id, _)))
+    val repartitioner = new TSTRRepartitioner[Point](Config.get("tPartition").toInt,
+      sThreshold, tThreshold, Config.get("samplingRate").toDouble)
+    val rdd = repartitioner.partition(pRDD)
+      .mapPartitionsWithIndex((id, p) => p.map((id, _)))
 
     // val partitioner = new TemporalPartitioner(startTime = pRDD.map(_.timeStamp._1).min,
     //      endTime = pRDD.map(_.timeStamp._2).max, numPartitions = numPartitions)

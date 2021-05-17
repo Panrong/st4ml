@@ -27,7 +27,7 @@ object TrajSpatialMapDev {
     val tQuery = parseTemporalRange(args(1))
     val tStart = tQuery._1
     val tEnd = tQuery._2
-    val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt)
+    val partitionRange = gridPartition(sQuery.coordinates, args(2).toInt).take(5)
     val timeInterval = args(3).toInt
 
 
