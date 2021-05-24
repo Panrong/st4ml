@@ -3,7 +3,7 @@ package examples
 import org.apache.spark.{SparkConf, SparkContext}
 import org.elasticsearch.spark._
 
-object IOElasticSearch {
+object IOElasticSearchDemo {
 
   def main(args: Array[String]): Unit = {
 
