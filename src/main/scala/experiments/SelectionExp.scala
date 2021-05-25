@@ -37,7 +37,7 @@ object SelectionExp extends App {
   val trajRDD = ReadTrajFile(trajectoryFile, numPartitions)
     .persist(StorageLevel.MEMORY_AND_DISK)
   trajRDD.take(1)
-
+  println(trajRDD.count)
   val spatialRange = Rectangle(Array(118.35, 29.183, 120.5, 30.55))
   val temporalRange = (trajRDD.map(_.timeStamp._1).min, trajRDD.map(_.timeStamp._1).max)
 
