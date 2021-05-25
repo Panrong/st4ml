@@ -61,7 +61,13 @@ object SelectionExp extends App {
     //      spatialSelector.query(pRDD)(sQuery)
     //    )(tQuery)
 
-    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+    //    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+
+    val selected = pRDD.mapPartitionsWithIndex((id, partition) => {
+      if (!partitionRange(id).intersect(sQuery) || partition.isEmpty) Iterator()
+      else partition.toArray.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery)).toIterator
+    })
+
     val c = selected.count
     println(s"--- $c points selected ")
   }
