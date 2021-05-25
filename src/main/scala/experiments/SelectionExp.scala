@@ -1,19 +1,19 @@
 package experiments
 
-import geometry.{Point, Rectangle, Shape}
-import operators.convertion.Traj2PointConverter
+import geometry.{Rectangle, Shape, Trajectory}
 import operators.selection.indexer.RTree
 import operators.selection.partitioner.STRPartitioner
 import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
-import preprocessing.{ReadTrajFile, ReadTrajJson}
+import preprocessing.ReadTrajFile
 import utils.Config
 
 import java.lang.System.nanoTime
-import scala.math.{max, sqrt}
 import scala.io.Source
+import scala.math.max
+import scala.reflect.ClassTag
 
 /**
  * Compare the time usage of selection(repartition + rtree) vs filtering on different selectivities
@@ -43,13 +43,14 @@ object SelectionExp extends App {
 
 
   /** experiments on multiple queries */
+
   val partitioner = new STRPartitioner(numPartitions, Some(0.1))
   partitioner.getPartitionRange(trajRDD)
   val partitionRange = partitioner.partitionRange
   //  println(partitionRange)
   val temporalSelector = new TemporalSelector()
   val pRDD = partitioner.partition(trajRDD)
-  val spatialSelector = RTreeHandlerMultiple(partitionRange)
+  val spatialSelector = RTreeHandlerMultiple[Trajectory](partitionRange)
 
   var t = nanoTime()
   println(s"start ${queries.length} queries")
@@ -74,8 +75,7 @@ object SelectionExp extends App {
     else false
   }
 
-  // not generalized
-  case class RTreeHandlerMultiple(partitionRange: Map[Int, Rectangle],
+  case class RTreeHandlerMultiple[T <:Shape:ClassTag](partitionRange: Map[Int, Rectangle],
                                   var capacity: Option[Int] = None) {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
@@ -83,9 +83,9 @@ object SelectionExp extends App {
         classOf[Rectangle],
         classOf[Shape]))
 
-    var rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
+    var rTreeRDD: Option[RDD[(Int, RTree[T])]] = None
 
-    def genRTreeRDD(dataRDD: RDD[Point]): RDD[(Int, RTree[Point])] = {
+    def genRTreeRDD(dataRDD: RDD[T]): RDD[(Int, RTree[T])] = {
       val rtreeT = nanoTime()
       val c = capacity.getOrElse({
         val dataSize = dataRDD.count
@@ -94,8 +94,8 @@ object SelectionExp extends App {
       val dataRDDWithIndex = dataRDD
         .mapPartitionsWithIndex {
           (index, partitionIterator) => {
-            val partitionsMap = scala.collection.mutable.Map[Int, List[Point]]()
-            var partitionList = List[Point]()
+            val partitionsMap = scala.collection.mutable.Map[Int, List[T]]()
+            var partitionList = List[T]()
             while (partitionIterator.hasNext) {
               partitionList = partitionIterator.next() :: partitionList
             }
@@ -118,7 +118,7 @@ object SelectionExp extends App {
       res
     }
 
-    def query(dataRDD: RDD[Point])(queryRange: Rectangle): RDD[Point] = {
+    def query(dataRDD: RDD[T])(queryRange: Rectangle): RDD[T] = {
       rTreeRDD.getOrElse {
         println("generated RTree RDD")
         rTreeRDD = Some(genRTreeRDD(dataRDD))
@@ -127,10 +127,10 @@ object SelectionExp extends App {
         .filter {
           case (_, rtree) => rtree.numEntries != 0 && rtree.root.m_mbr.intersect(queryRange)
         }
-        .flatMap { case (partitionID, rtree) => rtree.range(queryRange)
-          .filter(x => queryRange.referencePoint(x._1).get.inside(partitionRange(partitionID))) // filter by reference point
-          .map(x => x._1)
-        }
+        .flatMap {
+          case (_, rtree) => rtree.range(queryRange)
+        }.map(_._1)
+        .distinct
     }
   }
 
