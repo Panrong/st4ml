@@ -10,11 +10,12 @@ object Config {
       "numPartitions" -> "16",
       "hzData" -> "datasets/traj_10000_converted.json",
       "portoData" -> "preprocessing/traj_short.csv",
-      //      "portoData" -> "C:/Users/kaiqi001/Desktop/data/porto_traj.csv",
       "resPath" -> "out/",
       "tPartition" -> "4",
       "samplingRate" -> "0.5",
-      "queryFile" -> "datasets/queries.txt"
+      "queryFile" -> "datasets/queries.txt",
+      "portoQuery" -> "datasets/portoqueries.txt",
+      "hzQuery" ->  "datasets/hzqueries.txt"
     )
   }
 
@@ -27,7 +28,9 @@ object Config {
       "resPath" -> "/datasets/out/",
       "tPartition" -> "16",
       "samplingRate" -> "0.2",
-      "queryFile" -> "/home/kaiqi.liu/st-tool/datasets/queries.txt"
+      "queryFile" -> "/home/kaiqi.liu/st-tool/datasets/queries.txt",
+      "portoQuery" -> "/datasets/portoqueries.txt",
+      "hzQuery" ->  "datasets/hzqueries.txt"
     )
   }
 
@@ -40,6 +43,8 @@ object Config {
       "resPath" -> "/datasets/out/",
       "tPartition" -> "4",
       "samplingRate" -> "0.2",
+      "portoQuery" -> "/datasets/portoqueries.txt",
+      "hzQuery" ->  "datasets/hzqueries.txt"
     )
   }
 

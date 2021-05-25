@@ -31,7 +31,7 @@ object SelectionExp extends App {
   val numPartitions = Config.get("numPartitions").toInt
 
 
-  val queries = readQueries()
+  val queries = readQueries(Config.get("portoQuery"))
 
   /** use pointRDD as input data */
   val trajRDD = ReadTrajFile(trajectoryFile, numPartitions)
@@ -133,7 +133,7 @@ object SelectionExp extends App {
     }
   }
 
-  def readQueries(filename: String = "C:\\Users\\kaiqi001\\Desktop\\exp\\portoqueries.txt"): Array[Array[Double]] = {
+  def readQueries(filename: String): Array[Array[Double]] = {
     var res = new Array[Array[Double]](0)
     for (line <- Source.fromFile(filename).getLines) {
       val query = line.split(" ").map(_.toDouble)
