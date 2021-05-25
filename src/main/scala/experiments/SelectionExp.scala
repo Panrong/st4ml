@@ -57,11 +57,11 @@ object SelectionExp extends App {
   for (query <- queries) {
     val tQuery = (query(4).toLong, query(5).toLong)
     val sQuery = Rectangle(query.slice(0, 4))
-    val selected = temporalSelector.query(
-      spatialSelector.query(pRDD)(sQuery)
-    )(tQuery)
+    //    val selected = temporalSelector.query(
+    //      spatialSelector.query(pRDD)(sQuery)
+    //    )(tQuery)
 
-    //    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
     val c = selected.count
     println(s"--- $c points selected ")
   }
@@ -75,8 +75,8 @@ object SelectionExp extends App {
     else false
   }
 
-  case class RTreeHandlerMultiple[T <:Shape:ClassTag](partitionRange: Map[Int, Rectangle],
-                                  var capacity: Option[Int] = None) {
+  case class RTreeHandlerMultiple[T <: Shape : ClassTag](partitionRange: Map[Int, Rectangle],
+                                                         var capacity: Option[Int] = None) {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
       Array(classOf[RTree[_]],
