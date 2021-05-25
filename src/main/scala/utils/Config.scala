@@ -10,6 +10,7 @@ object Config {
       "numPartitions" -> "16",
       "hzData" -> "datasets/traj_10000_converted.json",
       "portoData" -> "preprocessing/traj_short.csv",
+      //      "portoData" -> "C:/Users/kaiqi001/Desktop/data/porto_traj.csv",
       "resPath" -> "out/",
       "tPartition" -> "4",
       "samplingRate" -> "0.5",

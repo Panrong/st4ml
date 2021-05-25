@@ -5,7 +5,7 @@ import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner}
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
-import preprocessing.ReadTrajJson
+import preprocessing.{ReadTrajFile, ReadTrajJson}
 import utils.Config
 
 import java.lang.System.nanoTime
@@ -26,8 +26,11 @@ object SelectorDev {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
 
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-      .persist(StorageLevel.MEMORY_AND_DISK)
+//    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+//      .persist(StorageLevel.MEMORY_AND_DISK)
+
+    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
+    println(trajRDD.count)
     val dataSize = trajRDD.count
 
     val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))

@@ -3,8 +3,7 @@ package examples
 import geometry.Rectangle
 import operators.SttDefault
 import org.apache.spark.sql.SparkSession
-import preprocessing.ReadTrajJson
-
+import preprocessing.{ReadTrajFile, ReadTrajJson}
 import utils.TimeParsing._
 import utils.Config
 
@@ -33,7 +32,8 @@ object PointAnalysisDemo {
     val operator = new SttDefault(sQuery, tQuery)
 
     /** read input data */
-    val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
+    // val trajRDD = ReadTrajJson(Config.get("hzData"), numPartitions)
+    val trajRDD = ReadTrajFile(Config.get("portoData"), numPartitions)
     println(s" ... before selection ${trajRDD.count} trajectories")
 
     /** step 1: Selection */
