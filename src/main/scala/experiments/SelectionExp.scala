@@ -12,7 +12,7 @@ import preprocessing.{ReadTrajFile, ReadTrajJson}
 import utils.Config
 
 import java.lang.System.nanoTime
-import scala.math.max
+import scala.math.{max, sqrt}
 import scala.io.Source
 
 /**
@@ -60,11 +60,13 @@ object SelectionExp extends App {
   for (query <- queries) {
     val tQuery = (query(4).toLong, query(5).toLong)
     val sQuery = Rectangle(query.slice(0, 4))
-    val selected = temporalSelector.query(
-      spatialSelector.query(pRDD)(sQuery)
-    )(tQuery)
+//    val selected = temporalSelector.query(
+//      spatialSelector.query(pRDD)(sQuery)
+//    )(tQuery)
+
+    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
     val c = selected.count
-    //    println(s"--- $c points selected ")
+    println(s"--- $c points selected ")
   }
   println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
@@ -112,7 +114,7 @@ object SelectionExp extends App {
             .zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
           val rtree = entries.length match {
             case 0 => RTree(entries, 0)
-            case _ => RTree(entries, c)
+            case _ => RTree(entries, 1000)
           }
           List((pIndex, rtree)).iterator
         })
