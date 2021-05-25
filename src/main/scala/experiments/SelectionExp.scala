@@ -33,26 +33,22 @@ object SelectionExp extends App {
 
   val queries = readQueries(Config.get("portoQuery"))
 
-  /** use pointRDD as input data */
+  /** use trajRDD as input data */
   val trajRDD = ReadTrajFile(trajectoryFile, numPartitions)
     .persist(StorageLevel.MEMORY_AND_DISK)
-  val dataSize = trajRDD.count
-  val converter = new Traj2PointConverter()
-  val pointRDD = converter.convert(trajRDD)
-  pointRDD.cache()
-  pointRDD.take(1)
+  trajRDD.take(1)
 
   val spatialRange = Rectangle(Array(118.35, 29.183, 120.5, 30.55))
-  val temporalRange = (pointRDD.map(_.timeStamp._1).min, pointRDD.map(_.timeStamp._1).max)
+  val temporalRange = (trajRDD.map(_.timeStamp._1).min, trajRDD.map(_.timeStamp._1).max)
 
 
   /** experiments on multiple queries */
   val partitioner = new STRPartitioner(numPartitions, Some(0.1))
-  partitioner.getPartitionRange(pointRDD)
+  partitioner.getPartitionRange(trajRDD)
   val partitionRange = partitioner.partitionRange
   //  println(partitionRange)
   val temporalSelector = new TemporalSelector()
-  val pRDD = partitioner.partition(pointRDD)
+  val pRDD = partitioner.partition(trajRDD)
   val spatialSelector = RTreeHandlerMultiple(partitionRange)
 
   var t = nanoTime()
@@ -60,11 +56,11 @@ object SelectionExp extends App {
   for (query <- queries) {
     val tQuery = (query(4).toLong, query(5).toLong)
     val sQuery = Rectangle(query.slice(0, 4))
-//    val selected = temporalSelector.query(
-//      spatialSelector.query(pRDD)(sQuery)
-//    )(tQuery)
+    val selected = temporalSelector.query(
+      spatialSelector.query(pRDD)(sQuery)
+    )(tQuery)
 
-    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+    //    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
     val c = selected.count
     println(s"--- $c points selected ")
   }
