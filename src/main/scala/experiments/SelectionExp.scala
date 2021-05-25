@@ -50,7 +50,7 @@ object SelectionExp extends App {
   val partitioner = new STRPartitioner(numPartitions, Some(0.1))
   partitioner.getPartitionRange(pointRDD)
   val partitionRange = partitioner.partitionRange
-  println(partitionRange)
+  //  println(partitionRange)
   val temporalSelector = new TemporalSelector()
   val pRDD = partitioner.partition(pointRDD)
   val spatialSelector = RTreeHandlerMultiple(partitionRange)
@@ -88,6 +88,7 @@ object SelectionExp extends App {
     var rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
 
     def genRTreeRDD(dataRDD: RDD[Point]): RDD[(Int, RTree[Point])] = {
+      val rtreeT = nanoTime()
       val c = capacity.getOrElse({
         val dataSize = dataRDD.count
         max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
@@ -104,7 +105,7 @@ object SelectionExp extends App {
             partitionsMap.iterator
           }
         }
-      dataRDDWithIndex
+      val res = dataRDDWithIndex
         .mapPartitions(x => {
           val (pIndex, contents) = x.next
           val entries = contents.map(x => (x, x.id))
@@ -115,6 +116,8 @@ object SelectionExp extends App {
           }
           List((pIndex, rtree)).iterator
         })
+      println(s"... Generating RTree takes ${((nanoTime() - rtreeT) * 1e-9).formatted("%.3f")} s.")
+      res
     }
 
     def query(dataRDD: RDD[Point])(queryRange: Rectangle): RDD[Point] = {
