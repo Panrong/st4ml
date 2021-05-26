@@ -26,15 +26,14 @@ object SelectorDev {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
 
-    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-      .persist(StorageLevel.MEMORY_AND_DISK)
-
-    //    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
+//    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+//      .persist(StorageLevel.MEMORY_AND_DISK)
+    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
     println(trajRDD.count)
     val dataSize = trajRDD.count
 
-    val sQuery = Rectangle(Array(118.116, 29.061, 120.167, 30.184))
-    val tQuery = (1597000000L, 1598000000L)
+    val sQuery = Rectangle(Array(-9.020497248267002, 39.65487571786815, -8.72821462082292, 42.006813716041854))
+    val tQuery = (1372684617L, 1372701688L)
     val rTreeCapacity = max(sqrt(dataSize / numPartitions).toInt, 100)
 
     println("\n*-*-*-*-*-*-*-*-*-*-*-*")
