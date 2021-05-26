@@ -26,10 +26,10 @@ object SelectorDev {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
 
-//    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-//      .persist(StorageLevel.MEMORY_AND_DISK)
+    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+      .persist(StorageLevel.MEMORY_AND_DISK)
 
-    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
+    //    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
     println(trajRDD.count)
     val dataSize = trajRDD.count
 
