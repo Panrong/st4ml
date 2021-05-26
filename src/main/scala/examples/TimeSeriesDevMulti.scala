@@ -37,7 +37,7 @@ object TimeSeriesDevMulti {
     val queries = readQueries(Config.get("portoQuery"))
       //    val queries = readQueries(Config.get("hzQuery"))
 
-      .map(x => (x(4).toLong, x(5).toLong)).take(5)
+      .map(x => (x(4).toLong, x(5).toLong))
 
 
     /**
