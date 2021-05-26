@@ -2,7 +2,7 @@ package experiments
 
 import geometry.{Rectangle, Shape, Trajectory}
 import operators.selection.indexer.RTree
-import operators.selection.partitioner.STRPartitioner
+import operators.selection.partitioner._
 import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -44,8 +44,8 @@ object SelectionExp extends App {
 
   /** experiments on multiple queries */
 
-  val partitioner = new STRPartitioner(numPartitions, Some(0.1))
-  partitioner.getPartitionRange(trajRDD)
+  val partitioner = new HashPartitioner(numPartitions)
+  //  partitioner.getPartitionRange(trajRDD)
   val partitionRange = partitioner.partitionRange
   //  println(partitionRange)
   val temporalSelector = new TemporalSelector()
