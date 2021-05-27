@@ -38,6 +38,7 @@ object TimeSeriesDevMulti {
       //    val queries = readQueries(Config.get("hzQuery"))
 
       .map(x => (x(4).toLong, x(5).toLong))
+      .take(2)
 
 
     /**
@@ -77,15 +78,12 @@ object TimeSeriesDevMulti {
 
     /** step 3: Extraction */
     val extractor = new TimeSeriesExtractor()
-    var slots = new Array[Array[(Long, Long)]](0)
     for (query <- queries) {
       val res = extractor.countTimeSlotSamplesSpatial((query._1, query._2))(rdd2)
       val resCombined = res.flatMap(x => x).reduceByKey(_ + _).collect
-      println(resCombined.take(5).sortBy(_._1._1).deep)
+      //      println(resCombined.take(5).sortBy(_._1._1).deep)
       println(s"Total number: ${resCombined.map(_._2).sum}")
-      slots = slots :+ resCombined.map(_._1)
     }
-    val slotsIter = slots.toIterator
     println(s"... extraction takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
 
@@ -94,7 +92,7 @@ object TimeSeriesDevMulti {
 
     t = nanoTime()
     for (query <- queries) {
-      val slots = (query._1 to query._2 by timeInterval).sliding(2).toArray.map(x => (x(0), x(1)))
+      val slots = (query._1 to (query._2 + timeInterval) by timeInterval).sliding(2).toArray.map(x => (x(0), x(1)))
       val benchmark = pointRDD.mapPartitions(iter => {
         val points = iter.toArray
         slots.map(slot => {
