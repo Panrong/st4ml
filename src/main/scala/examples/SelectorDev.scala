@@ -63,7 +63,7 @@ object SelectorDev {
 
     t = nanoTime()
     val hashPartitioner = new HashPartitioner(numPartitions)
-    val pRDDHash = hashPartitioner.partition(trajRDD).cache()
+    val pRDDHash = hashPartitioner.partition(trajRDD)
     val partitionRangeHash = hashPartitioner.partitionRange
 
     val selectorHash = RTreeHandler(partitionRangeHash, Some(rTreeCapacity))
@@ -87,7 +87,7 @@ object SelectorDev {
 
     t = nanoTime()
     val quadTreePartitioner = new QuadTreePartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
-    val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
+    val pRDDQt = quadTreePartitioner.partition(trajRDD)
     val partitionRangeQt = quadTreePartitioner.partitionRange
     val selectorQt = RTreeHandler(partitionRangeQt, Some(rTreeCapacity))
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
@@ -97,7 +97,7 @@ object SelectorDev {
     for (query <- queries) {
       val tQuery = (query(4).toLong, query(5).toLong)
       val sQuery = Rectangle(query.slice(0, 4))
-      val queriedRDD2Qt = selectorQt.query(pRDDQt)(sQuery).cache()
+      val queriedRDD2Qt = selectorQt.query(pRDDQt)(sQuery)
       val queriedRDD3Qt = temporalSelectorQt.query(queriedRDD2Qt)(tQuery)
       println(s"==== Queried dataset contains ${queriedRDD3Qt.count} entries (ST)")
     }
@@ -108,7 +108,7 @@ object SelectorDev {
 
     t = nanoTime()
     val strPartitioner = new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
-    val pRDDSTR = strPartitioner.partition(trajRDD).cache()
+    val pRDDSTR = strPartitioner.partition(trajRDD)
     val partitionRangeSTR = strPartitioner.partitionRange
 
     val selectorSTR = RTreeHandler(partitionRangeSTR, Some(rTreeCapacity))
