@@ -26,7 +26,7 @@ object SelectorDev {
     sc.setLogLevel("ERROR")
 
     val trajectoryFile = Config.get("hzData")
-    val numPartitions = Config.get("numPartitions").toInt
+    val numPartitions = args(0).toInt
 
     //    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
     //      .persist(StorageLevel.MEMORY_AND_DISK)
