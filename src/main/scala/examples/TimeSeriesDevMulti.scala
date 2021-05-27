@@ -93,8 +93,8 @@ object TimeSeriesDevMulti {
     println("=== Benchmark:")
 
     t = nanoTime()
-    for (_ <- queries) {
-      val slots = slotsIter.next()
+    for (query <- queries) {
+      val slots = (query._1 to query._2 by timeInterval).sliding(2).toArray.map(x => (x(0), x(1)))
       val benchmark = pointRDD.mapPartitions(iter => {
         val points = iter.toArray
         slots.map(slot => {
