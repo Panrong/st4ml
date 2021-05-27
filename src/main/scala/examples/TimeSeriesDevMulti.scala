@@ -26,27 +26,27 @@ object TimeSeriesDevMulti {
     sc.setLogLevel("ERROR")
 
     /** parse input arguments */
-    val trajFile = Config.get("portoData")
-    //    val trajFile = Config.get("hzData")
+    //    val trajFile = Config.get("portoData")
+    val trajFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
     val sQuery = Rectangle(args(0).split(",").map(_.toDouble))
     val tQuery = parseTemporalRange(args(1))
     val queryRange = args(2).split(",").map(_.toLong)
     val timeInterval = args(3).toInt
 
-    val queries = readQueries(Config.get("portoQuery"))
-      //    val queries = readQueries(Config.get("hzQuery"))
+    //    val queries = readQueries(Config.get("portoQuery"))
+    val queries = readQueries(Config.get("hzQuery"))
 
       .map(x => (x(4).toLong, x(5).toLong))
-    
+
 
     /**
      * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 900
      */
 
     /** read input data */
-    //    val trajRDD = ReadTrajJson(trajFile, numPartitions)
-    val trajRDD = ReadTrajFile(trajFile, 100000000)
+    val trajRDD = ReadTrajJson(trajFile, numPartitions)
+    //    val trajRDD = ReadTrajFile(trajFile, 100000000)
     /** step 1: Selection */
     val selector = DefaultSelectorOld(numPartitions, sQuery, tQuery)
     val rdd1 = selector.query(trajRDD)
