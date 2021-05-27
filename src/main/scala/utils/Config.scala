@@ -22,7 +22,7 @@ object Config {
   var distributed: Map[String, String] = {
     Map(
       "master" -> "spark://11.167.227.34:7077",
-      "numPartitions" -> "64",
+      "numPartitions" -> "256",
       "hzData" -> "/datasets/hz_traj/",
       "portoData" -> "/datasets/porto_traj.csv",
       "resPath" -> "/datasets/out/",
