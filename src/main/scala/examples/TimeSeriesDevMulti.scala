@@ -38,8 +38,7 @@ object TimeSeriesDevMulti {
       //    val queries = readQueries(Config.get("hzQuery"))
 
       .map(x => (x(4).toLong, x(5).toLong))
-      .take(2)
-
+    
 
     /**
      * example input arguments: -180,-180,180,180 0,20000000000 1597015819,1597016719 900
