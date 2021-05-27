@@ -29,6 +29,7 @@ object PointCompanionDemo {
     val queryThreshold = args(2).split(",").map(_.toDouble)
     val sThreshold = queryThreshold.head
     val tThreshold = queryThreshold.last
+    val optimize = args(3).toBoolean
 
     /**
      * example input arguments: "118.35,29.183,120.5,30.55" "1597132800,1597136400" "1000,600"
@@ -55,7 +56,8 @@ object PointCompanionDemo {
     println(rdd2.count)
 
     /** step 3: Extraction */
-    val companionPairs = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    val companionPairs = if (optimize) operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    else operator.extractor.extract(sThreshold, tThreshold)(rdd2)
     println("=== Companion Analysis done: ")
     companionPairs.foreach { case (q, c) => println(s"  ... $q: ${c.size}") }
     sc.stop()
