@@ -1,7 +1,9 @@
 package examples
 
-import geometry.Rectangle
-import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner}
+import experiments.SelectionExp.readQueries
+import geometry.{Rectangle, Trajectory}
+import operators.convertion.Traj2PointConverter
+import operators.selection.partitioner.{HashPartitioner, QuadTreePartitioner, STRPartitioner}
 import operators.selection.selectionHandler.{RTreeHandler, TemporalSelector}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
@@ -26,27 +28,33 @@ object SelectorDev {
     val trajectoryFile = Config.get("hzData")
     val numPartitions = Config.get("numPartitions").toInt
 
-//    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
-//      .persist(StorageLevel.MEMORY_AND_DISK)
-    val trajRDD = ReadTrajFile(Config.get("portoData"),10000000)
+    //    val trajRDD = ReadTrajJson(trajectoryFile, numPartitions)
+    //      .persist(StorageLevel.MEMORY_AND_DISK)
+
+    // val trajRDD = ReadTrajFile(Config.get("portoData"), 10000000)
+    val trajRDD = new Traj2PointConverter().convert(ReadTrajFile(Config.get("portoData"), 10000000))
     println(trajRDD.count)
     val dataSize = trajRDD.count
 
-    val sQuery = Rectangle(Array(-9.020497248267002, 39.65487571786815, -8.72821462082292, 42.006813716041854))
-    val tQuery = (1372684617L, 1372701688L)
+    val queries = readQueries(Config.get("portoQuery")).take(10)
+
     val rTreeCapacity = max(sqrt(dataSize / numPartitions).toInt, 100)
 
     println("\n*-*-*-*-*-*-*-*-*-*-*-*")
 
     /** benchmark */
     t = nanoTime()
-    val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
-    println(s"*- Full scan S: ${fullSRDD.count} -*")
-    val fullSTRDD = fullSRDD.filter(x => {
-      val (ts, te) = x.timeStamp
-      (ts <= tQuery._2 && ts >= tQuery._1) || (te <= tQuery._2 && te >= tQuery._1)
-    })
-    println(s"*- Full scan ST: ${fullSTRDD.count} -*")
+    for (query <- queries) {
+      val tQuery = (query(4).toLong, query(5).toLong)
+      val sQuery = Rectangle(query.slice(0, 4))
+      val fullSRDD = trajRDD.filter(x => x.intersect(sQuery))
+//      println(s"*- Full scan S: ${fullSRDD.count} -*")
+      val fullSTRDD = fullSRDD.filter(x => {
+        val (ts, te) = x.timeStamp
+        (ts <= tQuery._2 && ts >= tQuery._1) || (te <= tQuery._2 && te >= tQuery._1)
+      })
+      println(s"*- Full scan ST: ${fullSTRDD.count} -*")
+    }
     println("*-*-*-*-*-*-*-*-*-*-*-*")
     println(s"... Full scanning takes ${(nanoTime() - t) * 1e-9} s.\n")
 
@@ -63,15 +71,16 @@ object SelectorDev {
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Hash = selectorHash.query(pRDDHash)(sQuery).cache()
-    println(s"==== Queried dataset contains ${queriedRDD2Hash.count} entries (RTree)")
-    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
-
-    t = nanoTime()
     val temporalSelectorH = new TemporalSelector
-    val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)(tQuery)
-    println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
-    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
+
+    for (query <- queries) {
+      val tQuery = (query(4).toLong, query(5).toLong)
+      val sQuery = Rectangle(query.slice(0, 4))
+      val queriedRDD2Hash = selectorHash.query(pRDDHash)(sQuery)
+      val queriedRDD3Hash = temporalSelectorH.query(queriedRDD2Hash)(tQuery)
+      println(s"==== Queried dataset contains ${queriedRDD3Hash.count} entries (ST)")
+    }
+    println(s"... Querying takes ${(nanoTime() - t) * 1e-9} s.")
 
     /** test quadTree partitioner */
     println("\n==== quadTree ====")
@@ -80,21 +89,42 @@ object SelectorDev {
     val quadTreePartitioner = new QuadTreePartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
     val pRDDQt = quadTreePartitioner.partition(trajRDD).cache()
     val partitionRangeQt = quadTreePartitioner.partitionRange
-
     val selectorQt = RTreeHandler(partitionRangeQt, Some(rTreeCapacity))
-    pRDDQt.count()
     println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
 
     t = nanoTime()
-    val queriedRDD2Qt = selectorQt.query(pRDDQt)(sQuery).cache()
-    println(s"==== Queried dataset contains ${queriedRDD2Qt.count} entries (RTree)")
-    println(s"... Querying with index takes ${(nanoTime() - t) * 1e-9} s.")
+    val temporalSelectorQt = new TemporalSelector
+    for (query <- queries) {
+      val tQuery = (query(4).toLong, query(5).toLong)
+      val sQuery = Rectangle(query.slice(0, 4))
+      val queriedRDD2Qt = selectorQt.query(pRDDQt)(sQuery).cache()
+      val queriedRDD3Qt = temporalSelectorQt.query(queriedRDD2Qt)(tQuery)
+      println(s"==== Queried dataset contains ${queriedRDD3Qt.count} entries (ST)")
+    }
+    println(s"... Querying takes ${(nanoTime() - t) * 1e-9} s.")
+
+    /** test STR partitioner */
+    println("\n==== STR ====")
 
     t = nanoTime()
-    val temporalSelectorQt = new TemporalSelector
-    val queriedRDD3Qt = temporalSelectorQt.query(queriedRDD2Qt)(tQuery)
-    println(s"==== Queried dataset contains ${queriedRDD3Qt.count} entries (ST)")
-    println(s"... Temporal querying takes ${(nanoTime() - t) * 1e-9} s.")
+    val strPartitioner = new STRPartitioner(numPartitions, Some(Config.get("samplingRate").toDouble))
+    val pRDDSTR = strPartitioner.partition(trajRDD).cache()
+    val partitionRangeSTR = strPartitioner.partitionRange
+
+    val selectorSTR = RTreeHandler(partitionRangeSTR, Some(rTreeCapacity))
+    pRDDSTR.count()
+    println(s"... Partitioning takes ${(nanoTime() - t) * 1e-9} s.")
+    val temporalSelectorSTR = new TemporalSelector
+
+    t = nanoTime()
+    for (query <- queries) {
+      val tQuery = (query(4).toLong, query(5).toLong)
+      val sQuery = Rectangle(query.slice(0, 4))
+      val queriedRDD2STR = selectorSTR.query(pRDDSTR)(sQuery).cache()
+      val queriedRDD3STR = temporalSelectorSTR.query(queriedRDD2STR)(tQuery)
+      println(s"==== Queried dataset contains ${queriedRDD3STR.count} entries (ST)")
+    }
+    println(s"... Querying takes ${(nanoTime() - t) * 1e-9} s.")
 
     sc.stop()
   }
