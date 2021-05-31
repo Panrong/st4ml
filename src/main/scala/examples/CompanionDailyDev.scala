@@ -68,7 +68,8 @@ object CompanionDailyDev {
     //      .reduceByKey(_ ++ _)
 
     /** step 3: Extraction */
-    val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    //        val companionPairsRDD = operator.extractor.optimizedExtract(sThreshold, tThreshold)(rdd2)
+    val companionPairsRDD = operator.extractor.extractSTR(sThreshold, tThreshold)(rdd2)
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()
     println("=== Companion Analysis done: ")

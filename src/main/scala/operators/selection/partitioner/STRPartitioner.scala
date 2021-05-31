@@ -7,7 +7,9 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Double] = None, threshold: Double = 0)
+class STRPartitioner(numPartitions: Int,
+                     override var samplingRate: Option[Double] = None,
+                     threshold: Double = 0)
   extends SpatialPartitioner {
   var partitionRange: Map[Int, Rectangle] = Map()
 
@@ -226,7 +228,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
     dataRDD.take(1).head match {
-      case _: Point =>
+      case _: Point => {
         val rddWithIndex = dataRDD
           .map(x => {
             val pointShrink = Point(Array(
@@ -237,9 +239,9 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
               case (_, v) => pointShrink.inside(v)
             })
           })
-          .map(x => (x._1, x._2.keys.head))
-          .map(_.swap)
-        rddWithIndex
+        if (threshold != 0) rddWithIndex.flatMap(x => x._2.keys.map(y => (y, x._1)))
+        else rddWithIndex.map(x => (x._2.keys.head, x._1))
+      }
       case _ =>
         val rddWithIndex = dataRDD
           .map(x => {
