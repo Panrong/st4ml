@@ -7,7 +7,8 @@ import utils.Config
 
 object FaceDatasetToEsDemo {
 
-  case class Point(latitude: String, longitude:String, timestamp:String)
+  case class Point(latitude: String, longitude: String, timestamp: String)
+
   case class Traj(id: String, points: Array[Point])
 
   def main(args: Array[String]): Unit = {
@@ -29,9 +30,9 @@ object FaceDatasetToEsDemo {
     val dataDf = spark.read.option("multiline", "true").json(filePath)
     val dataDs = dataDf.as[Traj]
     val flattenDs = dataDs.withColumn("point", explode(col("points")))
-                          .withColumn("latitude", col("point.latitude"))
-                          .withColumn("longitude", col("point.longitude"))
-                          .withColumn("timestamp", col("point.timestamp"))
+      .withColumn("latitude", col("point.latitude"))
+      .withColumn("longitude", col("point.longitude"))
+      .withColumn("timestamp", col("point.timestamp"))
     val resultDs = flattenDs.drop("points", "point")
     resultDs.saveToEs(esIndex)
     resultDs.show()

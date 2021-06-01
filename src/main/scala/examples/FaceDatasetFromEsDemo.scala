@@ -1,10 +1,8 @@
 package examples
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{col, explode}
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{Row, SparkSession}
+import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
 import org.elasticsearch.spark.sparkContextFunctions
-import org.elasticsearch.spark.sql.sparkDatasetFunctions
 import utils.Config
 
 object FaceDatasetFromEsDemo {
@@ -38,7 +36,14 @@ object FaceDatasetFromEsDemo {
     resRdd.take(5).foreach(println)
 
     import spark.implicits._
-    resRdd.toDF.write.json(outputPath)
+    val schema = StructType(
+      Seq(
+        StructField("point", MapType(StringType, StringType, valueContainsNull = false), nullable = false)
+      )
+    )
+    val resDF = spark.createDataFrame(resRdd.map(x => Row(x._2)), schema)
+    resDF.write.json(outputPath)
+
 
   }
 
