@@ -16,7 +16,7 @@ object FaceDatasetToEsDemo {
     /** set up Spark environment */
     val spark = SparkSession
       .builder()
-      .appName("io-es")
+      .appName("io-es-writing-face")
       .master(Config.get("master"))
       .config("es.nodes", args(1))
       .config("es.port", args(2))
