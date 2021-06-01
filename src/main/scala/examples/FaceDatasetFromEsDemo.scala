@@ -38,7 +38,7 @@ object FaceDatasetFromEsDemo {
     import spark.implicits._
     val schema = StructType(
       Seq(
-        StructField("point", MapType(StringType, StringType, valueContainsNull = false), nullable = false)
+        StructField("point", MapType(StringType, StringType, valueContainsNull = true), nullable = true)
       )
     )
     val resDF = spark.createDataFrame(resRdd.map(x => Row(x._2)), schema)
