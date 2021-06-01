@@ -34,17 +34,16 @@ object FaceDatasetFromEsDemo {
     // (HEJrwnkB9NeNnnHfOvYY,Map(id -> 326e665e-b2e0-35f2-bef7-24c6be2b2fa6, latitude -> 30.2765380859375, longitude -> 120.11165364583333, timestamp -> 1597561598))
     println("Reading result top 5: ")
     resRdd.take(5).foreach(println)
-
+    val resRddFilter = resRdd.map(_._2).map(x => x.mapValues(_.asInstanceOf[Option[Double]])).filter(_.values.forall(_.isDefined)).map(x => x.mapValues(_.get.toString))
     import spark.implicits._
     val schema = StructType(
       Seq(
-        StructField("point", MapType(StringType, StringType, valueContainsNull = true), nullable = true)
+        StructField("point", MapType(StringType, StringType, valueContainsNull = false), nullable = false)
       )
     )
-    val resDF = spark.createDataFrame(resRdd.map(x => Row(x._2)), schema)
+    val resDF = spark.createDataFrame(resRddFilter.map(Row(_)), schema)
     resDF.write.json(outputPath)
-
-
+    
   }
 
 }
