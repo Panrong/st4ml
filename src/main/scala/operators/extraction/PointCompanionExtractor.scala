@@ -90,6 +90,27 @@ class PointCompanionExtractor extends BaseExtractor[Point] with Serializable {
       .reduceByKey(_ ++ _, numPartitions * 4)
   }
 
+  // find all companion pairs, make sure that the pRDD is partitioned with overlap to ensure correctness
+  def extractQuadTree(sThreshold: Double, tThreshold: Double)
+                (pRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
+
+    val numPartitions = pRDD.getNumPartitions
+
+    val repartitioner = new QuadTreePartitioner(Config.get("numPartitions").toInt,
+      Some(Config.get("samplingRate").toDouble), sThreshold)
+    val rdd = repartitioner.partition(pRDD)
+      .mapPartitionsWithIndex((id, p) => p.map((id, _)))
+    rdd.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+    rdd.join(rdd).map(_._2).filter {
+      case (p1, p2) => isCompanion(sThreshold, tThreshold)(p1, p2)
+    }.map {
+      case (p1, p2) => (p1.id, Array((p1.timeStamp._1, p2.id)))
+    }
+      .mapValues(_.toMap)
+      .reduceByKey(_ ++ _, numPartitions * 4)
+  }
+
   //find companion pairs of some queries with native spark implementation
   def queryWithIDs(sThreshold: Double, tThreshold: Double)(pRDD: RDD[Point], queryRDD: RDD[Point]): RDD[(String, Map[Long, String])] = {
     queryRDD.cartesian(pRDD).filter {

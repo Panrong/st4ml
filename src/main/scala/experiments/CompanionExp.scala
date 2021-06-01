@@ -36,7 +36,7 @@ object CompanionExp {
     val optimize = args(3).toBoolean
 
     /**
-     * example input arguments: "118.35,29.183,120.5,30.55" "2020-07-31 23:30:00,2020-08-02 00:30:00" "1000,600"
+     * example input arguments: "118.35,29.183,120.5,30.55" "2020-07-31 23:30:00,2020-08-02 00:30:00" "1000,600 true"
      */
 
     /** initialize operators */
@@ -69,7 +69,7 @@ object CompanionExp {
     //      .reduceByKey(_ ++ _)
 
     /** step 3: Extraction */
-    val companionPairsRDD = if(optimize) operator.extractor.extractSTR(sThreshold, tThreshold)(rdd2)
+    val companionPairsRDD = if(optimize) operator.extractor.extractQuadTree(sThreshold, tThreshold)(rdd2)
     else operator.extractor.extract(sThreshold, tThreshold)(rdd2)
     companionPairsRDD.persist(StorageLevel.MEMORY_AND_DISK_SER)
     rdd2.unpersist()

@@ -166,7 +166,7 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
     dataRDD.take(1).head match {
-      case _: Point =>
+      case _: Point => {
         val rddWithIndex = dataRDD
           .map(x => {
             val pointShrink = Point(Array(
@@ -177,9 +177,9 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
               case (_, v) => pointShrink.inside(v)
             })
           })
-          .map(x => (x._1, x._2.keys.head))
-          .map(_.swap)
-        rddWithIndex
+        if (threshold != 0) rddWithIndex.flatMap(x => x._2.keys.map(y => (y, x._1)))
+        else rddWithIndex.map(x => (x._2.keys.head, x._1))
+      }
       case _ =>
         val rddWithIndex = dataRDD
           .map(x => {
@@ -198,6 +198,7 @@ class QuadTreePartitioner(numPartitions: Int, override var samplingRate: Option[
           .map(_.swap)
     }
   }
+
 
   def getPartitionRange[T <: Shape : ClassTag](dataRDD: RDD[T]): Map[Int, Rectangle] = {
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
