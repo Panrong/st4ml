@@ -11,7 +11,7 @@ object ReadFaceJson {
       .builder()
       .getOrCreate()
     import spark.implicits._
-    val faceDF = spark.read.json(jsonPath)
+    val faceDF = spark.read.json(jsonPath).na.fill(181)
     val faceRDD = faceDF.as[Document].rdd.map(p => Point(Array(p.longitude, p.latitude), p.timestamp, p.id))
     faceRDD
   }
