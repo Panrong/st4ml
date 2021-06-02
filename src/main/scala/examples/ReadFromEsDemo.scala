@@ -23,22 +23,21 @@ object ReadFromEsDemo {
     val esIndex = args(2)
     val esQuery = args(3)
     val outputPath = args(4)
+    val numPartitions = args(5).toInt
 
     // reading
     val options = Map("es.nodes" -> esNode,
       "es.port" -> esPort,
       "es.query" -> esQuery)
-
     val resDs = spark.read
       .format("org.elasticsearch.spark.sql")
       .options(options)
       .load(esIndex)
 
-
     println("Reading result top 5: ")
     resDs.take(5).foreach(println)
     resDs.printSchema()
-    resDs.write.json(outputPath)
+    resDs.repartition(numPartitions).write.json(outputPath)
   }
 
 }
