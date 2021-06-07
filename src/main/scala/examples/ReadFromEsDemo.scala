@@ -23,6 +23,7 @@ object ReadFromEsDemo {
     val esIndex = args(2)
     val esQuery = args(3)
     val outputPath = args(4)
+    val numPartitions = args(5).toInt
 
     // reading
     val options = Map("pushdown" -> "true",
@@ -52,7 +53,6 @@ object ReadFromEsDemo {
       .options(options)
       .load(esIndex)
 
-
     println("Reading result top 5: ")
     resDs.take(5).foreach(println)
     resDs.printSchema()
@@ -60,7 +60,7 @@ object ReadFromEsDemo {
     print("Total number of records: ")
     println(resDs.count())
 
-    resDs.write.json(outputPath)
+    resDs.repartition(numPartitions).write.json(outputPath)
 
   }
 
