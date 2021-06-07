@@ -1,6 +1,5 @@
 package examples
 
-import geometry.{Point, Trajectory}
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -50,7 +49,8 @@ object ReadVhcEsDemo {
       })
 
     val TrajDs = spark.createDataset(TrajRDD)
-    println("Reading result top 5: ")    TrajDs.take(5).foreach(println)
+    println("Reading result top 5: ")
+    TrajDs.take(5).foreach(println)
     TrajDs.printSchema()
     TrajDs.repartition(numPartitions).write.json(outputPath)
 
