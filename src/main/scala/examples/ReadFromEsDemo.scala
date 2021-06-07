@@ -25,9 +25,27 @@ object ReadFromEsDemo {
     val outputPath = args(4)
 
     // reading
-    val options = Map("es.nodes" -> esNode,
+    val options = Map("pushdown" -> "true",
+      "es.nodes" -> esNode,
       "es.port" -> esPort,
       "es.query" -> esQuery)
+    // aggregation query example
+//      "es.query" -> """{
+//                      |    "query": {
+//                      |        "range": {
+//                      |            "timestamp" :{
+//                      |                "gte": 1596608074,
+//                      |                "lte": 1596626531
+//                      |            }
+//                      |        }
+//                      |    },
+//                      |    "aggs": {
+//                      |        "id_groupby" :{
+//                      |            "terms": {"field": "id.keyword"}
+//                      |        }
+//                      |    }
+//                      |}
+//                      |""".stripMargin)
 
     val resDs = spark.read
       .format("org.elasticsearch.spark.sql")
@@ -38,7 +56,12 @@ object ReadFromEsDemo {
     println("Reading result top 5: ")
     resDs.take(5).foreach(println)
     resDs.printSchema()
+
+    print("Total number of records: ")
+    println(resDs.count())
+
     resDs.write.json(outputPath)
+
   }
 
 }
