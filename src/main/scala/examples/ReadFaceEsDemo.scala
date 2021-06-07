@@ -5,7 +5,7 @@ import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
 import org.elasticsearch.spark.sparkContextFunctions
 import utils.Config
 
-object ReadFromEsDemo {
+object ReadFaceEsDemo {
 
   def main(args: Array[String]): Unit = {
     /** set up Spark environment */
