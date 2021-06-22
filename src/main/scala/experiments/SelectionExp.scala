@@ -2,7 +2,7 @@ package experiments
 
 import geometry.{Rectangle, Shape, Trajectory}
 import operators.selection.indexer.RTree
-import operators.selection.partitioner._
+import operators.selection
 import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -14,6 +14,7 @@ import java.lang.System.nanoTime
 import scala.io.Source
 import scala.math.max
 import scala.reflect.ClassTag
+import org.apache.spark.HashPartitioner
 
 /**
  * Compare the time usage of selection(repartition + rtree) vs filtering on different selectivities
@@ -44,7 +45,7 @@ object SelectionExp extends App {
 
   /** experiments on multiple queries */
 
-  val partitioner = new HashPartitioner(numPartitions)
+  val partitioner = new selection.partitioner.HashPartitioner(numPartitions)
   //  partitioner.getPartitionRange(trajRDD)
   val partitionRange = partitioner.partitionRange
   //  println(partitionRange)
@@ -66,6 +67,15 @@ object SelectionExp extends App {
   })
   val mean2 = info2.map(_._2).sum / info2.count.toDouble
   println(s"std old: ${math.sqrt(info2.map(x => (x._2 - mean2) * (x._2 - mean2)).sum / info2.count.toDouble)}")
+
+  val pRDD3 = trajRDD.map((_, 1)).partitionBy(new HashPartitioner(numPartitions))
+
+  val info3 = pRDD3.mapPartitionsWithIndex((x, iter) => {
+    Array((x, iter.size)).toIterator
+  })
+
+  val mean3 = info3.map(_._2).sum / info3.count.toDouble
+  println(s"std default: ${math.sqrt(info3.map(x => (x._2 - mean3) * (x._2 - mean3)).sum / info3.count.toDouble)}")
 
   //  var t = nanoTime()
   //  println(s"start ${queries.length} queries")
