@@ -9,7 +9,7 @@ import scala.collection.immutable.HashMap
 
 class HashPartitioner(numPartitions: Int) extends SpatialPartitioner with Serializable {
   override var samplingRate: Option[Double] = None
-  val multiplier = 10
+  val multiplier = math.sqrt(numPartitions).toInt
 
   def partitionOld[T <: geometry.Shape : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val partitioner = new KeyPartitioner(numPartitions)
