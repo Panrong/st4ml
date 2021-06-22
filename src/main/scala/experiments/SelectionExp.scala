@@ -14,7 +14,7 @@ import java.lang.System.nanoTime
 import scala.io.Source
 import scala.math.max
 import scala.reflect.ClassTag
-import org.apache.spark.HashPartitioner
+import org.apache.spark.{HashPartitioner, RangePartitioner}
 
 /**
  * Compare the time usage of selection(repartition + rtree) vs filtering on different selectivities
@@ -72,7 +72,6 @@ object SelectionExp extends App {
 
 
   val pRDD3 = trajRDD.map((_, 1)).partitionBy(new HashPartitioner(numPartitions))
-
   val info3 = pRDD3.mapPartitionsWithIndex((x, iter) => {
     Array((x, iter.size)).toIterator
   })
@@ -81,6 +80,17 @@ object SelectionExp extends App {
   println(s"std default: ${math.sqrt(info3.map(x => (x._2 - mean3) * (x._2 - mean3)).sum / info3.count.toDouble)}")
   println(s"diff default: ${info3.map(_._2).max - info3.map(_._2).min}")
 
+  implicit val TrajOrdering: Ordering[Trajectory] = new Ordering[Trajectory] {
+    override def compare(a: Trajectory, b: Trajectory): Int = a.hashCode - b.hashCode
+  }
+  val pRDD4 = trajRDD.map((_, 1)).partitionBy(new RangePartitioner(numPartitions, trajRDD.map((_, 1))))
+  val info4 = pRDD4.mapPartitionsWithIndex((x, iter) => {
+    Array((x, iter.size)).toIterator
+  })
+
+  val mean4 = info4.map(_._2).sum / info4.count.toDouble
+  println(s"std range: ${math.sqrt(info4.map(x => (x._2 - mean4) * (x._2 - mean4)).sum / info4.count.toDouble)}")
+  println(s"diff range: ${info4.map(_._2).max - info4.map(_._2).min}")
 
   //  var t = nanoTime()
   //  println(s"start ${queries.length} queries")
