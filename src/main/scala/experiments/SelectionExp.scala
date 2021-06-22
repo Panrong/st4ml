@@ -52,26 +52,41 @@ object SelectionExp extends App {
   val pRDD = partitioner.partition(trajRDD)
   val spatialSelector = RTreeHandlerMultiple[Trajectory](partitionRange)
 
-  var t = nanoTime()
-  println(s"start ${queries.length} queries")
-  for (query <- queries) {
-    val tQuery = (query(4).toLong, query(5).toLong)
-    val sQuery = Rectangle(query.slice(0, 4))
-    //    val selected = temporalSelector.query(
-    //      spatialSelector.query(pRDD)(sQuery)
-    //    )(tQuery)
+  val info = pRDD.mapPartitionsWithIndex((x, iter) => {
+    Array((x, iter.size)).toIterator
+  })
+  //  info.collect.foreach(x => println(x._2))
 
-    //    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+  val mean = info.map(_._2).sum / info.count.toDouble
+  println(s"std: ${math.sqrt(info.map(x => (x._2 - mean) * (x._2 - mean)).sum / info.count.toDouble)}")
 
-    val selected = pRDD.mapPartitionsWithIndex((id, partition) => {
-      if (!partitionRange(id).intersect(sQuery) || partition.isEmpty) Iterator()
-      else partition.toArray.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery)).toIterator
-    })
+  val pRDD2 = partitioner.partitionOld(trajRDD)
+  val info2 = pRDD2.mapPartitionsWithIndex((x, iter) => {
+    Array((x, iter.size)).toIterator
+  })
+  val mean2 = info2.map(_._2).sum / info2.count.toDouble
+  println(s"std old: ${math.sqrt(info2.map(x => (x._2 - mean2) * (x._2 - mean2)).sum / info2.count.toDouble)}")
 
-    val c = selected.count
-    println(s"--- $c points selected ")
-  }
-  println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
+  //  var t = nanoTime()
+  //  println(s"start ${queries.length} queries")
+  //  for (query <- queries) {
+  //    val tQuery = (query(4).toLong, query(5).toLong)
+  //    val sQuery = Rectangle(query.slice(0, 4))
+  //    //    val selected = temporalSelector.query(
+  //    //      spatialSelector.query(pRDD)(sQuery)
+  //    //    )(tQuery)
+  //
+  //    //    val selected = pRDD.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery))
+  //
+  //    val selected = pRDD.mapPartitionsWithIndex((id, partition) => {
+  //      if (!partitionRange(id).intersect(sQuery) || partition.isEmpty) Iterator()
+  //      else partition.toArray.filter(x => x.intersect(sQuery) && temporalOverlap(x.timeStamp, tQuery)).toIterator
+  //    })
+  //
+  //    val c = selected.count
+  //    println(s"--- $c points selected ")
+  //  }
+  //  println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
   sc.stop()
 
