@@ -60,6 +60,7 @@ object SelectionExp extends App {
 
   val mean = info.map(_._2).sum / info.count.toDouble
   println(s"std: ${math.sqrt(info.map(x => (x._2 - mean) * (x._2 - mean)).sum / info.count.toDouble)}")
+  println(s"diff: ${info.map(_._2).max - info.map(_._2).min}")
 
   val pRDD2 = partitioner.partitionOld(trajRDD)
   val info2 = pRDD2.mapPartitionsWithIndex((x, iter) => {
@@ -67,6 +68,8 @@ object SelectionExp extends App {
   })
   val mean2 = info2.map(_._2).sum / info2.count.toDouble
   println(s"std old: ${math.sqrt(info2.map(x => (x._2 - mean2) * (x._2 - mean2)).sum / info2.count.toDouble)}")
+  println(s"diff old: ${info2.map(_._2).max - info2.map(_._2).min}")
+
 
   val pRDD3 = trajRDD.map((_, 1)).partitionBy(new HashPartitioner(numPartitions))
 
@@ -76,6 +79,8 @@ object SelectionExp extends App {
 
   val mean3 = info3.map(_._2).sum / info3.count.toDouble
   println(s"std default: ${math.sqrt(info3.map(x => (x._2 - mean3) * (x._2 - mean3)).sum / info3.count.toDouble)}")
+  println(s"diff default: ${info3.map(_._2).max - info3.map(_._2).min}")
+
 
   //  var t = nanoTime()
   //  println(s"start ${queries.length} queries")
