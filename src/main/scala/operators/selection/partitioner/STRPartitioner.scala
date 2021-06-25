@@ -1,9 +1,8 @@
 package operators.selection.partitioner
 
-import geometry.{Rectangle, Shape, Point}
+import geometry.{Point, Rectangle, Shape}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
-
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
@@ -22,75 +21,56 @@ class STRPartitioner(numPartitions: Int,
    */
 
   def getPartitionRange[T <: Shape : ClassTag](dataRDD: RDD[T]): Map[Int, Rectangle] = {
-    def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
-      val interval = 1.0 / n
-      var t: Double = 0
-      var q = new Array[Double](0)
-      while (t < 1 - interval) {
-        t += interval
-        q = q :+ t
-      }
-      q = 0.0 +: q
-      if (q.length < n + 1) q = q :+ 1.0
-      df.stat.approxQuantile(column, q, 0.001)
+    def getBoundary(df: DataFrame, n: Int, column: String): List[Double] = {
+      val q = (BigDecimal(0.0) to BigDecimal(1.0) by 1 / n.toDouble).toArray.map(_.toDouble)
+      df.stat.approxQuantile(column, q, 0.001).toList
     }
 
     def getStrip(df: DataFrame, range: List[Double], column: String): DataFrame = {
       df.filter(functions.col(column) >= range.head && functions.col(column) < range(1))
     }
 
-    def genBoxes(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]]):
+    def genBoxes(xBoundaries: List[Double], yBoundaries: Array[List[Double]]):
     (Array[List[Double]], Map[List[Double], Array[(List[Double], Int)]]) = {
-      var metaBoxes = new Array[List[Double]](0)
-      for (x <- 0 to x_boundaries.length - 2) metaBoxes = metaBoxes :+
-        List(x_boundaries(x), y_boundaries(x)(0), x_boundaries(x + 1), y_boundaries(0).last)
-      var boxMap: Map[List[Double], Array[(List[Double], Int)]] = Map()
-      var boxes = new Array[List[Double]](0)
-      var n = 0
-      for (i <- 0 to x_boundaries.length - 2) {
-        var stripBoxes = new Array[(List[Double], Int)](0)
-        val x_min = x_boundaries(i)
-        val x_max = x_boundaries(i + 1)
-        for (j <- 0 to y_boundaries(i).length - 2) {
-          val y_min = y_boundaries(i)(j)
-          val y_max = y_boundaries(i)(j + 1)
-          val box = List(x_min, y_min, x_max, y_max)
-          boxes = boxes :+ box
-          stripBoxes = stripBoxes :+ (box, n)
-          n += 1
-        }
-        boxMap += metaBoxes(i) -> stripBoxes
-      }
+      val metaBoxes = xBoundaries.sliding(2).zip(yBoundaries.toIterator).map {
+        case (List(x1, x2), y) => List(x1, y.head, x2, y.last)
+      }.toArray
+      val xPairs = xBoundaries.sliding(2)
+      val yPairs = yBoundaries.map(_.sliding(2)).toIterator
+      val boxMap = xPairs.zip(yPairs).map {
+        case (x, y) => y.map(yPrime => List(x.head, yPrime.head, x(1), yPrime(1)))
+      }.map(_.toArray.zipWithIndex).toArray
+        .zip(metaBoxes)
+        .map(_.swap)
+        .toMap
+      val boxes = boxMap.values.toArray.flatMap(x => x.map(_._1))
       (boxes, boxMap)
     }
 
-    def getWholeRange(df: DataFrame, column: List[String]): Array[Double] = {
+    def getWholeRange(df: DataFrame, column: List[String]): List[Double] = {
       implicit def toDouble: Any => Double = {
         case i: Int => i
         case f: Float => f
         case d: Double => d
       }
 
-      val x_min = df.select(functions.min(column.head)).collect()(0)(0)
-      val x_max = df.select(functions.max(column.head)).collect()(0)(0)
-      val y_min = df.select(functions.min(column(1))).collect()(0)(0)
-      val y_max = df.select(functions.max(column(1))).collect()(0)(0)
-      val x_border = (x_max - x_min) * 0.001
-      val y_border = (y_max - y_min) * 0.001
-      Array(x_min - x_border, y_min - y_border, x_max + x_border, y_max + y_border)
+      val xMin = df.select(functions.min(column.head)).collect()(0)(0)
+      val xMax = df.select(functions.max(column.head)).collect()(0)(0)
+      val yMin = df.select(functions.min(column(1))).collect()(0)(0)
+      val yMax = df.select(functions.max(column(1))).collect()(0)(0)
+      val xBorder = (xMax - xMin) * 0.001
+      val yBorder = (yMax - yMin) * 0.001
+      List(xMin - xBorder, yMin - yBorder, xMax + xBorder, yMax + yBorder)
     }
 
-    def replaceBoundary(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]], wholeRange: Array[Double]):
-    (Array[Double], Array[Array[Double]]) = {
-      val n_x_boundaries = x_boundaries
-      var n_y_boundaries = new Array[Array[Double]](0)
-      n_x_boundaries(0) = wholeRange(0)
-      n_x_boundaries(n_x_boundaries.length - 1) = wholeRange(2)
-      for (y <- y_boundaries) {
-        val n_y_boundary = wholeRange(1) +: y.slice(1, y.length - 1) :+ wholeRange(3)
-        n_y_boundaries = n_y_boundaries :+ n_y_boundary
-      }
-      (n_x_boundaries, n_y_boundaries)
+    def replaceBoundary(xBoundaries: List[Double], yBoundaries: Array[List[Double]],
+                        wholeRange: List[Double]):
+    (List[Double], Array[List[Double]]) = {
+      val xBoundariesNew = wholeRange.head +:
+        xBoundaries.drop(1).dropRight(1) :+ wholeRange(2)
+      val yBoundariesNew = yBoundaries.map(y =>
+        wholeRange(1) +: y.drop(1).dropRight(1) :+ wholeRange(3))
+      (xBoundariesNew, yBoundariesNew)
     }
 
     def STR(df: DataFrame, columns: List[String], coverWholeRange: Boolean):
@@ -99,22 +79,19 @@ class STRPartitioner(numPartitions: Int,
       // return boxes
       val s = floor(sqrt(numPartitions)).toInt
       val n = floor(numPartitions / s.toDouble).toInt
-      var x_boundaries = getBoundary(df, s, columns.head)
-      assert(s * n <= numPartitions)
-      var y_boundaries = new Array[Array[Double]](0)
-      for (i <- 0 to x_boundaries.length - 2) {
-        val range = List(x_boundaries(i), x_boundaries(i + 1))
-        val stripRDD = getStrip(df, range, columns.head)
-        val y_boundary = getBoundary(stripRDD, n, columns(1))
-        y_boundaries = y_boundaries :+ y_boundary
-      }
+      val xBoundaries = getBoundary(df, s, columns.head)
+      val yBoundaries = xBoundaries.sliding(2).map(range => {
+        val stripDf = getStrip(df, range, columns.head)
+        getBoundary(stripDf, n, columns(1))
+      }).toArray
       if (coverWholeRange) {
-        val wholeRange = getWholeRange(df, List("x", "y"))
-        val new_boundaries = replaceBoundary(x_boundaries, y_boundaries, wholeRange)
-        x_boundaries = new_boundaries._1
-        y_boundaries = new_boundaries._2
+        //        val wholeRange = getWholeRange(df, List("x", "y"))
+        val wholeRange: List[Double] = List(-180, -90, 180, 90)
+        val new_boundaries = replaceBoundary(xBoundaries, yBoundaries, wholeRange)
+        genBoxes(new_boundaries._1, new_boundaries._2)
       }
-      genBoxes(x_boundaries, y_boundaries)
+      else
+        genBoxes(xBoundaries, yBoundaries)
     }
 
     val spark = SparkSession.builder().getOrCreate()
@@ -132,15 +109,14 @@ class STRPartitioner(numPartitions: Int,
       val latMax = boxes(i)(3)
       boxesWIthID += (i -> Rectangle(Array(lonMin, latMin, lonMax, latMax)))
     }
-    this.partitionRange = boxesWIthID
-    val areaSum = partitionRange.values.map(_.area).sum.formatted("%.5f")
-    val rangeArea = Rectangle(Array(
-      partitionRange.values.map(_.xMin).min,
-      partitionRange.values.map(_.yMin).min,
-      partitionRange.values.map(_.xMax).max,
-      partitionRange.values.map(_.yMax).max)).area.formatted("%.5f")
-    assert(areaSum == rangeArea,
-      s"Range boundary error, whole range area $rangeArea, area sum $areaSum")
+    //    val areaSum = partitionRange.values.map(_.area).sum.formatted("%.5f")
+    //    val rangeArea = Rectangle(Array(
+    //      partitionRange.values.map(_.xMin).min,
+    //      partitionRange.values.map(_.yMin).min,
+    //      partitionRange.values.map(_.xMax).max,
+    //      partitionRange.values.map(_.yMax).max)).area.formatted("%.5f")
+    //    assert(areaSum == rangeArea,
+    //      s"Range boundary error, whole range area $rangeArea, area sum $areaSum")
     if (threshold != 0) boxesWIthID.mapValues(rectangle => rectangle.dilate(threshold)).map(identity)
     else boxesWIthID
   }
@@ -156,9 +132,9 @@ class STRPartitioner(numPartitions: Int,
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
-
     val pRDD = assignPartition(dataRDD, partitionMap, boundary)
       .partitionBy(partitioner)
+    this.partitionRange = calPartitionRanges(pRDD)
     pRDD.map(_._2)
   }
 
@@ -224,42 +200,67 @@ class STRPartitioner(numPartitions: Int,
    * @tparam T :  type pf spatial dataRDD, extending geometry.Shape
    * @return : partitioned RDD of [(partitionNumber, dataRDD)]
    */
+  //  def assignPartition[T <: Shape : ClassTag](dataRDD: RDD[T],
+  //                                             partitionMap: Map[Int, Rectangle],
+  //                                             boundary: List[Double]): RDD[(Int, T)] = {
+  //    dataRDD.take(1).head match {
+  //      case _: Point =>
+  //        val rddWithIndex = dataRDD
+  //          .map(x => {
+  //            val pointShrink = Point(Array(
+  //              min(max(x.asInstanceOf[Point].x, boundary.head), boundary(2)),
+  //              min(max(x.asInstanceOf[Point].y, boundary(1)), boundary(3))
+  //            ))
+  //            (x, partitionMap.filter {
+  //              case (_, v) => pointShrink.inside(v)
+  //            })
+  //          })
+  //        if (threshold != 0) rddWithIndex.flatMap(x => x._2.keys.map(y => (y, x._1)))
+  //        else rddWithIndex.map(x => (x._2.keys.head, x._1))
+  //      case _ =>
+  //        val rddWithIndex = dataRDD
+  //          .map(x => {
+  //            val mbr = x.mbr
+  //            val mbrShrink = Rectangle(Array(
+  //              min(max(mbr.xMin, boundary.head), boundary(2)),
+  //              min(max(mbr.yMin, boundary(1)), boundary(3)),
+  //              max(min(mbr.xMax, boundary(2)), boundary.head),
+  //              max(min(mbr.yMax, boundary(3)), boundary(1))))
+  //            (x, partitionMap.filter {
+  //              case (_, v) => v.intersect(mbrShrink)
+  //            })
+  //          })
+  //        rddWithIndex.map(x => (x._1, x._2.keys))
+  //          .flatMapValues(x => x)
+  //          .map(_.swap)
+  //    }
+  //  }
+
   def assignPartition[T <: Shape : ClassTag](dataRDD: RDD[T],
                                              partitionMap: Map[Int, Rectangle],
                                              boundary: List[Double]): RDD[(Int, T)] = {
     dataRDD.take(1).head match {
-      case _: Point => {
+      case _: Point =>
         val rddWithIndex = dataRDD
           .map(x => {
-            val pointShrink = Point(Array(
-              min(max(x.asInstanceOf[Point].x, boundary.head), boundary(2)),
-              min(max(x.asInstanceOf[Point].y, boundary(1)), boundary(3))
-            ))
             (x, partitionMap.filter {
-              case (_, v) => pointShrink.inside(v)
+              case (_, v) => x.inside(v)
             })
           })
         if (threshold != 0) rddWithIndex.flatMap(x => x._2.keys.map(y => (y, x._1)))
         else rddWithIndex.map(x => (x._2.keys.head, x._1))
-      }
       case _ =>
         val rddWithIndex = dataRDD
           .map(x => {
             val mbr = x.mbr
-            val mbrShrink = Rectangle(Array(
-              min(max(mbr.xMin, boundary.head), boundary(2)),
-              min(max(mbr.yMin, boundary(1)), boundary(3)),
-              max(min(mbr.xMax, boundary(2)), boundary.head),
-              max(min(mbr.yMax, boundary(3)), boundary(1))))
             (x, partitionMap.filter {
-              case (_, v) => v.intersect(mbrShrink)
+              case (_, v) => v.intersect(mbr)
             })
           })
         rddWithIndex.map(x => (x._1, x._2.keys))
           .flatMapValues(x => x)
           .map(_.swap)
     }
-
   }
 
   def getSamplingRate[T <: Shape : ClassTag](dataRDD: RDD[T]): Double = {
