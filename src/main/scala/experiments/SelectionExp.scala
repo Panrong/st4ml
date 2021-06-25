@@ -1,13 +1,15 @@
 package experiments
 
 import geometry.{Rectangle, Shape, Trajectory}
+import operators.convertion.{Converter, Traj2PointConverter}
 import operators.selection.indexer.RTree
 import operators.selection
+import operators.selection.partitioner.STRPartitioner
 import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
-import preprocessing.ReadTrajFile
+import preprocessing.{ReadPointFile, ReadTrajFile}
 import utils.Config
 
 import java.lang.System.nanoTime
@@ -43,54 +45,61 @@ object SelectionExp extends App {
   val temporalRange = (trajRDD.map(_.timeStamp._1).min, trajRDD.map(_.timeStamp._1).max)
 
 
+  val pointRDD = new Traj2PointConverter().convert(trajRDD)
+
+  println(pointRDD.count)
+
+  var t = nanoTime()
   /** experiments on multiple queries */
 
-  val partitioner = new selection.partitioner.HashPartitioner(numPartitions)
+  val partitioner = new STRPartitioner(numPartitions, Some(1))
   //  partitioner.getPartitionRange(trajRDD)
   val partitionRange = partitioner.partitionRange
   //  println(partitionRange)
   val temporalSelector = new TemporalSelector()
-  val pRDD = partitioner.partition(trajRDD)
+  val pRDD = partitioner.partition(pointRDD)
   val spatialSelector = RTreeHandlerMultiple[Trajectory](partitionRange)
 
+  partitioner.partitionRange.foreach(x => println(x._2))
   val info = pRDD.mapPartitionsWithIndex((x, iter) => {
     Array((x, iter.size)).toIterator
   })
   //  info.collect.foreach(x => println(x._2))
+  println(s"... Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
   val mean = info.map(_._2).sum / info.count.toDouble
   println(s"std: ${math.sqrt(info.map(x => (x._2 - mean) * (x._2 - mean)).sum / info.count.toDouble)}")
   println(s"diff: ${info.map(_._2).max - info.map(_._2).min}")
 
-  val pRDD2 = partitioner.partitionOld(trajRDD)
-  val info2 = pRDD2.mapPartitionsWithIndex((x, iter) => {
-    Array((x, iter.size)).toIterator
-  })
-  val mean2 = info2.map(_._2).sum / info2.count.toDouble
-  println(s"std old: ${math.sqrt(info2.map(x => (x._2 - mean2) * (x._2 - mean2)).sum / info2.count.toDouble)}")
-  println(s"diff old: ${info2.map(_._2).max - info2.map(_._2).min}")
+  //  val pRDD2 = partitioner.partitionOld(trajRDD)
+  //  val info2 = pRDD2.mapPartitionsWithIndex((x, iter) => {
+  //    Array((x, iter.size)).toIterator
+  //  })
+  //  val mean2 = info2.map(_._2).sum / info2.count.toDouble
+  //  println(s"std old: ${math.sqrt(info2.map(x => (x._2 - mean2) * (x._2 - mean2)).sum / info2.count.toDouble)}")
+  //  println(s"diff old: ${info2.map(_._2).max - info2.map(_._2).min}")
 
 
-  val pRDD3 = trajRDD.map((_, 1)).partitionBy(new HashPartitioner(numPartitions))
-  val info3 = pRDD3.mapPartitionsWithIndex((x, iter) => {
-    Array((x, iter.size)).toIterator
-  })
-
-  val mean3 = info3.map(_._2).sum / info3.count.toDouble
-  println(s"std default: ${math.sqrt(info3.map(x => (x._2 - mean3) * (x._2 - mean3)).sum / info3.count.toDouble)}")
-  println(s"diff default: ${info3.map(_._2).max - info3.map(_._2).min}")
-
-  implicit val TrajOrdering: Ordering[Trajectory] = new Ordering[Trajectory] {
-    override def compare(a: Trajectory, b: Trajectory): Int = a.hashCode - b.hashCode
-  }
-  val pRDD4 = trajRDD.map((_, 1)).partitionBy(new RangePartitioner(numPartitions, trajRDD.map((_, 1))))
-  val info4 = pRDD4.mapPartitionsWithIndex((x, iter) => {
-    Array((x, iter.size)).toIterator
-  })
-
-  val mean4 = info4.map(_._2).sum / info4.count.toDouble
-  println(s"std range: ${math.sqrt(info4.map(x => (x._2 - mean4) * (x._2 - mean4)).sum / info4.count.toDouble)}")
-  println(s"diff range: ${info4.map(_._2).max - info4.map(_._2).min}")
+//  val pRDD3 = trajRDD.map((_, 1)).partitionBy(new HashPartitioner(numPartitions))
+//  val info3 = pRDD3.mapPartitionsWithIndex((x, iter) => {
+//    Array((x, iter.size)).toIterator
+//  })
+//
+//  val mean3 = info3.map(_._2).sum / info3.count.toDouble
+//  println(s"std default: ${math.sqrt(info3.map(x => (x._2 - mean3) * (x._2 - mean3)).sum / info3.count.toDouble)}")
+//  println(s"diff default: ${info3.map(_._2).max - info3.map(_._2).min}")
+//
+//  implicit val TrajOrdering: Ordering[Trajectory] = new Ordering[Trajectory] {
+//    override def compare(a: Trajectory, b: Trajectory): Int = a.hashCode - b.hashCode
+//  }
+//  val pRDD4 = trajRDD.map((_, 1)).partitionBy(new RangePartitioner(numPartitions, trajRDD.map((_, 1))))
+//  val info4 = pRDD4.mapPartitionsWithIndex((x, iter) => {
+//    Array((x, iter.size)).toIterator
+//  })
+//
+//  val mean4 = info4.map(_._2).sum / info4.count.toDouble
+//  println(s"std range: ${math.sqrt(info4.map(x => (x._2 - mean4) * (x._2 - mean4)).sum / info4.count.toDouble)}")
+//  println(s"diff range: ${info4.map(_._2).max - info4.map(_._2).min}")
 
   //  var t = nanoTime()
   //  println(s"start ${queries.length} queries")
