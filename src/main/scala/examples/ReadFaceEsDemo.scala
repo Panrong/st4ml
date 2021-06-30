@@ -1,8 +1,6 @@
 package examples
 
-import org.apache.spark.sql.{Row, SparkSession}
-import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
-import org.elasticsearch.spark.sparkContextFunctions
+import org.apache.spark.sql.SparkSession
 import utils.Config
 
 object ReadFaceEsDemo {
@@ -25,11 +23,29 @@ object ReadFaceEsDemo {
     val outputPath = args(4)
     val numPartitions = args(5).toInt
 
+//    val esQuery =
+//          "es.query" -> """{
+//                          |    "_source": {
+//                          |        "includes": []
+//                          |     }
+//                          |    "query": {
+//                          |        "range": {
+//                          |            "timestamp" :{
+//                          |                "gte": 1596608074,
+//                          |                "lte": 1596626531
+//                          |            }
+//                          |        }
+//                          |    }
+//                          |}
+//                          |""".stripMargin
+
+
     // reading
     val options = Map("pushdown" -> "true",
       "es.nodes" -> esNode,
       "es.port" -> esPort,
       "es.query" -> esQuery)
+
     // aggregation query example
 //      "es.query" -> """{
 //                      |    "query": {
@@ -60,7 +76,7 @@ object ReadFaceEsDemo {
     print("Total number of records: ")
     println(resDs.count())
 
-    resDs.repartition(numPartitions).write.json(outputPath)
+//    resDs.repartition(numPartitions).write.json(outputPath)
 
   }
 
