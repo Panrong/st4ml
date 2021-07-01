@@ -45,7 +45,7 @@ object SelectionExp extends App {
   val temporalRange = (trajRDD.map(_.timeStamp._1).min, trajRDD.map(_.timeStamp._1).max)
 
 
-  val pointRDD = new Traj2PointConverter().convert(trajRDD)
+  val pointRDD = sc.parallelize(new Traj2PointConverter().convert(trajRDD).take(50))
 
   println(pointRDD.count)
 
@@ -70,6 +70,13 @@ object SelectionExp extends App {
   val mean = info.map(_._2).sum / info.count.toDouble
   println(s"std: ${math.sqrt(info.map(x => (x._2 - mean) * (x._2 - mean)).sum / info.count.toDouble)}")
   println(s"diff: ${info.map(_._2).max - info.map(_._2).min}")
+
+  pRDD.mapPartitionsWithIndex{
+    case(pId, iter) => {
+      val points =iter.map(x=>(x.lon, x.lat)).toArray.mkString(", ")
+      Iterator((pId, points))
+    }
+  }.collect.foreach(x => println(x))
 
   //  val pRDD2 = partitioner.partitionOld(trajRDD)
   //  val info2 = pRDD2.mapPartitionsWithIndex((x, iter) => {
