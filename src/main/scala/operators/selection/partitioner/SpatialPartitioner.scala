@@ -28,4 +28,5 @@ abstract class SpatialPartitioner extends Serializable {
         Iterator((id, Rectangle(Array(xMin, yMin, xMax, yMax))))
     }.collect().toMap
   }
+
 }

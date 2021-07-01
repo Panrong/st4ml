@@ -15,7 +15,8 @@ object Config {
       "samplingRate" -> "0.5",
       "queryFile" -> "datasets/queries.txt",
       "portoQuery" -> "datasets/portoqueries.txt",
-      "hzQuery" ->  "datasets/hzqueries.txt"
+      "hzQuery" -> "datasets/hzqueries.txt",
+      "portoPoints" -> "datasets/porto_points"
     )
   }
 
@@ -30,7 +31,8 @@ object Config {
       "samplingRate" -> "0.2",
       "queryFile" -> "/home/kaiqi.liu/st-tool/datasets/queries.txt",
       "portoQuery" -> "../st-tool/datasets/portoqueries.txt",
-      "hzQuery" ->  "../st-tool/datasets/hzqueries.txt"
+      "hzQuery" -> "../st-tool/datasets/hzqueries.txt",
+      "portoPoints" -> "/datasets/porto_points"
     )
   }
 
@@ -44,7 +46,7 @@ object Config {
       "tPartition" -> "4",
       "samplingRate" -> "0.2",
       "portoQuery" -> "hdfs:///datasets/portoqueries.txt",
-      "hzQuery" ->  "hdfs:///datasets/hzqueries.txt"
+      "hzQuery" -> "hdfs:///datasets/hzqueries.txt"
     )
   }
 

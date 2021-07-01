@@ -1,7 +1,7 @@
 package operators.convertion
 
 import geometry.{Point, Rectangle, TimeSeries}
-import operators.selection.partitioner.SpatialPartitioner
+import operators.selection.partitioner.{SpatialPartitioner, STRPartitioner}
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
@@ -18,16 +18,23 @@ import scala.reflect.ClassTag
  */
 class Point2TimeSeriesConverter[T <: SpatialPartitioner : ClassTag](startTime: Long,
                                                                     timeInterval: Int,
-                                                                    partitioner: T) extends Converter {
+                                                                    partitioner: T,
+                                                                    partitionRange: Option[Map[Int, Rectangle]] = None) extends Converter {
 
   override type I = Point
   override type O = TimeSeries[Point]
 
   override def convert(rdd: RDD[Point])
   : RDD[TimeSeries[Point]] = {
-    val repartitionedRDD = partitioner.partition(rdd).mapPartitionsWithIndex((id, p) => p.map((id, _)))
-    val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
-    println(s"... Number of points per partition: " + s"${pointsPerPartition.deep}")
+    val repartitionedRDD = if (partitionRange.isEmpty)
+      partitioner.partition(rdd).mapPartitionsWithIndex((id, p) => p.map((id, _)))
+    else {
+      partitioner.partitionRange = partitionRange.get
+      val p = new STRPartitioner(numPartitions = partitionRange.get.size)
+      p.partition(rdd, partitionRange.get)
+    }
+    //    val pointsPerPartition = repartitionedRDD.mapPartitions(iter => Iterator(iter.length)).collect
+    //    println(s"... Number of points per partition: " + s"${pointsPerPartition.deep}")
     repartitionedRDD.mapPartitions(partition =>
       if (partition.isEmpty) {
         Iterator(TimeSeries[Point]("Empty", startTime, timeInterval, Rectangle(Array(0, 0, 0, 0)), new Array[Array[Point]](0)))
