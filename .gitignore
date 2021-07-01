@@ -5,3 +5,4 @@ target/
 venv/
 null/
 sttool-doc/
+local/
