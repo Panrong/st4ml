@@ -1,13 +1,12 @@
 package experiments
 
-import geometry.{Point, Rectangle, TimeSeries, Trajectory}
+import geometry.{Point, Rectangle, TimeSeries}
 import operators.OperatorSet
-import operators.convertion.{Converter, DoNothingConverter, Point2TimeSeriesConverter, Traj2PointConverter}
-import operators.extraction.{BaseExtractor, FakePlateExtractor, FlowExtractor, PointsAnalysisExtractor}
-import operators.selection.DefaultSelector
+import operators.convertion.Point2TimeSeriesConverter
+import operators.extraction.FlowExtractor
 import operators.selection.partitioner.STRPartitioner
 import org.apache.spark.sql.SparkSession
-import preprocessing.{ReadParquet, ReadTrajFile}
+import preprocessing.ReadParquet
 import utils.Config
 
 /**
