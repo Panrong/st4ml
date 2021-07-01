@@ -226,4 +226,12 @@ object Extent {
     val Array(xMin, yMin, xMax, yMax) = s.split(",").map(_.toDouble)
     new Extent(xMin, yMin, xMax, yMax)
   }
+
+  def apply(extents: Array[Extent]): Extent = {
+    val xMin = extents.map(_.xMin).min
+    val xMax = extents.map(_.xMax).max
+    val yMin = extents.map(_.yMin).min
+    val yMax = extents.map(_.yMax).max
+    new Extent(xMin, yMin, xMax, yMax)
+  }
 }
