@@ -13,7 +13,7 @@ object flowSpark {
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
-      .appName("SelectorExp")
+      .appName("flowSpark")
       .master(Config.get("master"))
       .getOrCreate()
 
@@ -42,11 +42,15 @@ object flowSpark {
           point.timeStamp._1 <= t(1)
       }
     })
-    val resRDD = gridRDD.filter(x => x.length > 0).map(x => (x.head, 1))
-      .groupByKey()
-      .mapValues(_.sum)
+    println(gridRDD.filter(x => x.length > 0).count)
+    val resRDD = gridRDD.filter(x => x.length > 0)
+      .map(x => (x.head, 1))
+      .reduceByKey(_+_)
 
     resRDD.take(5).foreach(x => println(x._1._1.deep, x._1._2.deep, x._2))
+
+    resRDD.collect.sortBy(x => (x._1._1(0), x._1._1(1) , x._1._1(2), x._1._1(3),x._1._2(0)))
+      .foreach(x => println(x._1._1.deep, x._1._2.deep, x._2))
     sc.stop()
 
   }

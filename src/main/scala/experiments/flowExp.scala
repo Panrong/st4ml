@@ -17,7 +17,7 @@ object flowExp {
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
-      .appName("SelectorExp")
+      .appName("flowExp")
       .master(Config.get("master"))
       .getOrCreate()
 
@@ -33,10 +33,12 @@ object flowExp {
     val tSplit = args(3).toInt
     val grids = genGrids(sQuery, sSize)
     val stGrids = genSTGrids(grids, (tQuery(0), tQuery(1)), tSplit)
-
     val pointFile = Config.get("portoPoints")
 
     val pointRDD = ReadParquet.ReadFaceParquet(pointFile)
+
+    val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1) ,1)).reduceByKey(_+_)
+    println(countRDD.collect.sortBy(_._1).deep)
 
     val operators = new OperatorSet(Rectangle(sQuery), (tQuery(0), tQuery(1))) {
       type I = Point
@@ -55,6 +57,8 @@ object flowExp {
     val rdd3 = operators.extractor.extract(rdd2)
 
     rdd3.take(5).foreach(x => println(x._1.deep, x._2, x._3))
+    //        rdd3.collect.sortBy(x => (x._1(0), x._1(1) , x._1(2), x._1(3),x._2._1))
+    //          .foreach(x => println(x._1.deep, x._2, x._3))
     sc.stop()
   }
 
@@ -73,4 +77,3 @@ object flowExp {
     grids.flatMap(grid => tSlots.map(t => (grid, t)))
   }
 }
-
