@@ -1,28 +1,50 @@
 package instances
 
-trait Instance[+S, +T, +D] {
-  val spatial: S
-  val temporal: T
+trait Instance[S, V, D] {
+  val entries: Array[Entry[S, V]]
   val data: D
 
-  def extent: Extent = spatial match {
-    case geom: Geometry => Extent(geom.getEnvelopeInternal)
-    case geomArr: Array[Geometry] => Extent(geomArr.map(x => Extent(x.getEnvelopeInternal)))
-    case _ => throw new IllegalArgumentException(
-      s"""Unrecognized spatial type when calculating extent of the instance, ${spatial};
-         | expected "Geometry" or "Array[Geometry]"""".stripMargin)
-  }
+  lazy val extent: Extent =
+    Extent(entries.map(_.extent))
 
-  def duration: Duration = temporal match {
-    case dur: Duration => dur
-    case durArr: Array[Duration] => Duration(durArr)
-    case _ => throw new IllegalArgumentException(
-      s"""Unrecognized temproal type when calculating duration of the instance, ${temporal};
-         | expected "Duration" or "Array[Duration]"""".stripMargin)
-  }
+  lazy val duration: Duration =
+    Duration(entries.map(_.duration))
 
-}
+  def dimension: Int = entries.size
 
-object Instance {
-  implicit def instanceToGeometry[S <: Geometry](f: Instance[S, _, _]): S = f.spatial
+  def center: (Point, Long) = (spatialCenter, temporalCenter)
+
+  def spatialCenter: Point = extent.center
+
+  def temporalCenter: Long = duration.center
+
+
+  // Predicates
+  // todo: results are not accurate, is it ok?
+  def intersects(g: Geometry): Boolean = extent.intersects(g)
+  def intersects(e: Extent): Boolean = extent.intersects(e)
+  def intersects(dur: Duration): Boolean = duration.intersects(dur)
+  def intersects(g: Geometry, dur: Duration): Boolean = intersects(g) && intersects(dur)
+  def intersects(e: Extent, dur: Duration): Boolean = intersects(e) && intersects(dur)
+
+  def contains(g: Geometry): Boolean = extent.contains(g)
+  def contains(e: Extent): Boolean = extent.contains(e)
+  def contains(dur: Duration): Boolean = duration.contains(dur)
+  def contains(g: Geometry, dur: Duration): Boolean = contains(g) && contains(dur)
+  def contains(e: Extent, dur: Duration): Boolean = contains(e) && contains(dur)
+
+  // Methods
+  // todo: test if the modification is in place
+//  def mapSpatial[N <: Geometry](f: S => N): Unit =
+//    entries.map(entry => Entry(f(entry.spatial), entry.temporal, entry.value))
+//
+//  def mapTemporal(f: Duration => Duration): Unit =
+//    entries.map(entry => Entry(entry.spatial, f(entry.temporal), entry.value))
+//
+//  def mapValue[N](f: V => N): Unit =
+//    entries.map(entry => Entry(entry.spatial, entry.temporal, f(entry.value)))
+//
+//  def mapData[N](f: D => N): I =
+
+
 }

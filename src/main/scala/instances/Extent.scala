@@ -54,7 +54,8 @@ case class Extent(
   def intersects(x: Double, y:Double): Boolean =
     x >= xMin && x <= xMax && y >= yMin && y <= yMax
     
-  def intersects(p: Point): Boolean = intersects(p.x, p.y)
+  def intersects(g: Geometry): Boolean =
+    intersects(Extent(g.getEnvelopeInternal))
     
   def contains(other: Extent): Boolean = {
     if (isEmpty) false  // Empty extent contains nothing
@@ -68,8 +69,8 @@ case class Extent(
   def contains(x: Double, y: Double): Boolean =
     x > xMin && x < xMax && y > yMin && y < yMax
     
-  def contains(p: Point): Boolean =
-    contains(p.x, p.y)
+  def contains(g: Geometry): Boolean =
+    contains(Extent(g.getEnvelopeInternal))
 
   // Ops
   def distance(other: Extent): Double = {
