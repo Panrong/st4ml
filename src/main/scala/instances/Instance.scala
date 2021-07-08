@@ -1,6 +1,7 @@
 package instances
 
-trait Instance[S, V, D] {
+trait Instance[S <: Geometry, V, D] {
+
   val entries: Array[Entry[S, V]]
   val data: D
 
@@ -10,7 +11,7 @@ trait Instance[S, V, D] {
   lazy val duration: Duration =
     Duration(entries.map(_.duration))
 
-  def dimension: Int = entries.size
+  def dimension: Int = entries.length
 
   def center: (Point, Long) = (spatialCenter, temporalCenter)
 
@@ -33,18 +34,20 @@ trait Instance[S, V, D] {
   def contains(g: Geometry, dur: Duration): Boolean = contains(g) && contains(dur)
   def contains(e: Extent, dur: Duration): Boolean = contains(e) && contains(dur)
 
-  // Methods
-  // todo: test if the modification is in place
-//  def mapSpatial[N <: Geometry](f: S => N): Unit =
-//    entries.map(entry => Entry(f(entry.spatial), entry.temporal, entry.value))
-//
-//  def mapTemporal(f: Duration => Duration): Unit =
-//    entries.map(entry => Entry(entry.spatial, f(entry.temporal), entry.value))
-//
-//  def mapValue[N](f: V => N): Unit =
-//    entries.map(entry => Entry(entry.spatial, entry.temporal, f(entry.value)))
-//
-//  def mapData[N](f: D => N): I =
 
+  // higher-order types cannot handle cases when S is a specific type, as the signature changes when the return type changes
+//  def mapSpatial[S1 <: Geometry](f: S => S1): F[S1, V, D]
+//  def mapTemporal(f: Duration => Duration): F[S, V, D]
+//  def mapValue[V1](f: V => V1): F[S, V1, D]
+//  def mapEntries[S1 <: Geometry, V1](
+//    f1: S => S1,
+//    f2: Duration => Duration,
+//    f3: V => V1): F[S1, V1, D]
+//  def mapData[D1](f: D => D1): F[S, V, D1]
+
+
+  override def toString: String =
+    this.getClass.getSimpleName +
+      s"(entries=${entries.map(_.toString).mkString("Array(", ", ", ")")}, data=${data.toString})"
 
 }

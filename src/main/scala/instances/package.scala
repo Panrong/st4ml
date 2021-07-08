@@ -8,4 +8,5 @@ package object instances {
   type Geometry = jts.Geometry
 
   type Instant = jTime.Instant
+
 }

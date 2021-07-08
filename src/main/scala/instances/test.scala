@@ -1,16 +1,23 @@
 package instances
 
-import java.time
-
 object test extends App {
 
-  val t1 = time.Instant.now()
-  Thread.sleep(5603)
-  val t2 = time.Instant.now()
-  val delta = t2.getEpochSecond - t1.getEpochSecond
-  println(t2.getEpochSecond)
-  println(t1.getEpochSecond)
-  println(t1.plusSeconds(5).getEpochSecond)
-  println(delta)
+  val a = Array(
+    Entry(Point(1, 1), Duration(10000L, 20000L), 1)
+  )
+
+  val b = Event(entries = a, data = 1)
+//  println(b)
+
+//  val c = b.mapData(_.toString)
+//  println(c.data)
+
+//  val d = c.mapEntries(_ + Point(1,2), _.plusSeconds(1,1), _.toString)
+//  println(d)
+//  println(d.entries(0).temporal)
+
+  import GeometryImplicits.withExtraPointOps
+  val e = b.mapSpatial(_ + Point(1,2))
+  print(e)
 
 }

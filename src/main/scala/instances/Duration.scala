@@ -46,6 +46,9 @@ case class Duration(start: Long, end: Long) {
     end+deltaEnd
   )
 
+  override def toString: String =
+    s"Duration($start, $end)"
+
 }
 
 object Duration {

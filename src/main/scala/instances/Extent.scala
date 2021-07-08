@@ -217,6 +217,7 @@ case class Extent(
     Polygon(LineString(exterior))
   }
 
+
 }
 
 object Extent {
@@ -235,4 +236,11 @@ object Extent {
     val yMax = extents.map(_.yMax).max
     new Extent(xMin, yMin, xMax, yMax)
   }
+
+  implicit def toPolygon(extent: Extent): Polygon =
+    extent.toPolygon
+
+  implicit def envelope2Extent(envelope: Envelope): Extent =
+    Extent(envelope)
+
 }
