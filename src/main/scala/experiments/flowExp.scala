@@ -27,17 +27,17 @@ object flowExp {
     /**
      * "-8.65, 41.13, -8.57, 41.17" "1372636800,1404172800" 5 3600
      */
-    val sQuery = args(0).split(",").map(_.toDouble)
-    val tQuery = args(1).split(",").map(_.toLong)
-    val sSize = args(2).toInt
-    val tSplit = args(3).toInt
+    val sQuery = args(1).split(",").map(_.toDouble)
+    val tQuery = args(2).split(",").map(_.toLong)
+    val sSize = args(3).toInt
+    val tSplit = args(4).toInt
     val grids = genGrids(sQuery, sSize)
     val stGrids = genSTGrids(grids, (tQuery(0), tQuery(1)), tSplit)
-    val pointFile = Config.get("portoPoints")
+    val pointFile = args(0)
 
     val pointRDD = ReadParquet.ReadFaceParquet(pointFile)
 
-    val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1) ,1)).reduceByKey(_+_)
+    val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1), 1)).reduceByKey(_ + _)
     println(countRDD.collect.sortBy(_._1).deep)
 
     val operators = new OperatorSet(Rectangle(sQuery), (tQuery(0), tQuery(1))) {
@@ -57,8 +57,9 @@ object flowExp {
     val rdd3 = operators.extractor.extract(rdd2)
 
     rdd3.take(5).foreach(x => println(x._1.deep, x._2, x._3))
-    //        rdd3.collect.sortBy(x => (x._1(0), x._1(1) , x._1(2), x._1(3),x._2._1))
-    //          .foreach(x => println(x._1.deep, x._2, x._3))
+    //    rdd3.collect.foreach(x => println(x._1.deep, x._2, x._3))
+    //    println(s"Total Points: ${rdd3.map(_._3).sum}")
+
     sc.stop()
   }
 
