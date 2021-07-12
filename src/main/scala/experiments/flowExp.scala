@@ -5,6 +5,7 @@ import operators.OperatorSet
 import operators.convertion.Point2TimeSeriesConverter
 import operators.extraction.FlowExtractor
 import operators.selection.partitioner.STRPartitioner
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import preprocessing.ReadParquet
 import utils.Config
@@ -35,7 +36,8 @@ object flowExp {
     val stGrids = genSTGrids(grids, (tQuery(0), tQuery(1)), tSplit)
     val pointFile = args(0)
 
-    val pointRDD = ReadParquet.ReadFaceParquet(pointFile)
+    val pointRDD = readGeoMesaParquet(pointFile)
+    //    val pointRDD = ReadParquet.ReadFaceParquet(pointFile)
 
     val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1), 1)).reduceByKey(_ + _)
     println(countRDD.collect.sortBy(_._1).deep)
@@ -76,5 +78,19 @@ object flowExp {
   def genSTGrids(grids: Array[Array[Double]], tRange: (Long, Long), tSplit: Int): Array[(Array[Double], Array[Long])] = {
     val tSlots = ((tRange._1 until tRange._2 by tSplit.toLong).toArray :+ tRange._2).sliding(2).toArray
     grids.flatMap(grid => tSlots.map(t => (grid, t)))
+  }
+
+  def readGeoMesaParquet(file: String): RDD[Point] = {
+    val spark = SparkSession.builder().getOrCreate()
+    val gmDf = spark.read.parquet(file)
+    val pointDf = gmDf.select("fid", "timestamp", "geom.x", "geom.y")
+    val pointRDD = pointDf.rdd.map(row => {
+      val id = row.getString(0)
+      val t = row.getLong(1)
+      val x = row.getDouble(2)
+      val y = row.getDouble(3)
+      Point(id = id, coordinates = Array(x, y), t = t)
+    })
+    pointRDD
   }
 }
