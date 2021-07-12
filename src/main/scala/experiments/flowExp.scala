@@ -39,8 +39,8 @@ object flowExp {
     val pointRDD = readGeoMesaParquet(pointFile)
     //    val pointRDD = ReadParquet.ReadFaceParquet(pointFile)
 
-    val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1), 1)).reduceByKey(_ + _)
-    println(countRDD.collect.sortBy(_._1).deep)
+    //    val countRDD = pointRDD.map(p => (utils.TimeParsing.getDate(p.timeStamp._1), 1)).reduceByKey(_ + _)
+    //    println(countRDD.collect.sortBy(_._1).deep)
 
     val operators = new OperatorSet(Rectangle(sQuery), (tQuery(0), tQuery(1))) {
       type I = Point
@@ -58,9 +58,9 @@ object flowExp {
     val rdd2 = operators.converter.convert(rdd1)
     val rdd3 = operators.extractor.extract(rdd2)
 
-    rdd3.take(5).foreach(x => println(x._1.deep, x._2, x._3))
-    //    rdd3.collect.foreach(x => println(x._1.deep, x._2, x._3))
-    //    println(s"Total Points: ${rdd3.map(_._3).sum}")
+    //    rdd3.take(5).foreach(x => println(x._1.deep, x._2, x._3))
+    rdd3.collect.foreach(x => println(x._1.deep, x._2, x._3))
+    println(s"Total Points: ${rdd3.map(_._3).sum}")
 
     sc.stop()
   }
