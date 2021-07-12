@@ -59,8 +59,9 @@ object flowExp {
     val rdd3 = operators.extractor.extract(rdd2)
 
     //    rdd3.take(5).foreach(x => println(x._1.deep, x._2, x._3))
-    rdd3.collect.foreach(x => println(x._1.deep, x._2, x._3))
-    println(s"Total Points: ${rdd3.map(_._3).sum}")
+    val res = rdd3.collect
+    res.foreach(x => println(x._1.deep, x._2, x._3))
+    println(s"Total Points: ${res.map(_._3).sum}")
 
     sc.stop()
   }
