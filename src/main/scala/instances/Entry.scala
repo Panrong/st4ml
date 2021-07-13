@@ -14,6 +14,14 @@ case class Entry[S <: Geometry, V] (
 
 }
 
+object Entry {
+  def apply[S <: Geometry, V](entry: (S, Duration, V)): Entry[S, V] =
+    new Entry(entry._1, entry._2, entry._3)
+
+  def apply[S <: Geometry](entry: (S, Duration)): Entry[S, None.type] =
+    new Entry(entry._1, entry._2, None)
+}
+
 
 
 

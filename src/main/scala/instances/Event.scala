@@ -36,9 +36,9 @@ case class Event[S <: Geometry, V, D](
       data)
 
   def mapEntries[S1 <: Geometry, V1](
-    f1: S => S1,
-    f2: Duration => Duration,
-    f3: V => V1): Event[S1, V1, D] =
+                                      f1: S => S1,
+                                      f2: Duration => Duration,
+                                      f3: V => V1): Event[S1, V1, D] =
     Event(
       entries.map(entry =>
         Entry(
@@ -55,4 +55,12 @@ case class Event[S <: Geometry, V, D](
           entry.temporal,
           entry.value)),
       f(data))
+}
+
+object Event {
+  def apply[S <: Geometry, V](entries: Array[Entry[S, V]]): Event[S, V, None.type] =
+    new Event(entries, None)
+
+  def apply[S <: Geometry, V, D](s: S, t: Duration, v: V = None, d: D = None): Event[S, V, D] =
+    new Event(Array(Entry(s, t, v)), d)
 }

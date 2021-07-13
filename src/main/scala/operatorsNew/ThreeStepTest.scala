@@ -21,12 +21,12 @@ object ThreeStepTest {
 
     val sQuery = Extent(-90,-180,90,180)
     val tQuery = Duration(0, 1000000000)
-    val operatorSet = new OperatorSet {
-      type I = Event[Point, Null, Null]
-      override val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
-      override val converter = new DoNothingConverter[I]
-      override val extractor: Extractor[_] = _
-    }
+//    val operatorSet = new OperatorSet {
+//      type I = Event[Point, Null, Null]
+//      override val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
+//      override val converter = new DoNothingConverter[I]
+//      override val extractor: Extractor[_] = _
+//    }
     sc.stop()
   }
 }

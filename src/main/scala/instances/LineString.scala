@@ -25,4 +25,7 @@ trait LineStringConstructors {
       case (x, y) => Point(x, y)
     })
 
+  def apply(points: Point*): LineString =
+    apply(points.toList)
+
 }

@@ -3,5 +3,6 @@ out/
 project/
 target/
 sttool-doc/
-README.md
 venv/
+null/
+.bsp/

@@ -50,4 +50,14 @@ trait Instance[S <: Geometry, V, D] {
     this.getClass.getSimpleName +
       s"(entries=${entries.map(_.toString).mkString("Array(", ", ", ")")}, data=${data.toString})"
 
+  override def equals(that: Any): Boolean = {
+    that match {
+      case that: Instance[S, V, D] =>
+        (this.entries sameElements that.entries) &&
+          this.data == that.data
+      case _ => false
+    }
+  }
+
+
 }
