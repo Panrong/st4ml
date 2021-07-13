@@ -3,9 +3,9 @@ package operatorsNew.converter
 import instances.Instance
 import org.apache.spark.rdd.RDD
 
-abstract class Converter {
-  type I <: Instance[_, _, _]
-  type O <: Instance[_, _, _]
+abstract class Converter extends Serializable {
+  type I
+  type O
 
   def convert(input: RDD[I]): RDD[O]
 }
