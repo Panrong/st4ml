@@ -1,8 +1,7 @@
 package operatorsNew.extractor
 
 import instances.Instance
-import org.apache.spark.rdd.RDD
 
-abstract class Extractor[I <: Instance[_, _, _]] {
-//  def extract(input: RDD[I]): _
+
+abstract class Extractor[O <: Instance[_, _, _]] extends Serializable {
 }
