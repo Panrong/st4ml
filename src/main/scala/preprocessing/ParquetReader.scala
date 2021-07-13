@@ -19,7 +19,6 @@ object ParquetReader {
       .filter("latitude is not null")
       .filter("longitude is not null")
       .filter("timestamp is not null")
-    println(df.count)
     val faceRDD = df.as[Document].rdd
       .map(p => {
         val point = Point(p.longitude, p.latitude)

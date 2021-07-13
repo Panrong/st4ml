@@ -1,4 +1,4 @@
-package operatorsNew.Partitioner
+package operatorsNew.selector.partitioner
 
 import instances._
 import org.apache.spark.rdd.RDD
