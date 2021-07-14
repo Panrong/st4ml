@@ -11,7 +11,7 @@ object ParquetReader {
 
   case class T(id: String, points: Array[P])
 
-  def readFaceParquet(filePath: String): RDD[Event[Point, String, None.type]] = {
+  def readFaceParquet(filePath: String): RDD[Event[Point, None.type, String]] = {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     val df = spark.read.parquet(filePath)
@@ -24,8 +24,8 @@ object ParquetReader {
         val point = Point(p.longitude, p.latitude)
         val duration = Duration(p.timestamp)
         val id = p.id
-        val entry = Entry(point, duration, id)
-        Event(Array(entry), None)
+        val entry = Entry(point, duration, None)
+        Event(Array(entry), id)
       })
     faceRDD
   }

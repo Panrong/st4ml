@@ -1,7 +1,7 @@
 package operatorsNew
 
 import instances.{Duration, Event, Extent, Point, Trajectory}
-import operatorsNew.converter.{DoNothingConverter, Traj2EventConverter}
+import operatorsNew.converter.{DoNothingConverter, Event2TrajConverter, Traj2EventConverter}
 import operatorsNew.extractor.{AnomalyExtractor, VITExtractor}
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
@@ -24,8 +24,8 @@ object ThreeStepTest {
     val tQuery = Duration(0, Long.MaxValue)
 
     val operatorSet = new OperatorSet {
-      type I = Event[Point, String, None.type]
-      type O = Event[Point, String, None.type]
+      type I = Event[Point, None.type, String]
+      type O = Event[Point, None.type, String]
       val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
       val converter = new DoNothingConverter[I]
       val extractor = new AnomalyExtractor[O]
@@ -36,6 +36,7 @@ object ThreeStepTest {
     val rdd3 = operatorSet.extractor.extract(rdd2, Array(23, 4), Array(sQuery.toPolygon))
 
 
+    /** test trajectory to point */
     val trajRDD = ParquetReader.readVhcParquet("datasets/traj_example.parquet")
     val converter = new Traj2EventConverter[None.type, String]
     val convertedRDD = converter.convert(trajRDD)
@@ -43,9 +44,17 @@ object ThreeStepTest {
     println("5 examples:")
     convertedRDD.take(5).foreach(println(_))
 
-    val extractor = new VITExtractor[Trajectory[None.type, String]]
-    val vit = extractor.extract(trajRDD, 40)
-    vit.take(5).foreach(println(_))
+    /** test vit */
+    //    val extractor = new VITExtractor[Trajectory[None.type, String]]
+    //    val vit = extractor.extract(trajRDD, 40)
+    //    vit.take(10).foreach(x => println(x._1.data, x._2.deep))
+
+    /** test event to trajectory */
+    val e2tConverter = new Event2TrajConverter[None.type, String]
+    val cTrajRDD = e2tConverter.convert(convertedRDD)
+    cTrajRDD.take(5).foreach(println(_))
+    println(s"Number of trajs after conversion back: ${cTrajRDD.count}")
+
     sc.stop()
   }
 }
