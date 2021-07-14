@@ -12,8 +12,11 @@ class VITExtractor[T <: Trajectory[_, _] : ClassTag] extends Extractor[T] {
       def calSpeed(spatialDistances: Array[Double], temporalDistances: Array[Long]): Array[Double] = {
         spatialDistances.zip(temporalDistances).map(x => x._1 / x._2)
       }
+
       val speedArr = traj.mapConsecutive(calSpeed)
-      val temporalArr = traj.entries.map(_.duration.start).sliding(2).map(x => (x(0), x(1))).toArray
+      val temporalArr = traj.temporalSliding(2)
+        .map(x => (x(0).start, x(1).start))
+        .toArray
       (traj, temporalArr.zip(speedArr).filter(_._2 > speedThreshold))
     }
     )
