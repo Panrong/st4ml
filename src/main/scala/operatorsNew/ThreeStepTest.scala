@@ -1,8 +1,8 @@
 package operatorsNew
 
-import instances.{Duration, Event, Extent, Point}
-import operatorsNew.converter.DoNothingConverter
-import operatorsNew.extractor.AnomalyExtractor
+import instances.{Duration, Event, Extent, Point, Trajectory}
+import operatorsNew.converter.{DoNothingConverter, Traj2EventConverter}
+import operatorsNew.extractor.{AnomalyExtractor, VITExtractor}
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.ParquetReader
@@ -19,27 +19,33 @@ object ThreeStepTest {
     sc.setLogLevel("ERROR")
     val numPartitions = 16
 
-
-    val sQuery = Extent(-90,-180,90,180)
-    val tQuery = Duration(0, 1000000000)
-
     val inputRDD = ParquetReader.readFaceParquet("datasets/face_example.parquet")
     val sQuery = Extent(-180, -90, 180, 90)
     val tQuery = Duration(0, Long.MaxValue)
 
     val operatorSet = new OperatorSet {
-       type I = Event[Point, String, Null]
-       type O = Event[Point, String, Null]
-       val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
-       val converter = new DoNothingConverter[I]
-       val extractor = new AnomalyExtractor[O]
+      type I = Event[Point, String, None.type]
+      type O = Event[Point, String, None.type]
+      val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
+      val converter = new DoNothingConverter[I]
+      val extractor = new AnomalyExtractor[O]
     }
     val rdd1 = operatorSet.selector.query(inputRDD)
     println(s"${rdd1.count} events")
     val rdd2 = operatorSet.converter.convert(rdd1)
-    val rdd3 = operatorSet.extractor.extract(rdd2, Array(23,4), Array(sQuery.toPolygon) )
+    val rdd3 = operatorSet.extractor.extract(rdd2, Array(23, 4), Array(sQuery.toPolygon))
 
->>>>>>> bb03aa1eda5d3653a525f262b23172e2c96c9663
+
+    val trajRDD = ParquetReader.readVhcParquet("datasets/traj_example.parquet")
+    val converter = new Traj2EventConverter[None.type, String]
+    val convertedRDD = converter.convert(trajRDD)
+    println(s"${trajRDD.count} trajectories converted to ${convertedRDD.count} events")
+    println("5 examples:")
+    convertedRDD.take(5).foreach(println(_))
+
+    val extractor = new VITExtractor[Trajectory[None.type, String]]
+    val vit = extractor.extract(trajRDD, 40)
+    vit.take(5).foreach(println(_))
     sc.stop()
   }
 }
