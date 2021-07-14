@@ -7,6 +7,9 @@ case class Trajectory[V, D](
   data: D)
   extends Instance[Point, V, D] {
 
+  require(entries.length > 1,
+    s"The length of entries for Trajectory at least 2, but got ${entries.length}")
+
   def mapSpatial(f: Point => Point): Trajectory[V, D] =
     Trajectory(
       entries.map(entry =>
@@ -115,6 +118,17 @@ case class Trajectory[V, D](
     val csd = consecutiveSpatialDistance(spatialMetric)
     val ctd = consecutiveTemporalDistance(temporalMetric)
     f(csd, ctd)
+  }
+
+  def sortByTemporal(metric: String): Trajectory[V, D] = metric match {
+    case "start" => Trajectory(entries.sortBy(_.temporal.start), data)
+    case "end" => Trajectory(entries.sortBy(_.temporal.end), data)
+    case "center" => Trajectory(entries.sortBy(_.temporal.center), data)
+    case "duration" => Trajectory(entries.sortBy(_.temporal.seconds), data)
+    case _ => throw new Exception(
+      s"""Invalid metric: the input metric should be "start", "end", "center" or "duration"
+         | but got $metric
+         |""".stripMargin)
   }
 
 }

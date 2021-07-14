@@ -40,13 +40,16 @@ object test extends App {
 //  println(p3.hashCode())
 //  println(p4.hashCode())
 
-  case class Person[T](name: String, data: Option[T])
+//  case class Person[T](name: String, data: Option[T])
+//
+//  val pA = Person("A", None)
+//  val pB = Person("B", Option(5))
+//  val pC = Person("C", Option(Map(1->2, 2->3)))
+//  println(pB.data.isEmpty)
+//  println(pC.data.getClass)
 
-  val pA = Person("A", None)
-  val pB = Person("B", Option(5))
-  val pC = Person("C", Option(Map(1->2, 2->3)))
-  println(pB.data.isEmpty)
-  println(pC.data.getClass)
+  val m = Event(entries = a, data = None)
+  println(m.toString)
 
 
 }
