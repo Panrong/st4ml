@@ -37,12 +37,13 @@ object ParquetReader {
       .filter("id is not null")
       .filter("points is not null")
     val tRDD = df.as[T].rdd
-    tRDD.map(t => {
-      val points = t.points.map(p => Point(p.longitude, p.latitude))
-      val durations = t.points.map(_.timestamp).map(Duration(_))
-      val entries = (points zip durations).map(x => Entry(x._1, x._2, None))
-      val id = t.id
-      Trajectory(entries, id)
-    })
+    tRDD.filter(_.points.length > 1)
+      .map(t => {
+        val points = t.points.map(p => Point(p.longitude, p.latitude))
+        val durations = t.points.map(_.timestamp).map(Duration(_))
+        val entries = (points zip durations).map(x => Entry(x._1, x._2, None))
+        val id = t.id
+        Trajectory(entries, id)
+      })
   }
 }
