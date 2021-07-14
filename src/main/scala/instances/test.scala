@@ -48,8 +48,31 @@ object test extends App {
 //  println(pB.data.isEmpty)
 //  println(pC.data.getClass)
 
-  val m = Event(entries = a, data = None)
-  println(m.toString)
+//  val m = Event(entries = a, data = None)
+//  println(m.toString)
 
+//  import org.locationtech.jts.{geom => jts}
+
+//  object MultiPolygon extends MultiPolygonConstructors
+//
+//  trait MultiPolygonConstructors {
+//    def apply(ps: jts.Polygon*): jts.MultiPolygon =
+//      apply(ps)
+//
+//    def apply(ps: Traversable[jts.Polygon]): jts.MultiPolygon =
+//      GeometryFactory.factory.createMultiPolygon(ps.toArray)
+//  }
+//
+//  val poly1 = Polygon(LineString(Point(0, 0), Point(0, 1), Point(1, 1), Point(1, 0), Point(0, 0)))
+//  val poly2 = Polygon(LineString(Point(0, 0), Point(0, -1), Point(-1, -1), Point(-1, 0), Point(0, 0)))
+//
+//  val mp = MultiPolygon(poly1, poly2)
+//
+//  println(mp)
+//  println(mp.intersects(Point(-0.5, -0.5)))
+
+  val x = Event(entries = a, data = 1)
+  println(x.hashCode())
+  println(b.hashCode())
 
 }

@@ -1,6 +1,7 @@
 package instances
 
 import GeometryImplicits.withExtraPointOps
+import org.scalacheck.Prop.True
 
 case class Trajectory[V, D](
   entries: Array[Entry[Point, V]],
@@ -57,6 +58,15 @@ case class Trajectory[V, D](
           entry.temporal,
           entry.value)),
       f(data))
+
+  def entrySliding(n: Int): Iterator[Array[Entry[Point, V]]] =
+    entries.sliding(n)
+
+  def spatialSliding(n: Int): Iterator[Array[Point]] =
+    entries.map(_.spatial).sliding(n)
+
+  def temporalSliding(n: Int): Iterator[Array[Duration]] =
+    entries.map(_.temporal).sliding(n)
 
   def consecutiveSpatialDistance(metric: String): Array[Double] = {
     metric match {
@@ -120,16 +130,55 @@ case class Trajectory[V, D](
     f(csd, ctd)
   }
 
-  def sortByTemporal(metric: String): Trajectory[V, D] = metric match {
-    case "start" => Trajectory(entries.sortBy(_.temporal.start), data)
-    case "end" => Trajectory(entries.sortBy(_.temporal.end), data)
-    case "center" => Trajectory(entries.sortBy(_.temporal.center), data)
-    case "duration" => Trajectory(entries.sortBy(_.temporal.seconds), data)
-    case _ => throw new Exception(
-      s"""Invalid metric: the input metric should be "start", "end", "center" or "duration"
-         | but got $metric
-         |""".stripMargin)
+  def sortBySpatial(metric: String, ascending: Boolean = true): Trajectory[V, D] = {
+    val sign = if (ascending) 1 else -1
+    metric match {
+      case "x" => Trajectory(entries.sortBy(_.spatial.x * sign), data)
+      case "y" => Trajectory(entries.sortBy(_.spatial.y * sign), data)
+      case _ => throw new Exception(
+        s"""Invalid metric: the input metric should be either "x" or "y"
+           | but got $metric
+           |""".stripMargin)
+    }
   }
+
+  def sortByTemporal(metric: String, ascending: Boolean = true): Trajectory[V, D] = {
+    val sign = if (ascending) 1 else -1
+    metric match {
+      case "start" => Trajectory(entries.sortBy(_.temporal.start * sign), data)
+      case "end" => Trajectory(entries.sortBy(_.temporal.end * sign), data)
+      case "center" => Trajectory(entries.sortBy(_.temporal.center * sign), data)
+      case "duration" => Trajectory(entries.sortBy(_.temporal.seconds * sign), data)
+      case _ => throw new Exception(
+        s"""Invalid metric: the input metric should be "start", "end", "center" or "duration"
+           | but got $metric
+           |""".stripMargin)
+    }
+  }
+
+  def sortByEntry(
+    entrySorter: Entry[Point, V] => Double,
+    ascending: Boolean = true): Trajectory[V, D] = {
+    val sign = if (ascending) 1 else -1
+    Trajectory(entries.sortBy(x => entrySorter(x)  * sign), data)
+  }
+
+  def reverse: Trajectory[V, D] =
+    Trajectory(entries.reverse, data)
+
+  def merge(
+    other: Trajectory[V, D],
+    dataCombiner: (D, D) => D
+  ): Trajectory[V, D] =
+    Trajectory(entries ++ other.entries, dataCombiner(data, other.data))
+
+  def mergeAndSort(
+    other: Trajectory[V, D],
+    dataCombiner: (D, D) => D,
+    entrySorter: Entry[Point, V] => Double
+  ): Trajectory[V, D] =
+    Trajectory((entries ++ other.entries).sortBy(x => entrySorter(x)),
+      dataCombiner(data, other.data))
 
 }
 

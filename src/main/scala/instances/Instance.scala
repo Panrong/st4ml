@@ -55,9 +55,15 @@ trait Instance[S <: Geometry, V, D] {
       case that: Instance[S, V, D] =>
         (this.entries sameElements that.entries) &&
           this.data == that.data
-      case _ => false
+      case _ => {
+        println("xx")
+        false
+      }
     }
   }
+
+  override def hashCode(): Int =
+    31 * (entries.##) + data.##
 
 
 }

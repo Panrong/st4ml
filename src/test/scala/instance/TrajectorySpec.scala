@@ -52,6 +52,23 @@ class TrajectorySpec extends AnyFunSpec with Matchers {
       traj shouldBe trajectory
     }
 
+    it("can slide over entries, spatial or temporal") {
+      val p1 = Point(0, 0)
+      val p2 = Point(0, 1)
+      val p3 = Point(0, 5)
+      val d1 = Duration(1626180345L, 1626180346L)
+      val d2 = Duration(1626180346L, 1626180347L)
+      val d3 = Duration(1626180347L, 1626180348L)
+      val e1 = Entry(p1, d1)
+      val e2 = Entry(p2, d2)
+      val e3 = Entry(p3, d3)
+      val traj = Trajectory(Array(e1, e2, e3))
+
+      traj.spatialSliding(2).toArray shouldBe Iterator(Array(p1, p2), Array(p2, p3)).toArray
+      traj.temporalSliding(2).toArray shouldBe Iterator(Array(d1, d2), Array(d2, d3)).toArray
+      traj.entrySliding(2).toArray shouldBe Iterator(Array(e1, e2), Array(e2, e3)).toArray
+    }
+
     it("calculates speed with euclidean distance and the start of Duration (default)") {
       val traj = Trajectory(
         Array(
@@ -135,6 +152,153 @@ class TrajectorySpec extends AnyFunSpec with Matchers {
 
       val temporalDistances = traj.consecutiveTemporalDistance(func2)
       temporalDistances shouldBe Array(2L, 2L)
+    }
+
+    it("can sort entries based on spatial") {
+      val traj = Trajectory(
+        Array(
+          (Point(0, 2), Duration(1626180345L, 1626180346L), None),
+          (Point(1, 1), Duration(1626180346L, 1626180347L), None),
+          (Point(2, 0), Duration(1626180346L, 1626180347L), None))
+      )
+
+      val trajSortedByY = Trajectory(
+        Array(
+          (Point(2, 0), Duration(1626180346L, 1626180347L), None),
+          (Point(1, 1), Duration(1626180346L, 1626180347L), None),
+          (Point(0, 2), Duration(1626180345L, 1626180346L), None))
+      )
+
+      traj.sortBySpatial("x") shouldBe traj
+      traj.sortBySpatial("y") shouldBe trajSortedByY
+      traj.sortBySpatial("x", ascending = false) shouldBe trajSortedByY
+      traj.sortBySpatial("y", ascending = false) shouldBe traj
+    }
+
+    it("can sort entries based on temporal") {
+      val traj = Trajectory(
+        Array(
+          (Point(0, 2), Duration(1L, 10L), None),
+          (Point(1, 1), Duration(2L, 7L), None),
+          (Point(2, 0), Duration(3L, 4L), None))
+      )
+
+      val trajSortedByStart = traj
+      val trajSortedByEnd = Trajectory(
+        Array(
+          (Point(2, 0), Duration(3L, 4L), None),
+          (Point(1, 1), Duration(2L, 7L), None),
+          (Point(0, 2), Duration(1L, 10L), None)
+        )
+      )
+      val trajSortedByCenter = trajSortedByEnd
+      val trajSortedByDuration = trajSortedByEnd
+
+      traj.sortByTemporal("start") shouldBe trajSortedByStart
+      traj.sortByTemporal("end") shouldBe trajSortedByEnd
+      traj.sortByTemporal("center") shouldBe trajSortedByCenter
+      traj.sortByTemporal("duration") shouldBe trajSortedByDuration
+      traj.sortByTemporal("start", ascending = false) shouldBe trajSortedByStart.reverse
+      traj.sortByTemporal("end", ascending = false) shouldBe trajSortedByEnd.reverse
+      traj.sortByTemporal("center", ascending = false) shouldBe trajSortedByCenter.reverse
+      traj.sortByTemporal("duration", ascending = false) shouldBe trajSortedByDuration.reverse
+    }
+
+    it("can sort entries with a UDF") {
+      val traj = Trajectory(
+        Array(
+          (Point(0, 2), Duration(1L, 10L), None),
+          (Point(1, 1), Duration(2L, 7L), None),
+          (Point(2, 0), Duration(3L, 4L), None))
+      )
+
+      def entryDummySorter =
+        (entry: Entry[Point, None.type]) =>
+          entry.spatial.getX + entry.spatial.getY + entry.temporal.seconds
+
+      val trajSorted = Trajectory(
+        Array(
+          (Point(2, 0), Duration(3L, 4L), None),
+          (Point(1, 1), Duration(2L, 7L), None),
+          (Point(0, 2), Duration(1L, 10L), None),
+        )
+      )
+
+      traj.sortByEntry(entryDummySorter) shouldBe trajSorted
+      traj.sortByEntry(entryDummySorter, ascending = false) shouldBe trajSorted.reverse
+    }
+
+    it("can merge with each other") {
+      val entries1 = Array(
+        (Point(0, 0), Duration(0L, 0L), None),
+        (Point(1, 1), Duration(1L, 1L), None)
+      )
+      val entries2 = Array(
+        (Point(2, 2), Duration(2L, 2L), None),
+        (Point(3, 3), Duration(3L, 3L), None)
+      )
+      val entriesMerged = Array(
+        (Point(0, 0), Duration(0L, 0L), None),
+        (Point(1, 1), Duration(1L, 1L), None),
+        (Point(2, 2), Duration(2L, 2L), None),
+        (Point(3, 3), Duration(3L, 3L), None)
+      )
+
+      val traj1 = Trajectory(entries1)
+      val traj2 = Trajectory(entries2)
+      val trajMerged = Trajectory(entriesMerged)
+
+      val trajDouble1 = Trajectory(entries1, 1.0)
+      val trajDouble2 = Trajectory(entries2, 2.0)
+      val trajDoubleMerged = Trajectory(entriesMerged, 3.0)
+
+      val trajArray1 = Trajectory(entries1, Array(1, 2, 3))
+      val trajArray2 = Trajectory(entries2, Array(4, 5, 6))
+      val trajArrayMerged = Trajectory(entriesMerged, Array(1, 2, 3, 4, 5, 6))
+
+      val trajMap1 = Trajectory(entries1, Map(1->"a", 2->"b", 3->"c"))
+      val trajMap2 = Trajectory(entries2, Map(1->"a", 2->"b", 4->"d"))
+      val trajMapMerged = Trajectory(entriesMerged, Map(1->"a", 2->"b", 3->"c", 4->"d"))
+
+      traj1.merge(traj2, (_: None.type, _: None.type) => None) shouldBe trajMerged
+      trajDouble1.merge(trajDouble2, (a: Double, b: Double) => a+b) shouldBe trajDoubleMerged
+
+      // todo: how to check if two objects are the same
+      trajArray1.merge(trajArray2, (a: Array[Int], b: Array[Int]) => a++b).entries shouldBe
+        trajArrayMerged.entries
+      trajArray1.merge(trajArray2, (a: Array[Int], b: Array[Int]) => a++b).data shouldBe
+        trajArrayMerged.data
+      trajMap1.merge(trajMap2, (a: Map[Int, String], b: Map[Int, String]) => a++b).entries shouldBe
+        trajMapMerged.entries
+      trajMap1.merge(trajMap2, (a: Map[Int, String], b: Map[Int, String]) => a++b).data shouldBe
+        trajMapMerged.data
+    }
+
+    it("can merge with each other and sort") {
+      val entries1 = Array(
+        (Point(1, 1), Duration(1L, 1L), None),
+        (Point(0, 0), Duration(0L, 0L), None)
+      )
+      val entries2 = Array(
+        (Point(3, 3), Duration(3L, 3L), None),
+        (Point(2, 2), Duration(2L, 2L), None)
+      )
+      val entriesMerged = Array(
+        (Point(0, 0), Duration(0L, 0L), None),
+        (Point(1, 1), Duration(1L, 1L), None),
+        (Point(2, 2), Duration(2L, 2L), None),
+        (Point(3, 3), Duration(3L, 3L), None)
+      )
+
+      val traj1 = Trajectory(entries1)
+      val traj2 = Trajectory(entries2)
+      val trajMerged = Trajectory(entriesMerged)
+
+      traj1.mergeAndSort(
+        traj2,
+        (_: None.type, _: None.type) => None,
+        (entry: Entry[Point, None.type]) => entry.temporal.start
+      ) shouldBe trajMerged
     }
 
 
