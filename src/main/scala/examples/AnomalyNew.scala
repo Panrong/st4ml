@@ -59,17 +59,21 @@ object AnomalyNew {
     println(pointRDD.count)
     println(s"Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
-    /** step 1: Selection */
-    val rdd1 = operator.selector.query(pointRDD)
+    //    /** step 1: Selection */
+    //    val rdd1 = operator.selector.query(pointRDD)
+    //
+    //    /** step 2: Conversion */
+    //    val rdd2 = operator.converter.convert(rdd1)
+    //    rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
+    //    println(s"--- Total points: ${rdd2.count}")
+    //
+    //    /** step 3: Extraction */
+    //    val anomalies = operator.extractor.extract(rdd2, tThreshold, sQueries)
+    //    println("done")
 
-    /** step 2: Conversion */
-    val rdd2 = operator.converter.convert(rdd1)
-    rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    println(s"--- Total points: ${rdd2.count}")
 
-    /** step 3: Extraction */
-    val anomalies = operator.extractor.extract(rdd2, tThreshold, sQueries)
-    println("done")
+    val rddInfo = operator.selector.queryWithInfo(pointRDD)
+    val resInfo = operator.extractor.extractWithInfo(rddInfo, tThreshold, sQueries)
     sc.stop()
   }
 
