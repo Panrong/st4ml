@@ -19,7 +19,8 @@ class AnomalyExtractor[T <: Instance[_, _, _] : ClassTag] extends Extractor[T] {
     var res = new Array[Array[T]](0)
     for (range <- ranges) {
       val a = filteredRDD.filter(_.intersects(range)).collect
-      println(s"In range (${range.toString}): ${a.length} anomalies.")
+      val coords = range.getCoordinates
+      println(s"In range (${(coords(0).x, coords(0).y, coords(2).x, coords(2).y)}): ${a.length} anomalies.")
       res = res :+ a
     }
     res
