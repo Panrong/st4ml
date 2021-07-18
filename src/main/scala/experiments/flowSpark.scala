@@ -11,7 +11,7 @@ object flowSpark {
    * divide the whole spatial range into grids and find how many points inside each grid
    * for every hour
    */
-    
+
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
@@ -25,13 +25,13 @@ object flowSpark {
     /**
      * "-8.65, 41.13, -8.57, 41.17" "1372636800,1404172800" 5 3600
      */
-    val sQuery = args(0).split(",").map(_.toDouble)
-    val tQuery = args(1).split(",").map(_.toLong)
-    val sSize = args(2).toInt
-    val tSplit = args(3).toInt
+    val sQuery = args(1).split(",").map(_.toDouble)
+    val tQuery = args(2).split(",").map(_.toLong)
+    val sSize = args(3).toInt
+    val tSplit = args(4).toInt
     val grids = genGrids(sQuery, sSize)
     val stGrids = genSTGrids(grids, (tQuery(0), tQuery(1)), tSplit)
-    val pointFile =args(4)
+    val pointFile =args(0)
 
     val stGridMap = stGrids.zipWithIndex.map(_.swap).toMap
     val stGridMapReversed = stGrids.zipWithIndex.toMap
