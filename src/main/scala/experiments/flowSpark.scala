@@ -1,6 +1,7 @@
 package experiments
 
 import experiments.flowExp.{genGrids, genSTGrids}
+import geometry.Point
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -10,9 +11,7 @@ object flowSpark {
    * divide the whole spatial range into grids and find how many points inside each grid
    * for every hour
    */
-
-  case class Point(lon: Double, lat: Double, t: Long)
-
+    
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
@@ -37,7 +36,7 @@ object flowSpark {
     val stGridMap = stGrids.zipWithIndex.map(_.swap).toMap
     val stGridMapReversed = stGrids.zipWithIndex.toMap
 
-    val pointRDD = readPointCsv(pointFile)
+    val pointRDD = readGeoMesaParquet(pointFile)
     println(pointRDD.count)
     val gridRDD = pointRDD.map(point => {
       stGrids.filter { case (s, t) =>
@@ -61,11 +60,17 @@ object flowSpark {
     sc.stop()
   }
 
-  def readPointCsv(fileName: String): RDD[Point] = {
+  def readGeoMesaParquet(file: String): RDD[Point] = {
     val spark = SparkSession.builder().getOrCreate()
-    val df = spark.read.csv(fileName)
-    df.rdd.map(row => Point(row(0).asInstanceOf[String].toDouble,
-      row(1).asInstanceOf[String].toDouble,
-      row(2).asInstanceOf[String].toLong))
+    val gmDf = spark.read.parquet(file)
+    val pointDf = gmDf.select("fid", "timestamp", "geom.x", "geom.y")
+    val pointRDD = pointDf.rdd.map(row => {
+      val id = row.getString(0)
+      val t = row.getLong(1)
+      val x = row.getDouble(2)
+      val y = row.getDouble(3)
+      Point(id = id, coordinates = Array(x, y), t = t)
+    })
+    pointRDD
   }
 }
