@@ -5,7 +5,7 @@ case class Raster[S <: Geometry, V, D](
   data: D)
   extends Instance[S, V, D] {
 
-  def mapSpatial[S1 <: Geometry](f: S => S1): Raster[S1, V, D] =
+  def mapSpatial(f: S => S): Raster[S, V, D] =
     Raster(
       entries.map(entry =>
         Entry(
@@ -32,10 +32,10 @@ case class Raster[S <: Geometry, V, D](
           f(entry.value))),
       data)
 
-  def mapEntries[S1 <: Geometry, V1](
-    f1: S => S1,
+  def mapEntries[V1](
+    f1: S => S,
     f2: Duration => Duration,
-    f3: V => V1): Raster[S1, V1, D] =
+    f3: V => V1): Raster[S, V1, D] =
     Raster(
       entries.map(entry =>
         Entry(

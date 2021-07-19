@@ -1,6 +1,6 @@
 package instances
 
-trait Instance[S <: Geometry, V, D] {
+abstract class Instance[S <: Geometry, V, D] {
 
   val entries: Array[Entry[S, V]]
   val data: D
@@ -36,14 +36,14 @@ trait Instance[S <: Geometry, V, D] {
 
 
   // higher-order types cannot handle cases when S is a specific type, as the signature changes when the return type changes
-//  def mapSpatial[S1 <: Geometry](f: S => S1): F[S1, V, D]
-//  def mapTemporal(f: Duration => Duration): F[S, V, D]
-//  def mapValue[V1](f: V => V1): F[S, V1, D]
-//  def mapEntries[S1 <: Geometry, V1](
-//    f1: S => S1,
-//    f2: Duration => Duration,
-//    f3: V => V1): F[S1, V1, D]
-//  def mapData[D1](f: D => D1): F[S, V, D1]
+  def mapSpatial(f: S => S): Instance[S, V, D]
+  def mapTemporal(f: Duration => Duration): Instance[S, V, D]
+  def mapValue[V1](f: V => V1): Instance[S, V1, D]
+  def mapEntries[V1](
+    f1: S => S,
+    f2: Duration => Duration,
+    f3: V => V1): Instance[S, V1, D]
+  def mapData[D1](f: D => D1): Instance[S, V, D1]
 
 
   override def toString: String =
@@ -55,10 +55,9 @@ trait Instance[S <: Geometry, V, D] {
       case that: Instance[S, V, D] =>
         (this.entries sameElements that.entries) &&
           this.data == that.data
-      case _ => {
+      case _ =>
         println("xx")
         false
-      }
     }
   }
 

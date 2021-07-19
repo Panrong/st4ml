@@ -55,3 +55,7 @@ case class TimeSeries[V, D](
       f(data))
 
 }
+
+object TimeSeries {
+
+}

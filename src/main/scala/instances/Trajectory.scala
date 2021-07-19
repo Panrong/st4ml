@@ -1,7 +1,6 @@
 package instances
 
 import GeometryImplicits.withExtraPointOps
-import org.scalacheck.Prop.True
 
 case class Trajectory[V, D](
   entries: Array[Entry[Point, V]],

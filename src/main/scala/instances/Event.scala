@@ -8,7 +8,7 @@ case class Event[S <: Geometry, V, D](
   require(entries.length == 1,
     s"The length of entries for Event should be 1, but got ${entries.length}")
 
-  def mapSpatial[S1 <: Geometry](f: S => S1): Event[S1, V, D] =
+  override def mapSpatial(f: S => S): Event[S, V, D] =
     Event(
       entries.map(entry =>
         Entry(
@@ -35,10 +35,10 @@ case class Event[S <: Geometry, V, D](
           f(entry.value))),
       data)
 
-  def mapEntries[S1 <: Geometry, V1](
-                                      f1: S => S1,
-                                      f2: Duration => Duration,
-                                      f3: V => V1): Event[S1, V1, D] =
+  def mapEntries[V1](
+    f1: S => S,
+    f2: Duration => Duration,
+    f3: V => V1): Event[S, V1, D] =
     Event(
       entries.map(entry =>
         Entry(
