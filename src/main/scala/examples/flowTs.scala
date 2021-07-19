@@ -2,7 +2,8 @@ package examples
 
 import instances.{Duration, Event, Extent, Point}
 import operatorsNew.converter.Event2TimeSeriesConverter
-import operatorsNew.selector.{MultiSTRangeSelector, MultiSpatialRangeSelector}
+import operatorsNew.selector.MultiSTRangeSelector
+import operatorsNew.selector.partitioner.STRPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -11,7 +12,7 @@ import utils.Config
  * divide the whole spatial range into grids and find how many points inside each grid
  * for every hour
  */
-object flowExp {
+object flowTs {
   def main(args: Array[String]): Unit = {
 
     val spark = SparkSession.builder()
@@ -45,11 +46,20 @@ object flowExp {
       stGrids.map(x => Duration(x._2(0), x._2(1))),
       numPartitions = grids.length)
 
-    val rdd1 = selector.queryWithInfo(pointRDD)
-    println(rdd1.count)
-    val resRDD = rdd1.flatMap(_._2).map((_, 1)).reduceByKey(_ + _)
-    resRDD.collect.map(x => (stGrids(x._1), x._2)).foreach(x => println(x._1._1.deep, x._1._2.deep, x._2))
-    println(resRDD.map(_._2).sum)
+    val rdd1 = selector.query(pointRDD)
+
+    val partitioner = new STRPartitioner(numPartitions = sSize * sSize)
+    val partitionMap = grids.map(x => Extent(x(0), x(1), x(2), x(3))).zipWithIndex.map(_.swap).toMap
+    val pRdd1 = partitioner.partition(rdd1, partitionMap)
+
+    val f: Array[Event[Point, None.type, String]] => Int = _.length
+    val tArray = ((tQuery(0) until tQuery(1) by tSplit.toLong).toArray :+ tQuery(1)).sliding(2).toArray.map(x => Duration(x(0), x(1)))
+    val converter = new Event2TimeSeriesConverter(f, tArray)
+    val rdd2 = converter.convert(pRdd1)
+    val resRdd = rdd2.map(x => x.entries.map(_.value).zipWithIndex.map(_.swap)).zipWithIndex().flatMap(x => x._1.map(y => (y, x._2)))
+    resRdd.collect.foreach(x => println(grids(x._2.toInt).mkString("Array(", ", ", ")"), tArray(x._1._1), x._1._2))
+    println(resRdd.map(_._1._2).sum)
+
 
     sc.stop()
   }
