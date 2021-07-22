@@ -46,4 +46,6 @@ object ParquetReader {
         Trajectory(entries, id)
       })
   }
+
+  def readTrajGeomesa(filePath: String):  RDD[Trajectory[None.type, String]] = ???
 }

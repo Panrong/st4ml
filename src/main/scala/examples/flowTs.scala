@@ -1,6 +1,6 @@
 package examples
 
-import instances.{Duration, Event, Extent, Point}
+import instances.{Duration, Event, Extent, Point, TimeSeries}
 import operatorsNew.converter.Event2TimeSeriesConverter
 import operatorsNew.selector.MultiSTRangeSelector
 import operatorsNew.selector.partitioner.STRPartitioner
