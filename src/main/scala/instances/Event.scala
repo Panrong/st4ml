@@ -1,12 +1,15 @@
 package instances
 
-case class Event[S <: Geometry, V, D](
-  entries: Array[Entry[S, V]],
-  data: D)
+class Event[S <: Geometry, V, D](
+  override val entries: Array[Entry[S, V]],
+  override val data: D)
   extends Instance[S, V, D] {
 
-  require(entries.length == 1,
+  require(validation,
     s"The length of entries for Event should be 1, but got ${entries.length}")
+
+  override def validation: Boolean =
+    entries.length == 1
 
   override def mapSpatial(f: S => S): Event[S, V, D] =
     Event(
@@ -17,7 +20,7 @@ case class Event[S <: Geometry, V, D](
           entry.value)),
       data)
 
-  def mapTemporal(f: Duration => Duration): Event[S, V, D] =
+  override def mapTemporal(f: Duration => Duration): Event[S, V, D] =
     Event(
       entries.map(entry =>
         Entry(
@@ -26,7 +29,7 @@ case class Event[S <: Geometry, V, D](
           entry.value)),
       data)
 
-  def mapValue[V1](f: V => V1): Event[S, V1, D] =
+  override def mapValue[V1](f: V => V1): Event[S, V1, D] =
     Event(
       entries.map(entry =>
         Entry(
@@ -35,7 +38,7 @@ case class Event[S <: Geometry, V, D](
           f(entry.value))),
       data)
 
-  def mapEntries[V1](
+  override def mapEntries[V1](
     f1: S => S,
     f2: Duration => Duration,
     f3: V => V1): Event[S, V1, D] =
@@ -47,7 +50,7 @@ case class Event[S <: Geometry, V, D](
           f3(entry.value))),
       data)
 
-  def mapData[D1](f: D => D1): Event[S, V, D1] =
+  override def mapData[D1](f: D => D1): Event[S, V, D1] =
     Event(
       entries.map(entry =>
         Entry(
@@ -55,9 +58,13 @@ case class Event[S <: Geometry, V, D](
           entry.temporal,
           entry.value)),
       f(data))
+
 }
 
 object Event {
+  def apply[S <: Geometry, V, D](entries: Array[Entry[S, V]], data: D): Event[S, V, D] =
+    new Event(entries, data)
+
   def apply[S <: Geometry, V](entries: Array[Entry[S, V]]): Event[S, V, None.type] =
     new Event(entries, None)
 

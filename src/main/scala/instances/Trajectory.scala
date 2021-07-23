@@ -2,15 +2,18 @@ package instances
 
 import GeometryImplicits.withExtraPointOps
 
-case class Trajectory[V, D](
-  entries: Array[Entry[Point, V]],
-  data: D)
+class Trajectory[V, D](
+  override val entries: Array[Entry[Point, V]],
+  override val data: D)
   extends Instance[Point, V, D] {
 
-  require(entries.length > 1,
+  require(validation,
     s"The length of entries for Trajectory at least 2, but got ${entries.length}")
 
-  def mapSpatial(f: Point => Point): Trajectory[V, D] =
+  override def validation: Boolean =
+    entries.length > 1
+
+  override def mapSpatial(f: Point => Point): Trajectory[V, D] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -19,7 +22,7 @@ case class Trajectory[V, D](
           entry.value)),
       data)
 
-  def mapTemporal(f: Duration => Duration): Trajectory[V, D] =
+  override def mapTemporal(f: Duration => Duration): Trajectory[V, D] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -28,7 +31,7 @@ case class Trajectory[V, D](
           entry.value)),
       data)
 
-  def mapValue[V1](f: V => V1): Trajectory[V1, D] =
+  override def mapValue[V1](f: V => V1): Trajectory[V1, D] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -37,7 +40,7 @@ case class Trajectory[V, D](
           f(entry.value))),
       data)
 
-  def mapEntries[V1](
+  override def mapEntries[V1](
     f1: Point => Point,
     f2: Duration => Duration,
     f3: V => V1): Trajectory[V1, D] =
@@ -49,7 +52,7 @@ case class Trajectory[V, D](
           f3(entry.value))),
       data)
 
-  def mapData[D1](f: D => D1): Trajectory[V, D1] =
+  override def mapData[D1](f: D => D1): Trajectory[V, D1] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -83,7 +86,7 @@ case class Trajectory[V, D](
   }
 
   def consecutiveSpatialDistance(metric: (Point, Point) => Double): Array[Double] = {
-    entries.map(_.spatial).sliding(2).map {
+    spatialSliding(2).map {
         case Array(p1, p2) => metric(p1, p2)
       }.toArray
   }
@@ -104,7 +107,7 @@ case class Trajectory[V, D](
   }
 
   def consecutiveTemporalDistance(metric: (Duration, Duration) => Long): Array[Long] = {
-    entries.map(_.temporal).sliding(2).map {
+    temporalSliding(2).map {
       case Array(dur1, dur2) => metric(dur1, dur2)
     }.toArray
   }
@@ -182,6 +185,9 @@ case class Trajectory[V, D](
 }
 
 object Trajectory {
+  def apply[V, D](entries: Array[Entry[Point, V]], data: D): Trajectory[V, D] =
+    new Trajectory(entries, data)
+
   def apply[V](entries: Array[Entry[Point, V]]): Trajectory[V, None.type] =
     new Trajectory(entries, None)
 

@@ -1,11 +1,15 @@
 package instances
 
-case class SpatialMap[V, D](
-  entries: Array[Entry[Polygon, V]],
-  data: D)
+class SpatialMap[V, D](
+  override val entries: Array[Entry[Polygon, V]],
+  override val data: D)
   extends Instance[Polygon, V, D] {
 
-  def mapSpatial(f: Polygon => Polygon): SpatialMap[V, D] =
+ lazy val spatials: Array[Polygon] = entries.map(_.spatial)
+
+  override def validation: Boolean = ???
+
+  override def mapSpatial(f: Polygon => Polygon): SpatialMap[V, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -15,7 +19,7 @@ case class SpatialMap[V, D](
       data)
 
 
-  def mapTemporal(f: Duration => Duration): SpatialMap[V, D] =
+  override def mapTemporal(f: Duration => Duration): SpatialMap[V, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -24,7 +28,7 @@ case class SpatialMap[V, D](
           entry.value)),
       data)
 
-  def mapValue[V1](f: V => V1): SpatialMap[V1, D] =
+  override def mapValue[V1](f: V => V1): SpatialMap[V1, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -33,7 +37,7 @@ case class SpatialMap[V, D](
           f(entry.value))),
       data)
 
-  def mapEntries[V1](
+  override def mapEntries[V1](
     f1: Polygon => Polygon,
     f2: Duration => Duration,
     f3: V => V1): SpatialMap[V1, D] =
@@ -45,7 +49,7 @@ case class SpatialMap[V, D](
           f3(entry.value))),
       data)
 
-  def mapData[D1](f: D => D1): SpatialMap[V, D1] =
+  override def mapData[D1](f: D => D1): SpatialMap[V, D1] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -53,4 +57,19 @@ case class SpatialMap[V, D](
           entry.temporal,
           entry.value)),
       f(data))
+
+
+}
+
+object SpatialMap {
+//  def empty(extentArr: Array[Extent]): SpatialMap[None.type, None.type] = {
+//    val extentArrSorted = extentArr.sorted
+//    SpatialMap(extentArrSorted.map(x => Entry(x.toPolygon, Duration.empty)))
+//  }
+
+  def apply[V, D](entries: Array[Entry[Polygon, V]], data: D): SpatialMap[V, D] =
+    new SpatialMap(entries, data)
+
+  def apply[V](entries: Array[Entry[Polygon, V]]): SpatialMap[V, None.type] =
+    new SpatialMap(entries, None)
 }
