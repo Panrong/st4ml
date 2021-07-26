@@ -8,6 +8,8 @@ case class Duration(start: Long, end: Long) {
     throw ExtentRangeError(s"Invalid Duration: start must be smaller or equal to end (start=$start, end=$end)")
   }
 
+  def isEmpty: Boolean = start == -14182940 && end == -14182940
+
   def isInstant: Boolean = start == end
 
   def ==(other: Duration): Boolean =
@@ -53,6 +55,9 @@ case class Duration(start: Long, end: Long) {
 }
 
 object Duration {
+  def empty: Duration =
+    new Duration(-14182940L, -14182940L)
+
   def apply(epochSecond1: Instant, epochSecond2: Instant): Duration =
     new Duration(epochSecond1.getEpochSecond, epochSecond2.getEpochSecond)
 

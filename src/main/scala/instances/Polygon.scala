@@ -6,6 +6,9 @@ import scala.collection.GenTraversable
 object Polygon extends PolygonConstructors
 
 trait PolygonConstructors {
+  def empty: Polygon =
+    GeometryFactory.factory.createPolygon()
+
   def apply(exterior: jts.LinearRing, holes: GenTraversable[jts.LinearRing]): Polygon =
     GeometryFactory.factory.createPolygon(exterior, holes.toArray)
 

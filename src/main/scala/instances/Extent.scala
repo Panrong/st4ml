@@ -237,6 +237,14 @@ object Extent {
     new Extent(xMin, yMin, xMax, yMax)
   }
 
+  def apply(envelopes: Array[Envelope]): Extent = {
+    val xMin = envelopes.map(_.xMin).min
+    val xMax = envelopes.map(_.xMax).max
+    val yMin = envelopes.map(_.yMin).min
+    val yMax = envelopes.map(_.yMax).max
+    new Extent(xMin, yMin, xMax, yMax)
+  }
+
   implicit def toPolygon(extent: Extent): Polygon =
     extent.toPolygon
 

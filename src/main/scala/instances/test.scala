@@ -5,8 +5,8 @@ object test extends App {
   val a = Array(
     Entry(Point(1, 1), Duration(10000L, 20000L))
   )
-
-  val b = Event(entries = a, data = 1)
+//
+//  val b = Event(entries = a, data = 1)
 //  println(b)
 
 //  val c = b.mapData(_.toString)
@@ -71,8 +71,12 @@ object test extends App {
 //  println(mp)
 //  println(mp.intersects(Point(-0.5, -0.5)))
 
-  val x = Event(entries = a, data = 1)
-  println(x.hashCode())
-  println(b.hashCode())
+//  val x = Event(entries = a, data = 1)
+//  println(x.hashCode())
+//  println(b.hashCode())
+
+  val emptyDuration = Duration.empty
+  print(emptyDuration)
+  print(emptyDuration.isEmpty)
 
 }

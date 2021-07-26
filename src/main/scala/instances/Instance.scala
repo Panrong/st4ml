@@ -16,9 +16,12 @@ abstract class Instance[S <: Geometry, V, D] {
   def center: (Point, Long) = (spatialCenter, temporalCenter)
 
   def spatialCenter: Point = extent.center
-
   def temporalCenter: Long = duration.center
 
+  // todo: cannot get around type erase problem
+//  def spatials(implicit tag: ClassTag[S]): Array[S] = entries.map(_.spatial)
+//  def temporals: Array[Duration] = entries.map(_.temporal)
+//  def values(implicit tag: ClassTag[V]): Array[V] = entries.map(_.value)
 
   // Predicates
   // todo: results are not accurate, is it ok?
@@ -34,8 +37,9 @@ abstract class Instance[S <: Geometry, V, D] {
   def contains(g: Geometry, dur: Duration): Boolean = contains(g) && contains(dur)
   def contains(e: Extent, dur: Duration): Boolean = contains(e) && contains(dur)
 
+  // Methods
+  def validation: Boolean
 
-  // higher-order types cannot handle cases when S is a specific type, as the signature changes when the return type changes
   def mapSpatial(f: S => S): Instance[S, V, D]
   def mapTemporal(f: Duration => Duration): Instance[S, V, D]
   def mapValue[V1](f: V => V1): Instance[S, V1, D]
@@ -44,6 +48,9 @@ abstract class Instance[S <: Geometry, V, D] {
     f2: Duration => Duration,
     f3: V => V1): Instance[S, V1, D]
   def mapData[D1](f: D => D1): Instance[S, V, D1]
+
+  def isEmpty: Boolean =
+    entries.length == 0 || entries.map(_.spatial.isEmpty).forall(_ == true)
 
 
   override def toString: String =
@@ -55,14 +62,14 @@ abstract class Instance[S <: Geometry, V, D] {
       case that: Instance[S, V, D] =>
         (this.entries sameElements that.entries) &&
           this.data == that.data
-      case _ =>
-        println("xx")
-        false
+      case _ => false
     }
   }
 
   override def hashCode(): Int =
     31 * (entries.##) + data.##
 
-
 }
+
+
+

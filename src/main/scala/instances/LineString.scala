@@ -5,6 +5,9 @@ import org.locationtech.jts.{geom => jts}
 object LineString extends LineStringConstructors
 
 trait LineStringConstructors {
+  def empty: LineString =
+    GeometryFactory.factory.createLinearRing()
+
   def apply(coords: jts.CoordinateSequence): LineString =
     GeometryFactory.factory.createLineString(coords)
 
@@ -12,9 +15,8 @@ trait LineStringConstructors {
     apply(GeometryFactory.factory.getCoordinateSequenceFactory.create(coords.toArray))
 
   def apply(points: Traversable[Point])(implicit e1: DummyImplicit, e2: DummyImplicit): LineString = {
-    if (points.size < 2) {
+    if (points.size < 2)
       sys.error(s"Invalid LineString: Requires 2 or more points: ${points}")
-    }
 
     val coords = points.toArray.map(_.getCoordinate)
     GeometryFactory.factory.createLineString(coords)
