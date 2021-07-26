@@ -33,6 +33,7 @@ object TrajSpeedSpark {
     val pointFile = args(0)
 
     val trajRDD = readGeoMesaTraj(pointFile)
+    trajRDD.cache()
     var res = new Array[(Array[Double], Array[Long], Double)](0)
 
     for (query <- stGrids) {
