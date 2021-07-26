@@ -21,7 +21,7 @@ object TrajSpeedExp {
     sc.setLogLevel("ERROR")
 
     /**
-     * "C:\\Users\\kaiqi001\\Documents\\GitHub\\geomesa-fs_2.12-3.2.0\\face-point\\09_W964092771efa4a4b87c1c75d5c79d6ec.parquet" "-9.137,38.715,-7.740,41.523" "1372639359,1372755736" "5" "3600"
+     * C:\Users\kaiqi001\Documents\GitHub\geomesa-fs_2.12-3.2.0\trajectory\2013\07\01\13_W2757b56033204294839f0dd45b1fd366.parquet "-8.65, 41.13, -8.57, 41.17" "1372636800,1372736800" 2 36000 16
      */
     val sQuery = args(1).split(",").map(_.toDouble)
     val tQuery = args(2).split(",").map(_.toLong)
@@ -33,12 +33,13 @@ object TrajSpeedExp {
         Duration(x._2(0), x._2(1))))
     val sQ = stGrids.map(x => toPolygon(x._1))
     val tQ = stGrids.map(_._2)
+    val numPartitions = args(5).toInt
 
     val trajFile = args(0)
 
     val trajRDD = ParquetReader.readTrajGeomesa(trajFile)
 
-    val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQ, tQ, sQ.length * tQ.length)
+    val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQ, tQ, numPartitions)
     val selectedRDD = selector.queryWithInfo(trajRDD)
     val speedRDD = selectedRDD.flatMap {
       case (traj, qArr) => qArr.map(q => (traj, q))
@@ -50,14 +51,16 @@ object TrajSpeedExp {
       .map { case (k, v) => (k, v.avg) }
 
     val paddingRDD = sQ.indices.map((_, 0)).toMap
-    (paddingRDD ++ speedRDD.collect.toMap).foreach{
-      case(idx, speed) => println(sQ(idx), tQ(idx), speed)
+    (paddingRDD ++ speedRDD.collect.toMap).foreach {
+      case (idx, speed) => println(sQ(idx), tQ(idx), speed)
     }
 
     sc.stop()
   }
+
   class AvgCollector(val tot: Double, val cnt: Int = 1) extends Serializable {
     def combine(that: AvgCollector) = new AvgCollector(tot + that.tot, cnt + that.cnt)
+
     def avg: Double = tot / cnt
   }
 
