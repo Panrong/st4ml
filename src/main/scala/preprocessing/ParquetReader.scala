@@ -2,14 +2,18 @@ package preprocessing
 
 import instances._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Dataset, SparkSession}
 
-object ParquetReader {
+object ParquetReader extends Serializable {
   case class Document(id: String, latitude: Double, longitude: Double, timestamp: Long)
 
   case class P(latitude: Double, longitude: Double, timestamp: Long)
 
   case class T(id: String, points: Array[P])
+
+  case class GMP(x: Array[Double], y: Array[Double])
+
+  case class GMT(fid: String, timestamp: Long, points: GMP)
 
   def readFaceParquet(filePath: String): RDD[Event[Point, None.type, String]] = {
     val spark = SparkSession.builder().getOrCreate()
@@ -47,5 +51,24 @@ object ParquetReader {
       })
   }
 
-  def readTrajGeomesa(filePath: String):  RDD[Trajectory[None.type, String]] = ???
+  def readTrajGeomesa(filePath: String, samplingRate: Int = 15): RDD[Trajectory[None.type, String]] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val ds = spark.read.parquet(filePath)
+      .filter("fid is not null")
+      .filter("points is not null")
+      .filter("timestamp is not null")
+      .select("fid", "timestamp", "points").as[GMT]
+
+    val rdd = ds.rdd
+    rdd.map(traj => {
+      val length = traj.points.x.length
+      val valueArr = new Array[None.type](length)
+      val pointArr = (traj.points.x zip traj.points.y).map(Point(_))
+      val durationArr =  (0 until length).toArray
+        .map(x => traj.timestamp + x * samplingRate)
+        .map(Duration(_))
+      Trajectory(pointArr, durationArr, valueArr, traj.fid)
+    })
+  }
 }

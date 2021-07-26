@@ -1,7 +1,6 @@
 package instances
 
-abstract class Instance[S <: Geometry, V, D]
-  extends Serializable {
+abstract class Instance[S <: Geometry, V, D] extends Serializable {
 
   val entries: Array[Entry[S, V]]
   val data: D

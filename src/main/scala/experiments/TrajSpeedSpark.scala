@@ -30,9 +30,9 @@ object TrajSpeedSpark {
     val tSplit = args(4).toInt
     val grids = genGrids(sQuery, sSize)
     val stGrids = genSTGrids(grids, (tQuery(0), tQuery(1)), tSplit)
-    val pointFile = args(0)
+    val trajFile = args(0)
 
-    val trajRDD = readGeoMesaTraj(pointFile)
+    val trajRDD = readGeoMesaTraj(trajFile)
     trajRDD.cache()
     var res = new Array[(Array[Double], Array[Long], Double)](0)
 
