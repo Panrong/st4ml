@@ -10,7 +10,8 @@ import scala.reflect.ClassTag
 // map each partition to a time series
 class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S, V, D]] => VTS,
                                                                tArray: Array[Duration],
-                                                               d: DTS = None) extends Converter {
+                                                               d: DTS = None,
+                                                               instant: Boolean = true) extends Converter {
   type I = Event[S, V, D]
   type O = TimeSeries[VTS, DTS]
 
@@ -40,7 +41,8 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
     input.mapPartitions(partition => {
       val eventSlots = partition.map(event => {
         val slots = tMap.filter(_._2.intersects(event.duration))
-        (event, slots.map(_._1))
+        if (instant) (event, Array(slots.head._1))
+        else (event, slots.map(_._1))
       }).flatMap {
         case (event, slots) => slots.map(slot => (slot, event)).toIterator
       }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
@@ -55,15 +57,9 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
       Iterator(ts)
     })
   }
-
-  def mbrAll(geometries: Array[I]): Polygon = {
-    val extents = geometries.map(_.extent)
-    val initial = extents.head
-    extents.foldLeft(initial)(_.combine(_)).toPolygon
-  }
 }
 
-object test {
+object Event2TimeSeriesConverterTest {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder().master("local[2]").getOrCreate()
     val sc = spark.sparkContext
@@ -71,7 +67,7 @@ object test {
     val events = Array(
       Event(Point(1, 2), Duration(34), d = "0"),
       Event(Point(3, 4), Duration(94), d = "1"),
-      Event(Point(5, 6), Duration(134), d = "2"),
+      Event(Point(5, 6), Duration(100), d = "2"),
       Event(Point(7, 8), Duration(174), d = "3"),
       Event(Point(9, 10), Duration(234), d = "4"),
       Event(Point(11, 12), Duration(284), d = "5"),
@@ -88,9 +84,9 @@ object test {
       Duration(300, 400)
     )
 
-    //    val f: Array[Event[Point, None.type, String]] => Int = _.length
+    val f: Array[Event[Point, None.type, String]] => Int = _.length
 
-    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
+    //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
     val countConverter = new Event2TimeSeriesConverter(f, tArray)
 
     val tsRDD = countConverter.convert(eventRDD)
