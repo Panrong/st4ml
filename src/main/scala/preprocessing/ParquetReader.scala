@@ -15,6 +15,8 @@ object ParquetReader extends Serializable {
 
   case class GMT(fid: String, timestamp: Long, points: GMP)
 
+  case class GMTS(fid: String, points: GMP, start: Long, interval: Int)
+
   def readFaceParquet(filePath: String): RDD[Event[Point, None.type, String]] = {
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
@@ -65,8 +67,27 @@ object ParquetReader extends Serializable {
       val length = traj.points.x.length
       val valueArr = new Array[None.type](length)
       val pointArr = (traj.points.x zip traj.points.y).map(Point(_))
-      val durationArr =  (0 until length).toArray
+      val durationArr = (0 until length).toArray
         .map(x => traj.timestamp + x * samplingRate)
+        .map(Duration(_))
+      Trajectory(pointArr, durationArr, valueArr, traj.fid)
+    })
+  }
+
+  def readSyntheticTraj(filePath: String): RDD[Trajectory[None.type, String]] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val ds = spark.read.parquet(filePath)
+      .filter("fid is not null")
+      .filter("points is not null")
+      .select("fid", "points", "start", "interval").as[GMTS]
+    val rdd = ds.rdd
+    rdd.map(traj => {
+      val length = traj.points.x.length
+      val valueArr = new Array[None.type](length)
+      val pointArr = (traj.points.x zip traj.points.y).map(Point(_))
+      val durationArr = (0 until length).toArray
+        .map(x => traj.start + x * traj.interval)
         .map(Duration(_))
       Trajectory(pointArr, durationArr, valueArr, traj.fid)
     })

@@ -1,6 +1,6 @@
 package experiments
 
-import experiments.TrajSpeedSpark.{genGrids, genSTGrids, greatCircleDistance}
+import experiments.TrajSpeedSpark.{genGrids, genSTGrids}
 import instances.Extent.toPolygon
 import instances.GeometryImplicits.withExtraPointOps
 import instances.{Duration, Extent, Trajectory}
@@ -37,7 +37,7 @@ object TrajSpeedExp {
 
     val trajFile = args(0)
 
-    val trajRDD = ParquetReader.readTrajGeomesa(trajFile)
+    val trajRDD = ParquetReader.readSyntheticTraj(trajFile)
 
     val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQ, tQ, numPartitions)
     val selectedRDD = selector.queryWithInfo(trajRDD)
@@ -74,4 +74,6 @@ object TrajSpeedExp {
       Some(distance / duration)
     }
   }
+
 }
+
