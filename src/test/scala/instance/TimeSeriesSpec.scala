@@ -96,24 +96,44 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
 //    val mismatchedTs = TimeSeries.empty[Event[_,_,_]](durBins).attachGeometry(eventArr, timeArr)
 //  }
 
-//  it("can merge TimeSeries of same type") {
-//    val eventTs1 = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr, timeArr)
-//
-//    val eventArr2 = pointArr.map(x => Event(x, Duration(1L)))
-//    val eventTs2 = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr2, timeArr)
-//
-////    val dummyDataCombiner: (None.type, None.type) => None.type = (None, None) => None
-//
-//    val eventTsMerged = eventTs1.merge(eventTs2)
-//
-//    eventTsMerged.entries.map(_.value).foreach(println)
-//
-////    shouldBe Array(
-////      Array(eventArr(0), eventArr(1), eventArr2(0), eventArr2(1)),
-////      Array(eventArr(2), eventArr(3), eventArr2(2), eventArr2(3)),
-////      Array(eventArr(4), eventArr2(4))
-////    )
-//
-//  }
+  it("can merge TimeSeries of same type") {
+    val eventTs1 = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr, timeArr)
+
+    val eventArr2 = pointArr.map(x => Event(x, Duration(1L)))
+    val eventTs2 = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr2, timeArr)
+
+
+    val eventTsMerged = eventTs1.merge(eventTs2)
+
+    eventTsMerged.entries.map(_.value) shouldBe Array(
+      Array(eventArr(0), eventArr(1), eventArr2(0), eventArr2(1)),
+      Array(eventArr(2), eventArr(3), eventArr2(2), eventArr2(3)),
+      Array(eventArr(4), eventArr2(4))
+    )
+  }
+
+  it("can split a TimeSeries at certain timestamp") {
+    val eventTs = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr, timeArr)
+
+    val parts = eventTs.split(150L)
+    parts._1.entries.map(_.temporal) shouldBe Array(durBins(0), durBins(1))
+    parts._2.entries.map(_.temporal) shouldBe Array(durBins(2))
+
+
+    val parts2 = eventTs.split(100L)
+    parts2._1.entries.map(_.temporal) shouldBe Array(durBins(0))
+    parts2._2.entries.map(_.temporal) shouldBe Array(durBins(1), durBins(2))
+
+    the [IllegalArgumentException] thrownBy eventTs.split(250L)
+    the [IllegalArgumentException] thrownBy eventTs.split(75L)
+  }
+
+  it("can select sub TimeSeries from a TimeSeries based on Array[Duration]") {
+    val eventTs = TimeSeries.empty[Event[Point, None.type, None.type]](durBins).attachInstance(eventArr, timeArr)
+
+    val targetDurBins = Array(durBins(0), durBins(2))
+    eventTs.select(targetDurBins).entries.map(_.temporal) shouldBe targetDurBins
+  }
+
 
 }

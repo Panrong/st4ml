@@ -15,8 +15,10 @@ class TimeSeries[V, D](
       s"bot got ${temporals.mkString("Array(", ", ", ")")}.")
 
   override def validation: Boolean = {
-    temporals.sortBy(_.start).sliding(2).foreach {
-      case Array(dur1, dur2) => if (dur1.end > dur2.start) return false
+    if (temporals.length > 1) {
+      temporals.sortBy(_.start).sliding(2).foreach {
+        case Array(dur1, dur2) => if (dur1.end > dur2.start) return false
+      }
     }
     true
   }
@@ -111,33 +113,69 @@ class TimeSeries[V, D](
     TimeSeries(newEntries, data)
   }
 
-//  def merge(
-//    other: TimeSeries[V, D],
-////    dataCombiner: (D, D) => D
-//  ): TimeSeries[V, D] = {
-//    require(temporals sameElements other.temporals,
-//      "cannot merge TimeSeries with different temporal structure")
-//
-//    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map {
-//      case (a: Array[_], b: Array[_]) => a ++ b
-//    }
-//    val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-//      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
-//    )
-//    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_)).asInstanceOf[Array[Entry[Polygon, V]]]
-////    val newData = dataCombiner(data, other.data)
-//    TimeSeries(newEntries, data)
-//  }
-//
-//  def split(at: Long): (TimeSeries[V, D], TimeSeries[V, D]) = {
-//    require(temporals(0).end <= at && at <= temporals(dimension-1).start,
-//      s"the split timestamp should range from ${temporals(0).end} to ${temporals(temporals.length - 1).start}, " +
-//        s"but got $at")
-//
-//    val splitIndex = temporals.indexWhere(_.start >= at)
-//    (TimeSeries(entries.slice(0, splitIndex), data),
-//      TimeSeries(entries.slice(splitIndex, dimension-1), data))
-//  }
+  def merge[T : ClassTag](
+    other: TimeSeries[Array[T], _]
+  )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], None.type] = {
+    require(temporals sameElements other.temporals,
+      "cannot merge TimeSeries with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+    )
+    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
+    TimeSeries(newEntries, None)
+  }
+
+  def merge[T](
+    other: TimeSeries[T, D],
+    valueCombiner: (V, T) => V,
+    dataCombiner: (D, D) => D
+  ): TimeSeries[V, D] = {
+    require(temporals sameElements other.temporals,
+      "cannot merge TimeSeries with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      valueCombiner(x._1, x._2)
+    )
+    val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+    )
+    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    TimeSeries(newEntries, newData)
+  }
+
+  def merge[T : ClassTag](
+    other: TimeSeries[Array[T], D],
+    dataCombiner: (D, D) => D
+  )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    require(temporals sameElements other.temporals,
+      "cannot merge TimeSeries with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+    )
+    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    TimeSeries(newEntries, newData)
+  }
+
+  def split(at: Long): (TimeSeries[V, D], TimeSeries[V, D]) = {
+    require(temporals(0).end <= at && at <= temporals(dimension-1).start,
+      s"the split timestamp should range from ${temporals(0).end} to ${temporals(temporals.length - 1).start}, " +
+        s"but got $at")
+
+    val splitIndex = temporals.indexWhere(_.start >= at)
+    val (entriesPart1, entriesPart2) = entries.splitAt(splitIndex)
+    (TimeSeries(entriesPart1, data),
+      TimeSeries(entriesPart2, data))
+  }
 
   def select(targetDur: Array[Duration]): TimeSeries[V, D] =
     TimeSeries(entries.filter(x => targetDur.contains(x.temporal)), data)
