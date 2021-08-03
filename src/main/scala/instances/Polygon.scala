@@ -59,4 +59,7 @@ trait PolygonConstructors {
 
   def apply(exterior: Traversable[(Double, Double)])(implicit d: DummyImplicit, e:DummyImplicit): Polygon =
     apply(LineString(exterior)(d), Set())
+
+  def apply(exterior: Point*): Polygon =
+    apply(LineString(exterior), Set())
 }
