@@ -1,11 +1,13 @@
 package instances
 
+import scala.reflect.ClassTag
+
 class SpatialMap[V, D](
   override val entries: Array[Entry[Polygon, V]],
   override val data: D)
   extends Instance[Polygon, V, D] {
 
- lazy val spatials: Array[Polygon] = entries.map(_.spatial)
+  lazy val spatials: Array[Polygon] = entries.map(_.spatial)
 
   override def validation: Boolean = ???
 
@@ -62,10 +64,13 @@ class SpatialMap[V, D](
 }
 
 object SpatialMap {
-//  def empty(extentArr: Array[Extent]): SpatialMap[None.type, None.type] = {
-//    val extentArrSorted = extentArr.sorted
-//    SpatialMap(extentArrSorted.map(x => Entry(x.toPolygon, Duration.empty)))
-//  }
+  def empty[T: ClassTag](extentArr: Array[Extent]): SpatialMap[Array[T], None.type] = {
+    val extentArrSorted = extentArr.sorted
+    SpatialMap(extentArrSorted.map(x => Entry(x.toPolygon, Duration.empty, Array.empty[T])))
+  }
+
+  // todo: ts/sm validation?
+  def empty[T: ClassTag](polygonArr: Array[Polygon]): SpatialMap[Array[T], None.type] = ???
 
   def apply[V, D](entries: Array[Entry[Polygon, V]], data: D): SpatialMap[V, D] =
     new SpatialMap(entries, data)
