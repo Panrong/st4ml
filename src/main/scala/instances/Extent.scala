@@ -11,7 +11,7 @@ case class Extent(
   yMin: Double,
   xMax: Double,
   yMax: Double
-) {
+) extends Ordered[Extent]{
 
   // Validation
   if (xMin > xMax) {

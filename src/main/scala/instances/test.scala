@@ -75,8 +75,35 @@ object test extends App {
 //  println(x.hashCode())
 //  println(b.hashCode())
 
-  val emptyDuration = Duration.empty
-  print(emptyDuration)
-  print(emptyDuration.isEmpty)
+//  val emptyDuration = Duration.empty
+//  print(emptyDuration)
+//  print(emptyDuration.isEmpty)
+
+  def f[T]: Unit = {
+    println(2)
+//    val numbers = Array(1,2,3)
+//    println(numbers.head.isInstanceOf[T])
+////    println(numbers.head.isInstanceOf[String])
+//    println(numbers.head.isInstanceOf[Int])
+
+    val a = Array.empty[Int]
+    val b = Array.empty[Double]
+    println(a.isInstanceOf[Array[Int]])
+    println(b.isInstanceOf[Array[Int]])
+
+
+
+//    val res =  numbers match {
+//      case listOfStrings: Array[T] => "a list of strings"
+//      case listOfInts: Array[Int] => "a list of numbers"
+//      case _ => "others"
+//    }
+//    println(res)
+
+  }
+  f[String]
+
+
+
 
 }
