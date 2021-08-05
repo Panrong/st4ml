@@ -31,8 +31,8 @@ object ReadTrajJsonFile {
   def apply(fileName: String, num: Int = Double.PositiveInfinity.toInt, auxiliary: Boolean = false): RDD[geometry.Trajectory] = {
     val spark = SparkSession.builder().getOrCreate()
     val samplingRate = 15
-    val inputDF = spark.read.option("multiLine", true).json(fileName).limit(num)
-    println(inputDF.rdd.getNumPartitions)
+    val inputDF = spark.read.json(fileName).limit(num)
+    println(inputDF.count())
     inputDF.createOrReplaceTempView("jsonTable")
     import spark.implicits._
     if (auxiliary) {
