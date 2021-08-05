@@ -35,6 +35,6 @@ object SampledTraj2Event {
     pointDS.printSchema()
     pointDS.show(5)
 
-    pointDS.write.parquet(fileName.replace("traj","point"))
+    pointDS.write.parquet(fileName.replace("taxi","taxi_point"))
   }
 }
