@@ -32,17 +32,17 @@ object geoJson2ParquetTraj {
     trajDS.write.parquet(outputName)
 
     // read parquet
-    val readDs = spark.read.parquet(args(1))
-    readDs.printSchema()
-    readDs.show(5)
-
-    val trajectoryRDD = readDs.as[T].rdd.map(x => {
-      val pointArr = x.entries.map(e => Point(e.lon, e.lat)).toArray
-      val durationArr = x.entries.map(x => Duration(x.t)).toArray
-      val valueArr = x.entries.map(_ => None).toArray
-      Trajectory(pointArr, durationArr, valueArr, x.id)
-    })
-    trajectoryRDD.take(5).foreach(println)
+    //    val readDs = spark.read.parquet(args(1))
+    //    readDs.printSchema()
+    //    readDs.show(5)
+    //
+    //    val trajectoryRDD = readDs.as[T].rdd.map(x => {
+    //      val pointArr = x.entries.map(e => Point(e.lon, e.lat)).toArray
+    //      val durationArr = x.entries.map(x => Duration(x.t)).toArray
+    //      val valueArr = x.entries.map(_ => None).toArray
+    //      Trajectory(pointArr, durationArr, valueArr, x.id)
+    //    })
+    //    trajectoryRDD.take(5).foreach(println)
 
     sc.stop()
   }
