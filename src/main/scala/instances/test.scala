@@ -79,17 +79,17 @@ object test extends App {
 //  print(emptyDuration)
 //  print(emptyDuration.isEmpty)
 
-  def f[T]: Unit = {
-    println(2)
-//    val numbers = Array(1,2,3)
-//    println(numbers.head.isInstanceOf[T])
-////    println(numbers.head.isInstanceOf[String])
-//    println(numbers.head.isInstanceOf[Int])
-
-    val a = Array.empty[Int]
-    val b = Array.empty[Double]
-    println(a.isInstanceOf[Array[Int]])
-    println(b.isInstanceOf[Array[Int]])
+//  def f[T]: Unit = {
+//    println(2)
+////    val numbers = Array(1,2,3)
+////    println(numbers.head.isInstanceOf[T])
+//////    println(numbers.head.isInstanceOf[String])
+////    println(numbers.head.isInstanceOf[Int])
+//
+//    val a = Array.empty[Int]
+//    val b = Array.empty[Double]
+//    println(a.isInstanceOf[Array[Int]])
+//    println(b.isInstanceOf[Array[Int]])
 
 
 
@@ -100,8 +100,8 @@ object test extends App {
 //    }
 //    println(res)
 
-  }
-  f[String]
+//  }
+//  f[String]
 
 
 

@@ -5,6 +5,8 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
   val entries: Array[Entry[S, V]]
   val data: D
 
+  def validation: Boolean = entries.length > 0
+
   lazy val extent: Extent =
     Extent(entries.map(_.extent))
 
@@ -38,8 +40,6 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
   def contains(e: Extent, dur: Duration): Boolean = contains(e) && contains(dur)
 
   // Methods
-  def validation: Boolean
-
   def mapSpatial(f: S => S): Instance[S, V, D]
   def mapTemporal(f: Duration => Duration): Instance[S, V, D]
   def mapValue[V1](f: V => V1): Instance[S, V1, D]

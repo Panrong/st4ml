@@ -8,7 +8,7 @@ class Trajectory[V, D](
   extends Instance[Point, V, D] {
 
   require(validation,
-    s"The length of entries for Trajectory at least 2, but got ${entries.length}")
+    s"The length of entries for Trajectory should be at least 2, but got ${entries.length}")
 
   override def validation: Boolean =
     entries.length > 1

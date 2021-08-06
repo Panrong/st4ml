@@ -11,10 +11,9 @@ class TimeSeries[V, D](
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
 
   require(validation,
-    s"The temporal durations for TimeSeries must be disjoint with each other, " +
-      s"bot got ${temporals.mkString("Array(", ", ", ")")}.")
+    s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 
-  override def validation: Boolean = {
+  def isTemporalDisjoint: Boolean = {
     if (temporals.length > 1) {
       temporals.sortBy(_.start).sliding(2).foreach {
         case Array(dur1, dur2) => if (dur1.end > dur2.start) return false
@@ -72,47 +71,105 @@ class TimeSeries[V, D](
           entry.value)),
       f(data))
 
-  // assumes disjoint temporal durations
-  def getEntryIndex(timestampArr: Array[Long]): Array[Int] = {
-    timestampArr.map(ts =>
-      temporals.indexWhere(dur => dur.start == ts || dur.contains(ts))
-    )
+
+  /**
+   * Find the indices of temporal bins for each element of timeArr.
+   *
+   * Noted that:
+   * 1. An element is considered in a temporal bin as long as they intersect (including duration boundaries)
+   * 2. When temporal bins are disjoint and the input timeArr is Array[Long], each element in the timeArr would only
+   * belong to one temporal bin. Therefore, Utils.getBinIndex is used instead of Utils.getBinIndices
+   *
+   * @param timeArr each element represents a timestamp or a duration
+   * @return the indices of temporal bins
+   */
+  def getTemporalIndex(timeArr: Array[_]): Array[Array[Int]] = {
+    timeArr match {
+      case durArr: Array[Duration] => Utils.getBinIndices(temporals, durArr)
+      case timestampArr: Array[Long] =>
+        if (isTemporalDisjoint)
+          Utils.getBinIndex(temporals, timestampArr)
+        else
+          Utils.getBinIndices(temporals, timestampArr)
+      case _ => throw new IllegalArgumentException(
+        "Unsupported type of input argument in method getTemporalIndex; " +
+          "inputArr should be either Array[Long] or Array[Duration]")
+    }
+  }
+
+  def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
+    val indices = getTemporalIndex(timeArr)
+    objArr.zip(indices)
+      .filter(_._2.length > 0)
+      .flatMap{ case(geom, indexArr) =>
+        for {
+          idx <- indexArr
+        } yield (geom, idx)
+      }
+      .groupBy(_._2)
+      .mapValues(x => x.map(_._1))
+  }
+
+  def createTimeSeries[T: ClassTag](
+    temporalIndexToObj: Map[Int, Array[T]],
+    computeExtentFunc: Array[T] => Extent
+  ): TimeSeries[Array[T], D] = {
+    if (temporalIndexToObj.nonEmpty) {
+      val newValues = entries.zipWithIndex.map(entryWithIdx =>
+        entryWithIdx._1.value.asInstanceOf[Array[T]] ++ temporalIndexToObj(entryWithIdx._2)
+      )
+      val newSpatials = newValues.map { newGeomArr => computeExtentFunc(newGeomArr).toPolygon }
+      val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
+      TimeSeries(newEntries, data)
+    }
+    else {
+      this.asInstanceOf[TimeSeries[Array[T], D]]
+    }
   }
 
   def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T], timestampArr: Array[Long])
     (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
-    require(geomArr.length == timestampArr.length, "the length of two arguments must match")
+    require(geomArr.length == timestampArr.length,
+      "the length of two arguments must match")
 
-    val entryIndexArr = getEntryIndex(timestampArr)
-    val entryIndexToGeom = geomArr.zip(entryIndexArr).groupBy(_._2).mapValues(x => x.map(_._1))
+    val entryIndexToGeom = getTemporalIndexToObj(geomArr, timestampArr)
+    createTimeSeries(entryIndexToGeom, Utils.getExtentFromGeometryArray)
+  }
 
-    val newValues = entries.zipWithIndex.map(entryWithIdx =>
-      entryWithIdx._1.value.asInstanceOf[Array[T]] ++ entryIndexToGeom(entryWithIdx._2)
-    )
-    val newSpatials = newValues.map{ newGeomArr =>
-      Utils.getExtentFromGeometryArray(newGeomArr).toPolygon
-    }
-    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
-    TimeSeries(newEntries, data)
+  def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T], durationArr: Array[Duration])
+    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    require(geomArr.length == durationArr.length,
+      "the length of two arguments must match")
+
+    val entryIndexToGeom = getTemporalIndexToObj(geomArr, durationArr)
+    createTimeSeries(entryIndexToGeom, Utils.getExtentFromGeometryArray)
   }
 
   def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], timestampArr: Array[Long])
     (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
-    require(instanceArr.length == timestampArr.length, "the length of two arguments must match")
+    require(instanceArr.length == timestampArr.length,
+      "the length of two arguments must match")
 
-    val entryIndexArr = getEntryIndex(timestampArr)
-    val entryIndexToInstance = instanceArr.zip(entryIndexArr).groupBy(_._2).mapValues(x => x.map(_._1))
-
-    val newValues = entries.zipWithIndex.map(entryWithIdx =>
-      entryWithIdx._1.value.asInstanceOf[Array[T]] ++ entryIndexToInstance(entryWithIdx._2)
-    )
-    val newSpatials = newValues.map{ newInstanceArr =>
-      Utils.getExtentFromInstanceArray(newInstanceArr).toPolygon
-    }
-    val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
-    TimeSeries(newEntries, data)
+    val entryIndexToInstance = getTemporalIndexToObj(instanceArr, timestampArr)
+    createTimeSeries(entryIndexToInstance, Utils.getExtentFromInstanceArray)
   }
 
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], durationArr: Array[Duration])
+    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    require(instanceArr.length == durationArr.length,
+      "the length of two arguments must match")
+
+    val entryIndexToInstance = getTemporalIndexToObj(instanceArr, durationArr)
+    createTimeSeries(entryIndexToInstance, Utils.getExtentFromInstanceArray)
+  }
+
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T])
+    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    val durationArr = instanceArr.map(_.duration)
+    attachInstance(instanceArr, durationArr)
+  }
+
+  // todo: handle different order of the same temporals
   def merge[T : ClassTag](
     other: TimeSeries[Array[T], _]
   )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], None.type] = {
@@ -168,8 +225,8 @@ class TimeSeries[V, D](
 
   def split(at: Long): (TimeSeries[V, D], TimeSeries[V, D]) = {
     require(temporals(0).end <= at && at <= temporals(dimension-1).start,
-      s"the split timestamp should range from ${temporals(0).end} to ${temporals(temporals.length - 1).start}, " +
-        s"but got $at")
+      s"the split timestamp should range from " +
+        s"${temporals(0).end} to ${temporals(temporals.length - 1).start}, but got $at")
 
     val splitIndex = temporals.indexWhere(_.start >= at)
     val (entriesPart1, entriesPart2) = entries.splitAt(splitIndex)
@@ -180,23 +237,26 @@ class TimeSeries[V, D](
   def select(targetDur: Array[Duration]): TimeSeries[V, D] =
     TimeSeries(entries.filter(x => targetDur.contains(x.temporal)), data)
 
+  def append(other: TimeSeries[V, _]): TimeSeries[V, None.type] =
+    TimeSeries(entries ++ other.entries, None)
+
+  def append(other: TimeSeries[V, D], dataCombiner: (D, D) => D): TimeSeries[V, D] =
+    TimeSeries(entries ++ other.entries, dataCombiner(data, other.data))
+
 
 }
 
 object TimeSeries {
   def empty[T: ClassTag](durArr: Array[Duration]): TimeSeries[Array[T], None.type] = {
-    val durArrSorted = durArr.sortBy(_.start)
-    TimeSeries(durArrSorted.map(x => Entry(Polygon.empty, x, Array.empty[T])))
+    TimeSeries(durArr.map(x => Entry(Polygon.empty, x, Array.empty[T])))
   }
 
   def apply[V, D](entries: Array[Entry[Polygon, V]], data: D): TimeSeries[V, D] = {
-    val entriesSorted = entries.sortBy(_.temporal.start)
-    new TimeSeries(entriesSorted, data)
+    new TimeSeries(entries, data)
   }
 
   def apply[V](entries: Array[Entry[Polygon, V]]): TimeSeries[V, None.type] = {
-    val entriesSorted = entries.sortBy(_.temporal.start)
-    new TimeSeries(entriesSorted, None)
+    new TimeSeries(entries, None)
   }
 
 }
