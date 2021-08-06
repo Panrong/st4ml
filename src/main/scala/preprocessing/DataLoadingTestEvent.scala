@@ -39,8 +39,8 @@ object DataLoadingTestEvent {
 
     val selector = new DefaultSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
 
-    val res = selector.query(eventRDD).collect
-
+    val res = selector.query(eventRDD).count
+    println(res)
     println(fileName)
     println((nanoTime - t) * 1e-9)
 
