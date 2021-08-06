@@ -7,7 +7,8 @@ import preprocessing.geoJson2ParquetTraj.T
 import utils.Config
 
 object SampledTraj2Event {
-  case class E(lon: Double, lat:Double, t: Double, id: String)
+  case class E(lon: Double, lat: Double, t: Long, id: String)
+
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("SampledTraj2Event")
@@ -35,6 +36,7 @@ object SampledTraj2Event {
     pointDS.printSchema()
     pointDS.show(5)
 
-    pointDS.write.parquet(fileName.replace("taxi","taxi_point"))
+    pointDS.write.parquet(fileName.replace("taxi", "taxi_point"))
+    //    pointDS.write.parquet(fileName.replace("traj","point"))
   }
 }

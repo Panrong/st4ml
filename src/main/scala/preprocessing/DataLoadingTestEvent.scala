@@ -1,14 +1,15 @@
 package preprocessing
 
-import instances.{Duration, Extent, Point, Trajectory}
+import instances.{Duration, Event, Extent, Point}
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
-import preprocessing.geoJson2ParquetTraj.T
 import utils.Config
 
 import java.lang.System.nanoTime
 
-object DataLoadingTest {
+object DataLoadingTestEvent {
+  case class E(lon: Double, lat: Double, t: Long, id: String)
+
   def main(args: Array[String]): Unit = {
     val t = nanoTime
     val spark = SparkSession.builder()
@@ -32,19 +33,16 @@ object DataLoadingTest {
     val readDs = spark.read.parquet(fileName)
 
     import spark.implicits._
-    val trajectoryRDD = readDs.as[T].rdd.map(x => {
-      val pointArr = x.entries.map(e => Point(e.lon, e.lat)).toArray
-      val durationArr = x.entries.map(x => Duration(x.t)).toArray
-      val valueArr = x.entries.map(_ => None).toArray
-      Trajectory(pointArr, durationArr, valueArr, x.id)
+    val eventRDD = readDs.as[E].rdd.map(x => {
+      Event(Point(x.lon, x.lat), new Duration(x.t, x.t), None, x.id)
     })
 
-    val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
 
-    val res = selector.query(trajectoryRDD).collect
+    val res = selector.query(eventRDD).collect
 
     println(fileName)
-    println((nanoTime-t) * 1e-9)
+    println((nanoTime - t) * 1e-9)
 
   }
 }
