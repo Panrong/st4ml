@@ -2,18 +2,27 @@ package instances
 
 object Utils {
 
-  // methods for calculating an overall Extent
-  def getExtentFromGeometryArray[T <: Geometry](geomArr: Array[T]): Extent = {
-    val envelopes = geomArr.map(_.getEnvelopeInternal)
-    val xMin = envelopes.map(_.getMinX).min
-    val xMax = envelopes.map(_.getMaxX).max
-    val yMin = envelopes.map(_.getMinY).min
-    val yMax = envelopes.map(_.getMaxY).max
-    Extent(xMin, yMin, xMax, yMax)
+  // methods for calculating an overall Polygon
+  def getExtentFromGeometryArray[T <: Geometry](geomArr: Array[T]): Polygon = {
+    val nonEmptyGeomArr = geomArr.filter(! _.isEmpty)
+    val envelopes = nonEmptyGeomArr.map(_.getEnvelopeInternal)
+
+    if (envelopes.nonEmpty) {
+      val xMin = envelopes.map(_.getMinX).min
+      val xMax = envelopes.map(_.getMaxX).max
+      val yMin = envelopes.map(_.getMinY).min
+      val yMax = envelopes.map(_.getMaxY).max
+      Extent(xMin, yMin, xMax, yMax).toPolygon
+    }
+    else Polygon.empty
   }
 
-  def getExtentFromInstanceArray[T <: Instance[_,_,_]](instanceArr: Array[T]): Extent =
-    Extent(instanceArr.map(_.extent))
+  def getExtentFromInstanceArray[T <: Instance[_,_,_]](instanceArr: Array[T]): Polygon = {
+    if (instanceArr.nonEmpty) {
+      Extent(instanceArr.map(_.extent)).toPolygon
+    }
+    else Polygon.empty
+  }
 
 
   // methods for calculating the corresponding index/indices of bins for given query

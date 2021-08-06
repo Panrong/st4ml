@@ -73,20 +73,20 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
     val polygonTs = TimeSeries.empty[Polygon](durbinsDisjoint).attachGeometry(polygonArr, timestampArr)
 
     pointTs.entries.map(_.value) shouldBe Array(
-      Array(pointArr(0), pointArr(1)),
-      Array(pointArr(2), pointArr(3)),
+      Array(pointArr(0), pointArr(1), pointArr(2)),
+      Array(pointArr(3)),
       Array(pointArr(4))
     )
 
     lineStringTs.entries.map(_.value) shouldBe Array(
-      Array(lineStringArr(0), lineStringArr(1)),
-      Array(lineStringArr(2), lineStringArr(3)),
+      Array(lineStringArr(0), lineStringArr(1), lineStringArr(2)),
+      Array(lineStringArr(3)),
       Array(lineStringArr(4))
     )
 
     polygonTs.entries.map(_.value) shouldBe Array(
-      Array(polygonArr(0), polygonArr(1)),
-      Array(polygonArr(2), polygonArr(3)),
+      Array(polygonArr(0), polygonArr(1), polygonArr(2)),
+      Array(polygonArr(3)),
       Array(polygonArr(4))
     )
   }
@@ -100,14 +100,14 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
     val trajTs = TimeSeries.empty[Trajectory[None.type, None.type]](durbinsDisjoint).attachInstance(trajArr, timestampArr)
 
     eventTs.entries.map(_.value) shouldBe Array(
-      Array(eventArr(0), eventArr(1)),
-      Array(eventArr(2), eventArr(3)),
+      Array(eventArr(0), eventArr(1), eventArr(2)),
+      Array(eventArr(3)),
       Array(eventArr(4))
     )
 
     trajTs.entries.map(_.value) shouldBe Array(
-      Array(trajArr(0), trajArr(1)),
-      Array(trajArr(2), trajArr(3)),
+      Array(trajArr(0), trajArr(1), trajArr(2)),
+      Array(trajArr(3)),
       Array(trajArr(4))
     )
   }
@@ -140,8 +140,8 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
     val eventTsMerged = eventTs1.merge(eventTs2)
 
     eventTsMerged.entries.map(_.value) shouldBe Array(
-      Array(eventArr(0), eventArr(1), eventArr2(0), eventArr2(1)),
-      Array(eventArr(2), eventArr(3), eventArr2(2), eventArr2(3)),
+      Array(eventArr(0), eventArr(1), eventArr(2), eventArr2(0), eventArr2(1), eventArr2(2)),
+      Array(eventArr(3),  eventArr2(3)),
       Array(eventArr(4), eventArr2(4))
     )
   }

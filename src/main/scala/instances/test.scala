@@ -103,7 +103,11 @@ object test extends App {
 //  }
 //  f[String]
 
+  val durbinsDisjoint: Array[Duration] = Array(
+    Duration(0L, 100L),
+    Duration(100L, 200L),
+    Duration(200L, 300L))
 
-
+  println(TimeSeries.empty[Event[Point, None.type, None.type]](durbinsDisjoint).extent)
 
 }

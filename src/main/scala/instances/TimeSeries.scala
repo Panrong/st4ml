@@ -112,13 +112,18 @@ class TimeSeries[V, D](
 
   def createTimeSeries[T: ClassTag](
     temporalIndexToObj: Map[Int, Array[T]],
-    computeExtentFunc: Array[T] => Extent
+    computePolygonFunc: Array[T] => Polygon
   ): TimeSeries[Array[T], D] = {
     if (temporalIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
-        entryWithIdx._1.value.asInstanceOf[Array[T]] ++ temporalIndexToObj(entryWithIdx._2)
+        if (temporalIndexToObj.contains(entryWithIdx._2)) {
+          entryWithIdx._1.value.asInstanceOf[Array[T]] ++ temporalIndexToObj(entryWithIdx._2)
+        }
+        else {
+          entryWithIdx._1.value.asInstanceOf[Array[T]]
+        }
       )
-      val newSpatials = newValues.map { newGeomArr => computeExtentFunc(newGeomArr).toPolygon }
+      val newSpatials = newValues.map {newGeomArr => computePolygonFunc(newGeomArr)}
       val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
       TimeSeries(newEntries, data)
     }
@@ -180,7 +185,7 @@ class TimeSeries[V, D](
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     TimeSeries(newEntries, None)
@@ -198,7 +203,7 @@ class TimeSeries[V, D](
       valueCombiner(x._1, x._2)
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
@@ -216,7 +221,7 @@ class TimeSeries[V, D](
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2)).toPolygon
+      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
@@ -247,6 +252,7 @@ class TimeSeries[V, D](
 }
 
 object TimeSeries {
+  //todo: Polygon.empty to extent error
   def empty[T: ClassTag](durArr: Array[Duration]): TimeSeries[Array[T], None.type] = {
     TimeSeries(durArr.map(x => Entry(Polygon.empty, x, Array.empty[T])))
   }
