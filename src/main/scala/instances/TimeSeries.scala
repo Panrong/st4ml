@@ -172,6 +172,7 @@ class TimeSeries[V, D](
     (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     val durationArr = instanceArr.map(_.duration)
     attachInstance(instanceArr, durationArr)
+
   }
 
   // todo: handle different order of the same temporals

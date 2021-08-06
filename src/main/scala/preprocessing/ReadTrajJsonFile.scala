@@ -32,7 +32,7 @@ object ReadTrajJsonFile {
     val spark = SparkSession.builder().getOrCreate()
     val samplingRate = 15
     val inputDF = spark.read.json(fileName).limit(num)
-    println(inputDF.rdd.getNumPartitions)
+    println(inputDF.count())
     inputDF.createOrReplaceTempView("jsonTable")
     import spark.implicits._
     if (auxiliary) {
