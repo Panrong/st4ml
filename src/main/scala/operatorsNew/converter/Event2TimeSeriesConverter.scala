@@ -17,32 +17,18 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
 
   val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
 
-  //  // check if tArray is standard
-  //  var interval: Long = 0
-  //
-  //  def checkStandard(): Boolean = {
-  //    interval = tArray.head.seconds
-  //    for (Array(x1, x2) <- tArray.sliding(2)) {
-  //      if (x1.end != x2.start) {
-  //        println("The temporal ranges are not continuous. The calculation may be slow.")
-  //        return false
-  //      }
-  //      if (x2.seconds != interval) {
-  //        println("The temporal ranges are not of equal length. The calculation may be slow.")
-  //        return false
-  //      }
-  //    }
-  //    true
-  //  }
-  //
-  //  val standard: Boolean = checkStandard()
-
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val eventSlots = partition.map(event => {
-        val slots = tMap.filter(_._2.intersects(event.duration))
-        if (instant) (event, Array(slots.head._1))
-        else (event, slots.map(_._1))
+        if (instant) {
+          val idx = tMap.find(_._2.intersects(event.duration.start))
+          if(idx.isDefined) (event, Array(idx.get._1))
+          else (event, new Array[Int](0))
+        }
+        else {
+          val slots = tMap.filter(_._2.intersects(event.duration))
+          (event, slots.map(_._1))
+        }
       }).flatMap {
         case (event, slots) => slots.map(slot => (slot, event)).toIterator
       }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
@@ -57,6 +43,14 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
       Iterator(ts)
     })
   }
+
+//  override def convert(input: RDD[I]): RDD[O] = {
+//    input.mapPartitions(partition => {
+//      val events = partition.toArray
+//      val emptyTs = TimeSeries.empty[I](tArray)
+//      Iterator(emptyTs.attachInstance(events, events.map(_.temporalCenter)).mapValue(f).mapData(_ => d))
+//    })
+//  }
 }
 
 object Event2TimeSeriesConverterTest {

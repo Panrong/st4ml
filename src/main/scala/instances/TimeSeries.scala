@@ -102,7 +102,6 @@ class TimeSeries[V, D](
 
     val entryIndexArr = getEntryIndex(timestampArr)
     val entryIndexToInstance = instanceArr.zip(entryIndexArr).groupBy(_._2).mapValues(x => x.map(_._1))
-
     val newValues = entries.zipWithIndex.map(entryWithIdx =>
       entryWithIdx._1.value.asInstanceOf[Array[T]] ++ entryIndexToInstance(entryWithIdx._2)
     )

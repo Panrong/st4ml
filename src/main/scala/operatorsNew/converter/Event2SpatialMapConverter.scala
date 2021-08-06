@@ -6,8 +6,7 @@ import org.apache.spark.sql.SparkSession
 
 class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S, V, D]] => VSM,
                                                                sArray: Array[Polygon],
-                                                               d: DSM = None,
-                                                               instant: Boolean = true) extends Converter {
+                                                               d: DSM = None) extends Converter {
   type I = Event[S, V, D]
   type O = SpatialMap[VSM, DSM]
 
@@ -17,8 +16,7 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
     input.mapPartitions(partition => {
       val eventRegions = partition.map(event => {
         val regions = sMap.filter(_._2.intersects(event.extent))
-        if(instant) (event, Array(regions.head._1))
-        else (event, regions.map(_._1))
+        (event, regions.map(_._1))
       }).flatMap {
         case (event, slots) => slots.map(slot => (slot, event)).toIterator
       }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
@@ -61,7 +59,7 @@ object Event2SpatialMapConverterTest {
 
     val f: Array[Event[Point, None.type, String]] => Int = _.length
 
-//    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
+    //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
     val countConverter = new Event2SpatialMapConverter(f, sArray)
 
     val tsRDD = countConverter.convert(eventRDD)
