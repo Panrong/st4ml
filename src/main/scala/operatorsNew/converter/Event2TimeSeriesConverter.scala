@@ -10,8 +10,7 @@ import scala.reflect.ClassTag
 // map each partition to a time series
 class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S, V, D]] => VTS,
                                                                tArray: Array[Duration],
-                                                               d: DTS = None,
-                                                               instant: Boolean = true) extends Converter {
+                                                               d: DTS = None) extends Converter {
   type I = Event[S, V, D]
   type O = TimeSeries[VTS, DTS]
 
@@ -19,38 +18,13 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
 
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
-      val eventSlots = partition.map(event => {
-        if (instant) {
-          val idx = tMap.find(_._2.intersects(event.duration.start))
-          if(idx.isDefined) (event, Array(idx.get._1))
-          else (event, new Array[Int](0))
-        }
-        else {
-          val slots = tMap.filter(_._2.intersects(event.duration))
-          (event, slots.map(_._1))
-        }
-      }).flatMap {
-        case (event, slots) => slots.map(slot => (slot, event)).toIterator
-      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-
-      val entries = eventSlots.map(slot => {
-        val spatial = mbrAll(slot._2)
-        val temporal = tMap(slot._1)._2
-        val v = f(slot._2)
-        new Entry(spatial, temporal, v)
-      })
-      val ts = new TimeSeries[VTS, DTS](entries, data = d)
-      Iterator(ts)
+      val events = partition.toArray
+      val emptyTs = TimeSeries.empty[I](tArray)
+      Iterator(emptyTs.attachInstance(events, events.map(_.duration))
+        .mapValue(f)
+        .mapData(_ => d))
     })
   }
-
-//  override def convert(input: RDD[I]): RDD[O] = {
-//    input.mapPartitions(partition => {
-//      val events = partition.toArray
-//      val emptyTs = TimeSeries.empty[I](tArray)
-//      Iterator(emptyTs.attachInstance(events, events.map(_.temporalCenter)).mapValue(f).mapData(_ => d))
-//    })
-//  }
 }
 
 object Event2TimeSeriesConverterTest {

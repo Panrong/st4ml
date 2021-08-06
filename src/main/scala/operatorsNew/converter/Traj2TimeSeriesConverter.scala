@@ -12,27 +12,37 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
   val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
 
   // if a trajectory intersects two slots, record twice
+  //  override def convert(input: RDD[I]): RDD[O] = {
+  //    input.mapPartitions(partition => {
+  //      val trajSlots = partition.map(traj => {
+  //        val slots = tMap.filter(_._2.intersects(traj.duration))
+  //        (traj, slots.map(_._1))
+  //      }).flatMap {
+  //        case (traj, slots) => slots.map(slot => (slot, traj)).toIterator
+  //      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
+  //
+  //      val entries = trajSlots.map(slot => {
+  //        val spatial = mbrAll(slot._2)
+  //        val temporal = tMap(slot._1)._2
+  //        val v = f(slot._2)
+  //        new Entry(spatial, temporal, v)
+  //      })
+  //      val ts = new TimeSeries[VTS, DTS](entries, data = d)
+  //      Iterator(ts)
+  //    })
+  //  }
+
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
-      val trajSlots = partition.map(traj => {
-        val slots = tMap.filter(_._2.intersects(traj.duration))
-        (traj, slots.map(_._1))
-      }).flatMap {
-        case (traj, slots) => slots.map(slot => (slot, traj)).toIterator
-      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-
-      val entries = trajSlots.map(slot => {
-        val spatial = mbrAll(slot._2)
-        val temporal = tMap(slot._1)._2
-        val v = f(slot._2)
-        new Entry(spatial, temporal, v)
-      })
-      val ts = new TimeSeries[VTS, DTS](entries, data = d)
-      Iterator(ts)
+      val trajs = partition.toArray
+      val emptyTs = TimeSeries.empty[I](tArray)
+      Iterator(emptyTs.attachInstance(trajs, trajs.map(_.duration))
+        .mapValue(f)
+        .mapData(_ => d))
     })
   }
 }
-
 
 object Traj2TimeSeriesConverterTest {
   def main(args: Array[String]): Unit = {
@@ -49,10 +59,10 @@ object Traj2TimeSeriesConverterTest {
     val eventRDD = sc.parallelize(trajs)
 
     val tArray = Array(
-      Duration(0, 100),
-      Duration(100, 200),
-      Duration(200, 300),
-      Duration(300, 400)
+      Duration(0, 100), // 1
+      Duration(100, 200), // 1
+      Duration(200, 300), // 2
+      Duration(300, 400) // 1
     )
 
     val f: Array[Trajectory[None.type, String]] => Int = _.length
