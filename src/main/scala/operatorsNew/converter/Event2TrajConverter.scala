@@ -31,6 +31,6 @@ class Event2TrajConverter[EV: ClassTag, ED] extends Converter {
         valueArr = x.flatMap(_.entries.map(_.value)),
         x.head.data)
       .sortByTemporal("start")
-    ).map(_._1)
+    ).map(_._2)
   }
 }
