@@ -1,11 +1,14 @@
 package instances
 
-case class Raster[S <: Geometry, V, D](
-  entries: Array[Entry[S, V]],
-  data: D)
+import scala.reflect.ClassTag
+
+class Raster[S <: Geometry, V, D](
+  override val entries: Array[Entry[S, V]],
+  override val data: D)
   extends Instance[S, V, D] {
 
-  override def validation: Boolean = ???
+  require(validation,
+    s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 
   override def mapSpatial(f: S => S): Raster[S, V, D] =
     Raster(
@@ -56,4 +59,16 @@ case class Raster[S <: Geometry, V, D](
       f(data))
 
   override def toGeometry: Polygon = extent.toPolygon
+
+}
+
+object Raster {
+  def empty[T: ClassTag](entryArr: Array[Entry[Polygon, _]]): Raster[Polygon, Array[T], None.type] =
+    Raster(entryArr.map(x => Entry(x.spatial, x.temporal, Array.empty[T])))
+
+  def apply[S <: Geometry, V, D](entries: Array[Entry[S, V]], data: D): Raster[S, V, D] =
+    new Raster(entries, data)
+
+  def apply[S <: Geometry, V](entries: Array[Entry[S, V]]): Raster[S, V, None.type] =
+    new Raster(entries, None)
 }
