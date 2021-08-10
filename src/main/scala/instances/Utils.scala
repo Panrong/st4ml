@@ -3,7 +3,7 @@ package instances
 object Utils {
 
   // methods for calculating an overall Polygon
-  def getExtentFromGeometryArray[T <: Geometry](geomArr: Array[T]): Polygon = {
+  def getPolygonFromGeometryArray[T <: Geometry](geomArr: Array[T]): Polygon = {
     val nonEmptyGeomArr = geomArr.filter(! _.isEmpty)
     val envelopes = nonEmptyGeomArr.map(_.getEnvelopeInternal)
 
@@ -17,13 +17,21 @@ object Utils {
     else Polygon.empty
   }
 
-  def getExtentFromInstanceArray[T <: Instance[_,_,_]](instanceArr: Array[T]): Polygon = {
+  def getPolygonFromInstanceArray[T <: Instance[_,_,_]](instanceArr: Array[T]): Polygon = {
     if (instanceArr.nonEmpty) {
       Extent(instanceArr.map(_.extent)).toPolygon
     }
     else Polygon.empty
   }
 
+  // methods for calculating an overall Duration
+  def getDuration[T](geomArr: Array[T]): Duration = {
+    val durArr = geomArr.map {
+      case i: Instance[_, _, _] => i.duration
+      case _ => Duration.empty
+    }
+    Duration(durArr)
+  }
 
   // methods for calculating the corresponding index/indices of bins for given query
   def getBinIndex(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] =

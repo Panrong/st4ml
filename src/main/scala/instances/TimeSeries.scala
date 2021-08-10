@@ -138,7 +138,7 @@ class TimeSeries[V, D](
       "the length of two arguments must match")
 
     val entryIndexToGeom = getTemporalIndexToObj(geomArr, timestampArr)
-    createTimeSeries(entryIndexToGeom, Utils.getExtentFromGeometryArray)
+    createTimeSeries(entryIndexToGeom, Utils.getPolygonFromGeometryArray)
   }
 
   def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T], durationArr: Array[Duration])
@@ -147,7 +147,7 @@ class TimeSeries[V, D](
       "the length of two arguments must match")
 
     val entryIndexToGeom = getTemporalIndexToObj(geomArr, durationArr)
-    createTimeSeries(entryIndexToGeom, Utils.getExtentFromGeometryArray)
+    createTimeSeries(entryIndexToGeom, Utils.getPolygonFromGeometryArray)
   }
 
   def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], timestampArr: Array[Long])
@@ -156,7 +156,7 @@ class TimeSeries[V, D](
       "the length of two arguments must match")
 
     val entryIndexToInstance = getTemporalIndexToObj(instanceArr, timestampArr)
-    createTimeSeries(entryIndexToInstance, Utils.getExtentFromInstanceArray)
+    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
   def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], durationArr: Array[Duration])
@@ -165,7 +165,7 @@ class TimeSeries[V, D](
       "the length of two arguments must match")
 
     val entryIndexToInstance = getTemporalIndexToObj(instanceArr, durationArr)
-    createTimeSeries(entryIndexToInstance, Utils.getExtentFromInstanceArray)
+    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
   def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T])
@@ -186,7 +186,7 @@ class TimeSeries[V, D](
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
+      Utils.getPolygonFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     TimeSeries(newEntries, None)
@@ -204,7 +204,7 @@ class TimeSeries[V, D](
       valueCombiner(x._1, x._2)
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
+      Utils.getPolygonFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
@@ -222,7 +222,7 @@ class TimeSeries[V, D](
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
-      Utils.getExtentFromGeometryArray(Array(x._1, x._2))
+      Utils.getPolygonFromGeometryArray(Array(x._1, x._2))
     )
     val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
@@ -249,7 +249,7 @@ class TimeSeries[V, D](
   def append(other: TimeSeries[V, D], dataCombiner: (D, D) => D): TimeSeries[V, D] =
     TimeSeries(entries ++ other.entries, dataCombiner(data, other.data))
 
-
+  override def toGeometry: Polygon = extent.toPolygon
 }
 
 object TimeSeries {

@@ -103,11 +103,20 @@ object test extends App {
 //  }
 //  f[String]
 
-  val durbinsDisjoint: Array[Duration] = Array(
-    Duration(0L, 100L),
-    Duration(100L, 200L),
-    Duration(200L, 300L))
+//  val durbinsDisjoint: Array[Duration] = Array(
+//    Duration(0L, 100L),
+//    Duration(100L, 200L),
+//    Duration(200L, 300L))
+//
+//  println(TimeSeries.empty[Event[Point, None.type, None.type]](durbinsDisjoint).extent)
 
-  println(TimeSeries.empty[Event[Point, None.type, None.type]](durbinsDisjoint).extent)
+  val points: Array[_] = Array(Point(1,1), Point(2,2))
+  val res = points match {
+    case a: Array[Geometry] => "geom"
+    case b: Array[Point] => "point"
+  }
+  val events = Array(
+    Event(Point(1,1), Duration(0, 5)),
+    Event(Point(2,2), Duration(10, 13)))
 
 }

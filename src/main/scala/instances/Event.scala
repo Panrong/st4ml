@@ -59,6 +59,8 @@ class Event[S <: Geometry, V, D](
           entry.value)),
       f(data))
 
+  override def toGeometry: Geometry =
+    entries(0).spatial
 }
 
 object Event {

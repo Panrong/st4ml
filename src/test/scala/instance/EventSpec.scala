@@ -22,6 +22,12 @@ class EventSpec extends AnyFunSpec with Matchers {
       Event(ls, t) shouldBe Event(Array(Entry(ls, t, None)), None)
       Event(poly, t) shouldBe Event(Array(Entry(poly, t, None)), None)
     }
+
+    it("can convert to a geometry") {
+      Event(p, t).toGeometry shouldBe p
+      Event(ls, t).toGeometry shouldBe ls
+      Event(poly, t).toGeometry shouldBe poly
+    }
   }
 
 }

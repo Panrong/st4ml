@@ -55,5 +55,5 @@ case class Raster[S <: Geometry, V, D](
           entry.value)),
       f(data))
 
-
+  override def toGeometry: Polygon = extent.toPolygon
 }

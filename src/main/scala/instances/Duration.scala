@@ -79,9 +79,14 @@ object Duration {
   }
 
   def apply(durations: Array[Duration]): Duration = {
-    val start = durations.map(_.start).min
-    val end = durations.map(_.end).max
-    new Duration(start, end)
+    val nonEmptyDurations = durations.filter(! _.isEmpty)
+    if (nonEmptyDurations.nonEmpty) {
+      val start = durations.map(_.start).min
+      val end = durations.map(_.end).max
+      new Duration(start, end)
+    } else {
+      Duration.empty
+    }
   }
 }
 

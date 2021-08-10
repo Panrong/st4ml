@@ -182,6 +182,9 @@ class Trajectory[V, D](
     Trajectory((entries ++ other.entries).sortBy(x => entrySorter(x)),
       dataCombiner(data, other.data))
 
+  override def toGeometry: LineString =
+    LineString(entries.map(_.spatial))
+
 }
 
 object Trajectory {

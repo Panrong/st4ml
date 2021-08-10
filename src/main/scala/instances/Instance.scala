@@ -21,7 +21,8 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
   def temporalCenter: Long = duration.center
 
   // todo: cannot get around type erase problem
-//  def spatials(implicit tag: ClassTag[S]): Array[S] = entries.map(_.spatial)
+  def toGeometry: Geometry
+//  def spatials: Array[Geometry] = entries.map(_.spatial)
 //  def temporals: Array[Duration] = entries.map(_.temporal)
 //  def values(implicit tag: ClassTag[V]): Array[V] = entries.map(_.value)
 
