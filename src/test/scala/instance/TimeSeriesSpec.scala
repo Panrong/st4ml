@@ -128,6 +128,13 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
     val trajTs2 = TimeSeries.empty[Trajectory[None.type, None.type]](durbinsDisjoint)
       .attachInstance(trajArr)
 
+    trajTs2.entries.map(_.value) shouldBe Array(
+      Array(),
+      Array(),
+      Array()
+    )
+
+
   }
 
   it("can merge TimeSeries of same type") {
