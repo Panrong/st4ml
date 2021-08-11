@@ -48,7 +48,6 @@ object EventConversionTest {
       val t = nanoTime
       val converter = new Event2TimeSeriesConverter(f, tArray)
       val convertedRDD = converter.convert(eventRDD)
-      convertedRDD.collect
       println(convertedRDD.count)
       println("event to time series")
       println((nanoTime - t) * 1e-9)
@@ -58,7 +57,6 @@ object EventConversionTest {
       val converter2 = new Event2TrajConverter[None.type, String]
       val trajRDD = converter2.convert(eventRDD)
       println(trajRDD.count)
-      trajRDD.collect
       println("event to trajectory")
       println((nanoTime - t) * 1e-9)
     }
