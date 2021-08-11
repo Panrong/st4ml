@@ -14,7 +14,7 @@ class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM
     input.mapPartitions(partition => {
       val trajs = partition.toArray
       val emptySm = SpatialMap.empty[I](sArray)
-      Iterator(emptySm.attachInstance(trajs, trajs.map(_.extent.toPolygon))
+      Iterator(emptySm.attachInstance(trajs)
         .mapValue(f)
         .mapData(_ => d))
     })
