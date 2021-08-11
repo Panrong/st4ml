@@ -54,6 +54,7 @@ object TrajConversionTest {
 
       val converter = new Traj2SpatialMapConverter(f, sArray)
       val convertedRDD = converter.convert(res)
+      convertedRDD.collect
       println(convertedRDD.count)
       println("traj to spatial map")
       println((nanoTime - t) * 1e-9)

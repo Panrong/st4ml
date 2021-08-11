@@ -42,20 +42,23 @@ object EventConversionTest {
     val res = selector.query(eventRDD).count
     // selection done
 
-    val t = nanoTime
     if (c == "ts") {
       val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
       val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
+      val t = nanoTime
       val converter = new Event2TimeSeriesConverter(f, tArray)
       val convertedRDD = converter.convert(eventRDD)
+      convertedRDD.collect
       println(convertedRDD.count)
       println("event to time series")
       println((nanoTime - t) * 1e-9)
     }
     else if (c == "traj") {
+      val t = nanoTime
       val converter2 = new Event2TrajConverter[None.type, String]
       val trajRDD = converter2.convert(eventRDD)
       println(trajRDD.count)
+      trajRDD.collect
       println("event to trajectory")
       println((nanoTime - t) * 1e-9)
     }
