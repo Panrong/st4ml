@@ -1,7 +1,7 @@
 package experiments
 
 import instances.{Duration, Extent, Point, Trajectory}
-import operatorsNew.converter.{Traj2EventConverter, Traj2SpatialMapConverter}
+import operatorsNew.converter.{Traj2EventConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -71,6 +71,17 @@ object TrajConversionTest {
       val convertedRDD = converter.convert(trajRDD)
       println(convertedRDD.count)
       println("traj to event")
+      println((nanoTime - t) * 1e-9)
+    }
+
+    else if (c == "ts") {
+      val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
+      val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
+      val t = nanoTime
+      val converter = new Traj2TimeSeriesConverter(f, tArray)
+      val convertedRDD = converter.convert(trajRDD)
+      println(convertedRDD.count)
+      println("traj to time series")
       println((nanoTime - t) * 1e-9)
     }
     sc.stop()
