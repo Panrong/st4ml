@@ -47,8 +47,8 @@ object TrajConversionTest {
 
     if (c == "sm") {
       val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
-      val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 6).sliding(2).toArray
-      val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 6).sliding(2).toArray
+      val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
+      val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
       val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
       val t = nanoTime
 
@@ -70,7 +70,7 @@ object TrajConversionTest {
       val converter = new Traj2EventConverter[None.type, String]
       val convertedRDD = converter.convert(trajRDD)
       println(convertedRDD.count)
-      println("traj to spatial map")
+      println("traj to event")
       println((nanoTime - t) * 1e-9)
     }
     sc.stop()
