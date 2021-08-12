@@ -98,16 +98,20 @@ class TimeSeries[V, D](
   }
 
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
-    val indices = getTemporalIndex(timeArr)
-    objArr.zip(indices)
-      .filter(_._2.length > 0)
-      .flatMap{ case(geom, indexArr) =>
-        for {
-          idx <- indexArr
-        } yield (geom, idx)
-      }
-      .groupBy(_._2)
-      .mapValues(x => x.map(_._1))
+    if (timeArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getTemporalIndex(timeArr)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
   }
 
   def createTimeSeries[T: ClassTag](
