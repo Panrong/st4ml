@@ -78,16 +78,20 @@ class SpatialMap[V, D](
   }
 
   def getSpatialIndexToObj[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
-    val indices = getSpatialIndex(geomArr)
-    objArr.zip(indices)
-      .filter(_._2.length > 0)
-      .flatMap{ case(geom, indexArr) =>
-        for {
-          idx <- indexArr
-        } yield (geom, idx)
-      }
-      .groupBy(_._2)
-      .mapValues(x => x.map(_._1))
+    if (geomArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getSpatialIndex(geomArr)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
   }
 
   def createSpatialMap[T: ClassTag](

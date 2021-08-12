@@ -135,6 +135,14 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
 //        .attachGeometry(eventArr)
 //    }
 
+  it("can handle empty attachment"){
+    val eventEmptySm = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
+
+    val eventSm = eventEmptySm.attachInstance(Array.empty[Event[Point, None.type, None.type]])
+    eventSm shouldBe eventEmptySm
+
+  }
+
 
 
 
