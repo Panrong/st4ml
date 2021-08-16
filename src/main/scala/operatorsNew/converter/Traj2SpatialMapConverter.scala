@@ -45,7 +45,7 @@ object Traj2SpatialMapConverterTest {
     val sc = spark.sparkContext
 
     val trajs = Array(
-      Trajectory(Array(Point(1, 2), Point(3, 4)), Array(Duration(34), Duration(94)), Array(None, None), "0"),
+      Trajectory(Array(Point(-2, 4), Point(1, 7)), Array(Duration(34), Duration(94)), Array(None, None), "0"),
       Trajectory(Array(Point(5, 6), Point(7, 8)), Array(Duration(134), Duration(274)), Array(None, None), "1"),
       Trajectory(Array(Point(9, 10), Point(11, 12)), Array(Duration(234), Duration(284)), Array(None, None), "2"),
       Trajectory(Array(Point(13, 14), Point(15, 16)), Array(Duration(334), Duration(364)), Array(None, None), "3")
@@ -54,8 +54,8 @@ object Traj2SpatialMapConverterTest {
     val eventRDD = sc.parallelize(trajs)
 
     val sArray = Array(
-      Extent(0, 0, 5, 5).toPolygon, // 1
-      Extent(2, 2, 8, 8).toPolygon, // 2
+      Extent(0, 0, 5, 5).toPolygon, // 0
+      Extent(2, 2, 8, 8).toPolygon, // 1
       Extent(5, 5, 10, 10).toPolygon, // 2
       Extent(10, 10, 20, 20).toPolygon // 2
     )

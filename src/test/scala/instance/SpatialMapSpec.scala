@@ -93,7 +93,6 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
     val trajGeom = trajArr.map(_.entries.map(_.spatial)).map(LineString(_))
     val trajSm = SpatialMap.empty[Trajectory[None.type, None.type]](extendArrDisjoint)
       .attachInstance(trajArr, trajGeom)
-
     eventSm.entries.map(_.value) shouldBe Array(
       Array(eventArr(0), eventArr(1), eventArr(2)),
       Array.empty[Point],
