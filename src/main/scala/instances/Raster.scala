@@ -60,6 +60,89 @@ class Raster[S <: Geometry, V, D](
 
   override def toGeometry: Polygon = extent.toPolygon
 
+
+  /**
+   * the third argument could be "spatial", "temporal", "both" or "either"
+   * */
+  def getEntryIndex[G <: Geometry](
+    queryArr: Array[(G, Duration)],
+    how: String = "both"
+  ): Array[Array[Int]] =
+    queryArr.map(q =>
+      entries
+        .zipWithIndex
+        .filter(_._1.intersects(q._1, q._2, how))
+        .map(_._2)
+    )
+
+  def getEntryIndex[G <: Geometry](
+    queryArr: Array[(G, Long)],
+    how: String = "both"
+  ): Array[Array[Int]] =
+    getEntryIndex(queryArr.map(x => (x._1, Duration(x._2))), how)
+
+
+  def getEntryIndex[G <: Geometry](
+    geomArr: Array[G],
+    durArr: Array[Duration],
+    how: String = "both"
+  ): Array[Array[Int]] = {
+    val queryArr = geomArr.zip(durArr)
+    getEntryIndex(queryArr, how)
+  }
+
+  def getEntryIndex[G <: Geometry](
+    geomArr: Array[G],
+    timestampArr: Array[Long],
+    how: String = "both"
+  ): Array[Array[Int]] = {
+    val durArr = timestampArr.map(t => Duration(t))
+    val queryArr = geomArr.zip(durArr)
+    getEntryIndex(queryArr, how)
+  }
+
+  def getEntryIndexToObj[T: ClassTag, G <: Geometry](
+    objArr: Array[T],
+    queryArr: Array[(G, Duration)]
+  ): Map[Int, Array[T]] = {
+    if (queryArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getEntryIndex(queryArr)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
+  }
+
+  def createRaster[T: ClassTag](
+    entryIndexToObj: Map[Int, Array[T]],
+  ): Raster[S, V, D] = {
+    if (entryIndexToObj.nonEmpty) {
+      val newValues = entries.zipWithIndex.map(entryWithIdx =>
+        if (entryIndexToObj.contains(entryWithIdx._2)) {
+          entryWithIdx._1.value.asInstanceOf[Array[T]] ++ entryIndexToObj(entryWithIdx._2)
+        }
+        else {
+          entryWithIdx._1.value.asInstanceOf[Array[T]]
+        }
+      )
+      val newEntries = entries.zip(newValues).map(tup =>
+        Entry(tup._1.spatial, tup._1.temporal, tup._2)
+      )
+      Raster(newEntries, data)
+    }
+    else {
+      this.asInstanceOf[Raster[S, V, D]]
+    }
+  }
+
 }
 
 object Raster {
