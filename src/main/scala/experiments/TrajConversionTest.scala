@@ -57,17 +57,16 @@ object TrajConversionTest {
       println(convertedRDD.count)
       println("traj to spatial map")
       println((nanoTime - t) * 1e-9)
-      println(res.count())
-      var sum = 0
-
-      convertedRDD.collect().foreach(sm => sm.entries.foreach(x => {
-        println(x.temporal, x.spatial)
-        println(x.value.length)
-        sum += x.value.length
-      })
-      )
-
-      println(sum)
+      //      println(res.count())
+      //      var sum = 0
+      //
+      //      convertedRDD.collect().foreach(sm => sm.entries.foreach(x => {
+      //        println(x.temporal, x.spatial)
+      //        println(x.value.length)
+      //        sum += x.value.length
+      //      })
+      //      )
+      //      println(sum)
     }
 
     //    else if (c == "raster") {
@@ -92,14 +91,14 @@ object TrajConversionTest {
       val t = nanoTime
       val converter = new Traj2TimeSeriesConverter(f, tArray)
       val convertedRDD = converter.convert(trajRDD)
-      println(convertedRDD.count)
+      //      println(convertedRDD.count)
       println("traj to time series")
       println((nanoTime - t) * 1e-9)
-      println(res.count())
-      convertedRDD.collect().head.entries.foreach(x => {
-        println(x.temporal, x.spatial)
-        println(x.value.length)
-      })
+      //      println(res.count())
+      //      convertedRDD.collect().head.entries.foreach(x => {
+      //        println(x.temporal, x.spatial)
+      //        println(x.value.length)
+      //      })
     }
     sc.stop()
   }

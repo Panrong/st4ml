@@ -49,10 +49,11 @@ object RegionalSpeedTest {
     val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
     val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
     val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
-    val t = nanoTime
 
     val converter = new Traj2SpatialMapConverter(f, sArray)
     val smRDD = converter.convert(res)
+    smRDD.count()
+    val t = nanoTime
 
     val calSpeed: Array[Trajectory[None.type, String]] => Double = trajArray => {
       if (trajArray.isEmpty) -1
@@ -75,7 +76,7 @@ object RegionalSpeedTest {
       })
     val speeds = aggregatedSpeed.collect.map(x => (sArray(x._1), x._2))
     val t2 = nanoTime
-    
+
     println(speeds.deep)
     println((t2 - t) * 1e-9)
 
