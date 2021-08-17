@@ -144,6 +144,20 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
 
     }
 
+    it("can merge SpatialMap of same type") {
+      val eventSm = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
+        .attachInstance(eventArr)
+
+      val eventSmMergerd = eventSm.merge(eventSm)
+      eventSmMergerd.entries.map(_.value) shouldBe Array(
+        Array(eventArr(0), eventArr(1), eventArr(2), eventArr(0), eventArr(1), eventArr(2)),
+        Array.empty[Point],
+        Array(eventArr(3), eventArr(3)),
+        Array.empty[Point]
+      )
+    }
+
+
 
   }
 

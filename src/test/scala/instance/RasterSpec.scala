@@ -18,6 +18,20 @@ class RasterSpec extends AnyFunSpec with Matchers {
       Duration(200, 300),
       Duration(300, 400),
     )
+    val pointArr: Array[Point] = Array(
+      Point(0, 0),
+      Point(0.5, 0.5),
+      Point(1, 1),
+      Point(2.5, 2.5),
+      Point(4, 4)
+    )
+    val durArr: Array[Duration] = Array(
+      Duration(0, 0),     // bin0
+      Duration(0, 50),    // bin0
+      Duration(50, 100),  // bin0,1
+      Duration(30, 500),  // bin0,1,2,3
+      Duration(200, 301)  // bin1,2,3
+    )
 
     it("can create an Empty Raster") {
       val emptyRaster = Raster.empty[Point](sBins, tBins)
@@ -30,20 +44,6 @@ class RasterSpec extends AnyFunSpec with Matchers {
     it("can allocate Instance objects based on instance's extent and duration") {
       type eventType = Event[Point, None.type, None.type]
       val emptyRaster = Raster.empty[eventType](sBins, tBins)
-      val pointArr: Array[Point] = Array(
-        Point(0, 0),
-        Point(0.5, 0.5),
-        Point(1, 1),
-        Point(2.5, 2.5),
-        Point(4, 4)
-      )
-      val durArr: Array[Duration] = Array(
-        Duration(0, 0),     // bin0
-        Duration(0, 50),    // bin0
-        Duration(50, 100),  // bin0,1
-        Duration(30, 500),  // bin0,1,2,3
-        Duration(200, 301)  // bin1,2,3
-      )
       val eventArr: Array[eventType] =
         pointArr.zip(durArr).map(x => Event(x._1, x._2))
 
@@ -80,6 +80,21 @@ class RasterSpec extends AnyFunSpec with Matchers {
         Array(eventArr(2), eventArr(3), eventArr(4)),
       )
 
+    }
+
+    it("can merge Raster of the same type") {
+      type eventType = Event[Point, None.type, None.type]
+      val emptyRaster = Raster.empty[eventType](sBins, tBins)
+      val eventArr: Array[eventType] =
+        pointArr.zip(durArr).map(x => Event(x._1, x._2))
+      val eventRasterBoth = emptyRaster.attachInstance(eventArr, how="both")
+      val rasterMergerd  = eventRasterBoth.merge(eventRasterBoth)
+      rasterMergerd.entries.map(_.value) shouldBe Array(
+        Array(eventArr(0), eventArr(1), eventArr(2), eventArr(0), eventArr(1), eventArr(2)),
+        Array(eventArr(2), eventArr(2)),
+        Array.empty[eventType],
+        Array.empty[eventType]
+      )
     }
 
 

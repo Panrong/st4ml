@@ -136,6 +136,60 @@ class SpatialMap[V, D](
     attachInstance(instanceArr, geomArr)
   }
 
+  // todo: handle different order of the same spatials
+  def merge[T : ClassTag](
+    other: SpatialMap[Array[T], _]
+  )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], None.type] = {
+    require(spatials sameElements other.spatials,
+      "cannot merge SpatialMap with different spatial structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>
+      Duration(Array(x._1, x._2))
+    )
+    val newEntries = (spatials, newTemporals, newValues).zipped.toArray.map(Entry(_))
+    SpatialMap(newEntries, None)
+  }
+
+  def merge[T](
+    other: SpatialMap[T, D],
+    valueCombiner: (V, T) => V,
+    dataCombiner: (D, D) => D
+  ): SpatialMap[V, D] = {
+    require(spatials sameElements other.spatials,
+      "cannot merge SpatialMap with different spatial structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      valueCombiner(x._1, x._2)
+    )
+    val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>
+      Duration(Array(x._1, x._2))
+    )
+    val newEntries = (spatials, newTemporals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    SpatialMap(newEntries, newData)
+  }
+
+  def merge[T : ClassTag](
+    other: SpatialMap[Array[T], D],
+    dataCombiner: (D, D) => D
+  )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+    require(spatials sameElements other.spatials,
+      "cannot merge SpatialMap with different spatial structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>
+      Duration(Array(x._1, x._2))
+    )
+    val newEntries = (spatials, newTemporals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    SpatialMap(newEntries, newData)
+  }
+
   override def toGeometry: Polygon = extent.toPolygon
 }
 

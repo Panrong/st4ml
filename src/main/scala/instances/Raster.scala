@@ -180,6 +180,65 @@ class Raster[S <: Geometry, V, D](
     createRaster(entryIndexToInstance)
   }
 
+  // todo: handle different order of the same spatials
+  def merge[T : ClassTag](
+    other: Raster[S, Array[T], _]
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], None.type] = {
+    val spatials = entries.map(_.spatial)
+    val temproals = entries.map(_.temporal)
+    require(spatials sameElements other.entries.map(_.spatial),
+      "cannot merge Raster with different spatial structure")
+    require(temproals sameElements other.entries.map(_.temporal),
+      "cannot merge Raster with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
+    Raster(newEntries, None)
+  }
+
+  def merge[T : ClassTag](
+    other: Raster[S, V, D],
+    valueCombiner: (V, V) => V,
+    dataCombiner: (D, D) => D
+  ): Raster[S, V, D] = {
+    val spatials = entries.map(_.spatial)
+    val temproals = entries.map(_.temporal)
+    require(spatials sameElements other.entries.map(_.spatial),
+      "cannot merge Raster with different spatial structure")
+    require(temproals sameElements other.entries.map(_.temporal),
+      "cannot merge Raster with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      valueCombiner(x._1, x._2)
+    )
+    val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    Raster(newEntries, newData)
+  }
+
+  def merge[T : ClassTag](
+    other: Raster[S, Array[T], D],
+    dataCombiner: (D, D) => D
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val spatials = entries.map(_.spatial)
+    val temproals = entries.map(_.temporal)
+    require(spatials sameElements other.entries.map(_.spatial),
+      "cannot merge Raster with different spatial structure")
+    require(temproals sameElements other.entries.map(_.temporal),
+      "cannot merge Raster with different temporal structure")
+
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+      x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
+    )
+    val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
+    val newData = dataCombiner(data, other.data)
+    Raster(newEntries, newData)
+  }
+
+
+
   override def toGeometry: Polygon = extent.toPolygon
 
 }
