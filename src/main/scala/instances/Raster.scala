@@ -58,15 +58,9 @@ class Raster[S <: Geometry, V, D](
           entry.value)),
       f(data))
 
-  override def toGeometry: Polygon = extent.toPolygon
-
-
-  /**
-   * the third argument could be "spatial", "temporal", "both" or "either"
-   * */
   def getEntryIndex[G <: Geometry](
     queryArr: Array[(G, Duration)],
-    how: String = "both"
+    how: String
   ): Array[Array[Int]] =
     queryArr.map(q =>
       entries
@@ -76,16 +70,9 @@ class Raster[S <: Geometry, V, D](
     )
 
   def getEntryIndex[G <: Geometry](
-    queryArr: Array[(G, Long)],
-    how: String = "both"
-  ): Array[Array[Int]] =
-    getEntryIndex(queryArr.map(x => (x._1, Duration(x._2))), how)
-
-
-  def getEntryIndex[G <: Geometry](
     geomArr: Array[G],
     durArr: Array[Duration],
-    how: String = "both"
+    how: String
   ): Array[Array[Int]] = {
     val queryArr = geomArr.zip(durArr)
     getEntryIndex(queryArr, how)
@@ -94,7 +81,7 @@ class Raster[S <: Geometry, V, D](
   def getEntryIndex[G <: Geometry](
     geomArr: Array[G],
     timestampArr: Array[Long],
-    how: String = "both"
+    how: String
   ): Array[Array[Int]] = {
     val durArr = timestampArr.map(t => Duration(t))
     val queryArr = geomArr.zip(durArr)
@@ -103,12 +90,13 @@ class Raster[S <: Geometry, V, D](
 
   def getEntryIndexToObj[T: ClassTag, G <: Geometry](
     objArr: Array[T],
-    queryArr: Array[(G, Duration)]
+    queryArr: Array[(G, Duration)],
+    how: String
   ): Map[Int, Array[T]] = {
     if (queryArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {
-      val indices = getEntryIndex(queryArr)
+      val indices = getEntryIndex(queryArr, how)
       objArr.zip(indices)
         .filter(_._2.length > 0)
         .flatMap { case (geom, indexArr) =>
@@ -123,7 +111,7 @@ class Raster[S <: Geometry, V, D](
 
   def createRaster[T: ClassTag](
     entryIndexToObj: Map[Int, Array[T]],
-  ): Raster[S, V, D] = {
+  ): Raster[S, Array[T], D] = {
     if (entryIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
         if (entryIndexToObj.contains(entryWithIdx._2)) {
@@ -139,9 +127,60 @@ class Raster[S <: Geometry, V, D](
       Raster(newEntries, data)
     }
     else {
-      this.asInstanceOf[Raster[S, V, D]]
+      this.asInstanceOf[Raster[S, Array[T], D]]
     }
   }
+
+  /**
+   * the "how" argument could be "spatial", "temporal", "both" or "either"
+   * */
+  def attachGeometry[T <: Geometry: ClassTag](
+    geomArr: Array[T],
+    queryArr: Array[(Geometry, Duration)],
+    how: String = "both"
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    require(geomArr.length == queryArr.length,
+      "the length of the first two arguments must match")
+    val entryIndexToGeom = getEntryIndexToObj(geomArr, queryArr, how)
+    createRaster(entryIndexToGeom)
+  }
+
+
+  /**
+   * the "how" argument could be "spatial", "temporal", "both" or "either"
+   * */
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+    instanceArr: Array[T],
+    how: String
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
+    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
+    createRaster(entryIndexToInstance)
+  }
+
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+    instanceArr: Array[T]
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
+    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, "both")
+    createRaster(entryIndexToInstance)
+  }
+
+  /**
+   * the "how" argument could be "spatial", "temporal", "both" or "either"
+   * */
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+    instanceArr: Array[T],
+    queryArr: Array[(Geometry, Duration)],
+    how: String = "both"
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    require(instanceArr.length == queryArr.length,
+      "the length of the first two arguments must match")
+    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
+    createRaster(entryIndexToInstance)
+  }
+
+  override def toGeometry: Polygon = extent.toPolygon
 
 }
 
