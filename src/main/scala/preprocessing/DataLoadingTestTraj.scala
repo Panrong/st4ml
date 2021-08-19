@@ -41,8 +41,8 @@ object DataLoadingTestTraj {
 
     val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
 
-    val res = selector.query(trajectoryRDD).collect
-
+    val res = selector.query(trajectoryRDD).count
+    println(res)
     println(fileName)
     println((nanoTime-t) * 1e-9)
 
