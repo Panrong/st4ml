@@ -32,7 +32,7 @@ object SampledTraj2Event {
     val pointRDD = converter.convert(trajectoryRDD)
 
     val pointDS = pointRDD.map(p =>
-      E(p.entries.head.spatial.getX, p.entries.head.spatial.getX, p.entries.head.temporal.start, p.data)).toDS()
+      E(p.entries.head.spatial.getX, p.entries.head.spatial.getY, p.entries.head.temporal.start, p.data)).toDS()
     pointDS.printSchema()
     pointDS.show(5)
 

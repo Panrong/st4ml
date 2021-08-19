@@ -31,12 +31,10 @@ object DataLoadingTestEvent {
 
     // read parquet
     val readDs = spark.read.parquet(fileName)
-
     import spark.implicits._
     val eventRDD = readDs.as[E].rdd.map(x => {
       Event(Point(x.lon, x.lat), new Duration(x.t, x.t), None, x.id)
     })
-
     val selector = new DefaultSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
 
     val res = selector.query(eventRDD).count
