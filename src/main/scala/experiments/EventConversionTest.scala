@@ -44,8 +44,9 @@ object EventConversionTest {
     // selection done
 
     if (c == "ts") {
-      val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
-      val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
+      val f: Array[Event[Point, None.type, String]] => Int = x => x.length
+      val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 86400)
+        .sliding(2).map(x => Duration(x(0), x(1))).toArray
       val t = nanoTime
       val converter = new Event2TimeSeriesConverter(f, tArray)
       val convertedRDD = converter.convert(res)
