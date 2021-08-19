@@ -36,11 +36,10 @@ object EventConversionTest {
     val eventRDD = readDs.as[E].rdd.map(x => {
       Event(Point(x.lon, x.lat), new Duration(x.t, x.t), None, x.id)
     })
-    println(eventRDD.take(5).deep)
     type I = Event[Point, None.type, String]
     val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
-    eventRDD.cache()
     val res = selector.query(eventRDD)
+    res.cache()
     println(res.count)
     // selection done
 

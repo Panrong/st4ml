@@ -1,8 +1,7 @@
 package experiments
 
-import instances.{Duration, Extent, Point, SpatialMap, Trajectory}
-import operatorsNew.converter.{Traj2EventConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
-import operatorsNew.extractor.RegionalSpeedExtractor
+import instances.{Duration, Extent, Point, Polygon, Trajectory}
+import operatorsNew.converter.Traj2SpatialMapConverter
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -16,7 +15,7 @@ object RegionalSpeedTest {
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .appName("RegionalTest")
+      .appName("RegionalSpeedTest")
       .master(Config.get("master"))
       .getOrCreate()
 
@@ -41,11 +40,10 @@ object RegionalSpeedTest {
 
     val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(trajRDD)
-    res.cache()
-    res.count
     // selection done
 
     val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
+
     val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
     val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
     val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
@@ -59,7 +57,9 @@ object RegionalSpeedTest {
       if (trajArray.isEmpty) -1
       else {
         val speedArr = trajArray.map(traj =>
-          traj.consecutiveSpatialDistance("euclidean").sum / traj.duration.seconds)
+          {
+            traj.consecutiveSpatialDistance("euclidean").sum / traj.duration.seconds
+          })
         speedArr.sum / speedArr.length
       }
     }

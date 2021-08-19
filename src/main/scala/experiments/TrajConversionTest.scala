@@ -42,7 +42,7 @@ object TrajConversionTest {
     val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(trajRDD)
     res.cache()
-    res.count
+    println(res.count)
     // selection done
 
     if (c == "sm") {
