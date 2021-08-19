@@ -39,7 +39,8 @@ object EventConversionTest {
     type I = Event[Point, None.type, String]
     val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
     eventRDD.cache()
-    val res = selector.query(eventRDD).count
+    val res = selector.query(eventRDD)
+    println(res.count)
     // selection done
 
     if (c == "ts") {
@@ -47,7 +48,7 @@ object EventConversionTest {
       val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
       val t = nanoTime
       val converter = new Event2TimeSeriesConverter(f, tArray)
-      val convertedRDD = converter.convert(eventRDD)
+      val convertedRDD = converter.convert(res)
       println(convertedRDD.count)
       println("event to time series")
       println((nanoTime - t) * 1e-9)
@@ -55,7 +56,7 @@ object EventConversionTest {
     else if (c == "traj") {
       val t = nanoTime
       val converter2 = new Event2TrajConverter[None.type, String]
-      val trajRDD = converter2.convert(eventRDD)
+      val trajRDD = converter2.convert(res)
       println(trajRDD.count)
       println("event to trajectory")
       println((nanoTime - t) * 1e-9)

@@ -11,33 +11,11 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
   type O = TimeSeries[VTS, DTS]
   val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
 
-  // if a trajectory intersects two slots, record twice
-  //  override def convert(input: RDD[I]): RDD[O] = {
-  //    input.mapPartitions(partition => {
-  //      val trajSlots = partition.map(traj => {
-  //        val slots = tMap.filter(_._2.intersects(traj.duration))
-  //        (traj, slots.map(_._1))
-  //      }).flatMap {
-  //        case (traj, slots) => slots.map(slot => (slot, traj)).toIterator
-  //      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-  //
-  //      val entries = trajSlots.map(slot => {
-  //        val spatial = mbrAll(slot._2)
-  //        val temporal = tMap(slot._1)._2
-  //        val v = f(slot._2)
-  //        new Entry(spatial, temporal, v)
-  //      })
-  //      val ts = new TimeSeries[VTS, DTS](entries, data = d)
-  //      Iterator(ts)
-  //    })
-  //  }
-
-
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val trajs = partition.toArray
       val emptyTs = TimeSeries.empty[I](tArray)
-      Iterator(emptyTs.attachInstance(trajs, trajs.map(_.duration))
+      Iterator(emptyTs.attachInstance(trajs)
         .mapValue(f)
         .mapData(_ => d))
     })

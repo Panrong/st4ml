@@ -5,34 +5,19 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 class Event2RasterConverter[S <: Geometry, V, D, VR, DR](f: Array[Event[S, V, D]] => VR,
-                                                         stArray: Array[(Polygon, Duration)],
-                                                         d: DR = None,
-                                                         instant: Boolean = true) extends Converter {
+                                                         polygonArr: Array[Polygon],
+                                                         durArr: Array[Duration],
+                                                         d: DR = None) extends Converter {
   type I = Event[S, V, D]
   type O = Raster[Polygon, VR, DR]
 
-  val stMap: Array[(Int, (Polygon, Duration))] = stArray.zipWithIndex.map(_.swap)
-
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
-      val eventSlots = partition.map(event => {
-        val slots = stMap.filter {
-          case (_, (s, t)) => t.intersects(event.duration) && s.intersects(event.extent)
-        }
-        if (instant) (event, Array(slots.map(_._1).head))
-        else (event, slots.map(_._1))
-      }).flatMap {
-        case (event, slots) => slots.map(slot => (slot, event)).toIterator
-      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-
-      val entries = eventSlots.map(slot => {
-        val spatial = stMap(slot._1)._2._1
-        val temporal = stMap(slot._1)._2._2
-        val v = f(slot._2)
-        new Entry(spatial, temporal, v)
-      })
-      val raster = new Raster[Polygon, VR, DR](entries, data = d)
-      Iterator(raster)
+      val trajs = partition.toArray
+      val emptyRaster = Raster.empty[I](polygonArr, durArr)
+      Iterator(emptyRaster.attachInstance(trajs)
+        .mapValue(f)
+        .mapData(_ => d))
     })
   }
 }
@@ -55,7 +40,7 @@ object Event2RasterConverterTest {
 
     val eventRDD = sc.parallelize(events)
 
-    val sArray = Array(
+    val stArray = Array(
       (Extent(0, 0, 5, 5).toPolygon, Duration(0, 100)), // 2
       (Extent(2, 2, 8, 8).toPolygon, Duration(100, 200)), // 2
       (Extent(5, 5, 10, 10).toPolygon, Duration(200, 300)), // 1
@@ -65,9 +50,9 @@ object Event2RasterConverterTest {
     val f: Array[Event[Point, None.type, String]] => Int = _.length
 
     //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
-    val countConverter = new Event2RasterConverter(f, sArray)
+    val converter = new Event2RasterConverter(f, stArray.map(_._1), stArray.map(_._2))
 
-    val tsRDD = countConverter.convert(eventRDD)
+    val tsRDD = converter.convert(eventRDD)
     tsRDD.collect.foreach(println(_))
 
     sc.stop()

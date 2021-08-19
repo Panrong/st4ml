@@ -19,24 +19,6 @@ class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM
         .mapData(_ => d))
     })
   }
-//  override def convert(input: RDD[I]): RDD[O] = {
-//    input.mapPartitions(partition => {
-//      val eventRegions = partition.map(event => {
-//        val regions = sMap.filter(_._2.intersects(event.extent))
-//        (event, regions.map(_._1))
-//      }).flatMap {
-//        case (event, slots) => slots.map(slot => (slot, event)).toIterator
-//      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-//      val entries = eventRegions.map(region => {
-//        val spatial = sMap(region._1)._2
-//        val temporal = durationAll(region._2)
-//        val v = f(region._2)
-//        new Entry(spatial, temporal, v)
-//      })
-//      val sm = new SpatialMap[VSM, DSM](entries, data = d)
-//      Iterator(sm)
-//    })
-//  }
 }
 
 object Traj2SpatialMapConverterTest {
