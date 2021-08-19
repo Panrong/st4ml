@@ -40,13 +40,12 @@ object PeriodicalFlowTest {
     // selection done
 
     val f: Array[Event[Point, None.type, String]] => Int = x => x.length
-    val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10)
+    val tArray = (tQuery.start until tQuery.end by 86400)
       .sliding(2)
       .map(x => Duration(x(0), x(1))).toArray
 
     val converter = new Event2TimeSeriesConverter(f, tArray)
     val tsRDD = converter.convert(res)
-    tsRDD.take(5).foreach(println)
     val t = nanoTime
     val binRDD = tsRDD.flatMap(ts => ts.entries.zipWithIndex.map {
       case (bin, idx) => (idx, bin.value)
