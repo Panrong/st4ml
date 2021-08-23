@@ -1,7 +1,7 @@
 package experiments
 
 import instances.{Duration, Event, Extent, Point}
-import operatorsNew.converter.{Event2TimeSeriesConverter, Event2TrajConverter}
+import operatorsNew.converter.{Event2SpatialMapConverter, Event2TimeSeriesConverter, Event2TrajConverter}
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -51,6 +51,19 @@ object EventConversionTest {
       val convertedRDD = converter.convert(res)
       println(convertedRDD.count)
       println("event to time series")
+      println((nanoTime - t) * 1e-9)
+    }
+    else if (c == "sm") {
+      val f: Array[Event[Point, None.type, String]] =>Array[Event[Point, None.type, String]] = x => x
+      val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
+      val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
+      val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
+      val t = nanoTime
+
+      val converter = new Event2SpatialMapConverter(f, sArray)
+      val convertedRDD = converter.convert(res)
+      println(convertedRDD.count)
+      println("event to spatial map")
       println((nanoTime - t) * 1e-9)
     }
     else if (c == "traj") {
