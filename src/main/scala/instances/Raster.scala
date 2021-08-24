@@ -223,11 +223,11 @@ class Raster[S <: Geometry, V, D](
   }
 
   /**
-   * A more precise version for trajectory
+   * A precise version for trajectory
    *
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+  def attachInstanceExact[T <: Instance[_,_,_] : ClassTag](
     instanceArr: Array[T],
     queryArr: Array[Array[(Geometry, Duration)]],
     how: String = "both"
