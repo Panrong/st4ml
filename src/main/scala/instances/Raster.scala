@@ -73,6 +73,19 @@ class Raster[S <: Geometry, V, D](
     )
 
   def getEntryIndex[G <: Geometry](
+    queryArr: Array[Array[(G, Duration)]],
+    how: String
+  ): Array[Array[Int]] =
+    queryArr.map(q =>
+      entries
+        .zipWithIndex
+        .filter(eWithIndex =>
+          q.exists(innerTuple => eWithIndex._1.intersects(innerTuple._1, innerTuple._2, how))
+        )
+        .map(_._2)
+    )
+
+  def getEntryIndex[G <: Geometry](
     geomArr: Array[G],
     durArr: Array[Duration],
     how: String
@@ -94,6 +107,27 @@ class Raster[S <: Geometry, V, D](
   def getEntryIndexToObj[T: ClassTag, G <: Geometry](
     objArr: Array[T],
     queryArr: Array[(G, Duration)],
+    how: String
+  ): Map[Int, Array[T]] = {
+    if (queryArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getEntryIndex(queryArr, how)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
+  }
+
+  def getEntryIndexToObj[T: ClassTag, G <: Geometry](
+    objArr: Array[T],
+    queryArr: Array[Array[(G, Duration)]],
     how: String
   ): Map[Int, Array[T]] = {
     if (queryArr.isEmpty) {
@@ -182,6 +216,23 @@ class Raster[S <: Geometry, V, D](
     val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
     createRaster(entryIndexToInstance)
   }
+
+  /**
+   * A more precise version for trajectory
+   *
+   * the "how" argument could be "spatial", "temporal", "both" or "either"
+   * */
+  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+    instanceArr: Array[T],
+    queryArr: Array[Array[(Geometry, Duration)]],
+    how: String = "both"
+  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    require(instanceArr.length == queryArr.length,
+      "the length of the first two arguments must match")
+    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
+    createRaster(entryIndexToInstance)
+  }
+
 
   // todo: handle different order of the same spatials
   def merge[T : ClassTag](
