@@ -184,17 +184,22 @@ class Raster[S <: Geometry, V, D](
 
 
   /**
+   * default: not precise attachment
+   *
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
   def attachInstance[T <: Instance[_,_,_] : ClassTag](
     instanceArr: Array[T],
     how: String
   )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
-    val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
-    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
-    createRaster(entryIndexToInstance)
+      val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
+      val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
+      createRaster(entryIndexToInstance)
   }
 
+  /**
+   *
+   * */
   def attachInstance[T <: Instance[_,_,_] : ClassTag](
     instanceArr: Array[T]
   )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
