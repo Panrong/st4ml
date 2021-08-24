@@ -49,6 +49,9 @@ class Raster[S <: Geometry, V, D](
           f3(entry.value))),
       data)
 
+  def mapEntries[V1](f: Entry[S, V] => Entry[S, V1]): Raster[S, V1, D] =
+    Raster(entries.map(f(_)), data)
+
   override def mapData[D1](f: D => D1): Raster[S, V, D1] =
     Raster(
       entries.map(entry =>

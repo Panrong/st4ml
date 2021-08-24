@@ -60,6 +60,9 @@ class SpatialMap[V, D](
           f3(entry.value))),
       data)
 
+  override def mapEntries[V1](f: Entry[Polygon, V] => Entry[Polygon, V1]): SpatialMap[V1, D] =
+    SpatialMap(entries.map(f(_)), data)
+
   override def mapData[D1](f: D => D1): SpatialMap[V, D1] =
     SpatialMap(
       entries.map(entry =>

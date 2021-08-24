@@ -52,6 +52,9 @@ class Trajectory[V, D](
           f3(entry.value))),
       data)
 
+  override def mapEntries[V1](f: Entry[Point, V] => Entry[Point, V1]): Trajectory[V1, D] =
+    Trajectory(entries.map(f(_)), data)
+
   override def mapData[D1](f: D => D1): Trajectory[V, D1] =
     Trajectory(
       entries.map(entry =>

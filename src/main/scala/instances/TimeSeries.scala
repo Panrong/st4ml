@@ -62,6 +62,9 @@ class TimeSeries[V, D](
           f3(entry.value))),
       data)
 
+  override def mapEntries[V1](f: Entry[Polygon, V] => Entry[Polygon, V1]): TimeSeries[V1, D] =
+    TimeSeries(entries.map(f(_)), data)
+
   override def mapData[D1](f: D => D1): TimeSeries[V, D1] =
     TimeSeries(
       entries.map(entry =>

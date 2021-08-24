@@ -48,6 +48,7 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
     f1: S => S,
     f2: Duration => Duration,
     f3: V => V1): Instance[S, V1, D]
+  def mapEntries[V1](f: Entry[S, V] => Entry[S, V1]): Instance[S, V1, D]
   def mapData[D1](f: D => D1): Instance[S, V, D1]
 
   def isEmpty: Boolean =
