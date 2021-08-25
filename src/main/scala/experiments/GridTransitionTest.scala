@@ -88,7 +88,6 @@ object GridTransitionTest {
       new Raster(newEntries, raster.data)
     })
 
-    val resRDD = transitionRDD
 
     def vCombine(x: Array[Int], y: Array[Int]): Array[Int] = x ++ y
 
@@ -96,11 +95,13 @@ object GridTransitionTest {
 
     val emptyRaster = Raster.empty[Array[Int]](stArray.map(_._1), stArray.map(_._2)).mapValue(_ => new Array[Int](0))
 
-    val combined = resRDD.collect.foldRight(emptyRaster)(_.merge(_, vCombine, dCombine))
+    val resRDD = transitionRDD.aggregate(emptyRaster)((x, y) => x.merge(y, vCombine, dCombine), (x, y) => x.merge(y, vCombine, dCombine))
+
+    val combined = resRDD
       .mapValue(arr => arr.map((_, 1))
         .groupBy(_._1).map(x => (x._1, x._2.length)))
     val t2 = nanoTime()
-    println(combined.entries.filter(_.value.nonEmpty).deep)
+    //    println(combined.entries.filter(_.value.nonEmpty).deep)
     println((t2 - t) * 1e-9)
     sc.stop()
   }
