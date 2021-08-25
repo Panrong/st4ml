@@ -2,6 +2,7 @@ package experiments
 
 import experiments.TrajConversionTest.T
 import instances.{Duration, Extent, Point, Trajectory}
+import operatorsNew.selector.partitioner.HashPartitioner
 import operatorsNew.selector.DefaultSelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -38,10 +39,10 @@ object TrajRangeQuery {
       Trajectory(entries, x.id)
     })
     trajRDD.cache()
-
+    val partitionedRDD = new HashPartitioner(numPartitions).partition(trajRDD)
+    partitionedRDD.cache
     for ((s, t) <- queries) {
-      val selector = new DefaultSelector[Trajectory[None.type, String]](s, t, numPartitions)
-      val sRDD = selector.query(trajRDD)
+      val sRDD = partitionedRDD.filter(_.intersects(s, t))
       println(sRDD.count)
     }
     println((nanoTime - t) * 1e-9)
