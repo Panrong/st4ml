@@ -27,7 +27,9 @@ object GridTransitionTest {
     val spatialRange = args(1).split(",").map(_.toDouble)
     val temporalRange = args(2).split(",").map(_.toLong)
     val numPartitions = args(3).toInt
-
+    val tInterval = args(4)
+    // datasets/traj_example_parquet "-8.65, 41.13, -8.57, 41.17" "1380585600,1401580800" 16 86400
+    
     val sQuery = new Extent(spatialRange(0), spatialRange(1), spatialRange(2), spatialRange(3))
     val tQuery = Duration(temporalRange(0), temporalRange(1))
 
@@ -47,7 +49,6 @@ object GridTransitionTest {
     //      Trajectory(Array(Point(5, 15), Point(10, 15), Point(15, 15), Point(16, 16)), Array(Duration(0), Duration(1), Duration(3), Duration(4)), Array(None, None, None, None), "1")
     //    ))
 
-    val tInterval = 86400 //TODO
     val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
     val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
     val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
