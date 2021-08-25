@@ -40,6 +40,9 @@ object TrajRangeQuery {
       val entries = x.entries.map(p => (Point(p.lon, p.lat), Duration(p.t), None))
       Trajectory(entries, x.id)
     })
+    println(trajRDD.count)
+    println(s"Data loading ${(nanoTime - t) * 1e-9} s" )
+    t = nanoTime
     trajRDD.cache()
     if (m == "single") {
       val partitionedRDD = new HashPartitioner(numPartitions).partition(trajRDD)
@@ -49,7 +52,7 @@ object TrajRangeQuery {
         val sRDD = partitionedRDD.filter(_.intersects(s, t))
         println(sRDD.count)
       }
-      println((nanoTime - t) * 1e-9)
+      println(s"Single range query ${(nanoTime - t) * 1e-9} s" )
     }
     else if (m == "multi") {
       val sQuery = queries.map(x => toPolygon(x._1))
@@ -59,6 +62,8 @@ object TrajRangeQuery {
         case(_, qArray) => qArray.map((_, 1))
       }.reduceByKey(_+_)
       println(res.collect.deep)
+      println(s"Multi range query ${(nanoTime - t) * 1e-9} s" )
+
     }
     sc.stop()
   }
