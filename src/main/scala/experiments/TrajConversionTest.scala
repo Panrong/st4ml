@@ -26,7 +26,8 @@ object TrajConversionTest {
     val spatialRange = args(1).split(",").map(_.toDouble)
     val temporalRange = args(2).split(",").map(_.toLong)
     val numPartitions = args(3).toInt
-    val c = args(4)
+    val tInterval = args(4).toInt
+    val c = args(5)
 
     val sQuery = new Extent(spatialRange(0), spatialRange(1), spatialRange(2), spatialRange(3))
     val tQuery = Duration(temporalRange(0), temporalRange(1))
@@ -77,7 +78,7 @@ object TrajConversionTest {
       val xArray = (sQuery.xMin until sQuery.xMax by (sQuery.xMax - sQuery.xMin) / 11).sliding(2).toArray
       val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
       val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
-      val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
+      val tArray = (tQuery.start until tQuery.end by tInterval).sliding(2).map(x => Duration(x(0), x(1))).toArray
 
       val stArray = for {
         s <- sArray
@@ -112,7 +113,7 @@ object TrajConversionTest {
 
     else if (c == "ts") {
       val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
-      val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
+      val tArray = (tQuery.start until tQuery.end by tInterval).sliding(2).map(x => Duration(x(0), x(1))).toArray
       val t = nanoTime
       val converter = new Traj2TimeSeriesConverter(f, tArray)
       val convertedRDD = converter.convert(res)
