@@ -171,9 +171,9 @@ class Raster[S <: Geometry, V, D](
   /**
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachGeometry[T <: Geometry: ClassTag](
+  def attachGeometry[T <: Geometry: ClassTag, G <: Geometry: ClassTag](
     geomArr: Array[T],
-    queryArr: Array[(Geometry, Duration)],
+    queryArr: Array[(G, Duration)],
     how: String = "both"
   )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(geomArr.length == queryArr.length,
@@ -211,9 +211,9 @@ class Raster[S <: Geometry, V, D](
   /**
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](
+  def attachInstance[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag](
     instanceArr: Array[T],
-    queryArr: Array[(Geometry, Duration)],
+    queryArr: Array[(G, Duration)],
     how: String = "both"
   )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(instanceArr.length == queryArr.length,
@@ -227,9 +227,9 @@ class Raster[S <: Geometry, V, D](
    *
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstanceExact[T <: Instance[_,_,_] : ClassTag](
+  def attachInstanceExact[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag](
     instanceArr: Array[T],
-    queryArr: Array[Array[(Geometry, Duration)]],
+    queryArr: Array[Array[(G, Duration)]],
     how: String = "both"
   )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(instanceArr.length == queryArr.length,
