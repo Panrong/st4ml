@@ -1,9 +1,10 @@
 package experiments
 
 import experiments.TrajConversionTest.T
+import instances.Extent.toPolygon
 import instances.{Duration, Extent, Point, Trajectory}
 import operatorsNew.selector.partitioner.HashPartitioner
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.{DefaultSelector, MultiSTRangeSelector}
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -15,6 +16,7 @@ object TrajRangeQuery {
     val fileName = args(0)
     val queryFile = args(1)
     val numPartitions = args(2).toInt
+    val m = args(3)
     // read queries
     val f = Source.fromFile(queryFile)
     val queries = f.getLines().toArray.map(line => {
@@ -23,14 +25,14 @@ object TrajRangeQuery {
         Duration(r(4).toLong, r(5).toLong))
     })
     val spark = SparkSession.builder()
-      .appName("flowExp")
+      .appName("trajRangeQuery")
       .master(Config.get("master"))
       .getOrCreate()
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    val t = nanoTime
+    var t = nanoTime
     // read trajectories
     val readDs = spark.read.parquet(fileName)
     import spark.implicits._
@@ -39,14 +41,25 @@ object TrajRangeQuery {
       Trajectory(entries, x.id)
     })
     trajRDD.cache()
-    val partitionedRDD = new HashPartitioner(numPartitions).partition(trajRDD)
-    partitionedRDD.cache
-    for ((s, t) <- queries) {
-      val sRDD = partitionedRDD.filter(_.intersects(s, t))
-      println(sRDD.count)
+    if (m == "single") {
+      val partitionedRDD = new HashPartitioner(numPartitions).partition(trajRDD)
+      partitionedRDD.cache
+      partitionedRDD.count
+      for ((s, t) <- queries) {
+        val sRDD = partitionedRDD.filter(_.intersects(s, t))
+        println(sRDD.count)
+      }
+      println((nanoTime - t) * 1e-9)
     }
-    println((nanoTime - t) * 1e-9)
-
+    else if (m == "multi") {
+      val sQuery = queries.map(x => toPolygon(x._1))
+      val tQuery = queries.map(x => x._2)
+      val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+      val res = selector.queryWithInfo(trajRDD).flatMap{
+        case(_, qArray) => qArray.map((_, 1))
+      }.reduceByKey(_+_)
+      println(res.collect.deep)
+    }
     sc.stop()
   }
 }
