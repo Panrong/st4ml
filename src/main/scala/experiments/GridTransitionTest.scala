@@ -67,7 +67,7 @@ object GridTransitionTest {
 
     val converter = new Traj2RasterConverter(f, stArray.map(_._1), stArray.map(_._2))
     val rasterRDD = converter.convert(res)
-    rasterRDD.collect.foreach(x => println(x.mapValue(x => x.length)))
+    //    rasterRDD.collect.foreach(x => println(x.mapValue(x => x.length)))
     rasterRDD.cache()
     rasterRDD.count()
 
@@ -101,7 +101,7 @@ object GridTransitionTest {
       .mapValue(arr => arr.map((_, 1))
         .groupBy(_._1).map(x => (x._1, x._2.length)))
     val t2 = nanoTime()
-    //    println(combined.entries.filter(_.value.nonEmpty).deep)
+    println(combined.entries.filter(_.value.nonEmpty).deep)
     println((t2 - t) * 1e-9)
     sc.stop()
   }
