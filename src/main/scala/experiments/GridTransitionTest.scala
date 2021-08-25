@@ -27,9 +27,9 @@ object GridTransitionTest {
     val spatialRange = args(1).split(",").map(_.toDouble)
     val temporalRange = args(2).split(",").map(_.toLong)
     val numPartitions = args(3).toInt
-    val tInterval = args(4)
+    val tInterval = args(4).toInt
     // datasets/traj_example_parquet "-8.65, 41.13, -8.57, 41.17" "1380585600,1401580800" 16 86400
-    
+
     val sQuery = new Extent(spatialRange(0), spatialRange(1), spatialRange(2), spatialRange(3))
     val tQuery = Duration(temporalRange(0), temporalRange(1))
 
