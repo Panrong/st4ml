@@ -17,6 +17,8 @@ object TrajRangeQuery {
     val queryFile = args(1)
     val numPartitions = args(2).toInt
     val m = args(3)
+    val partition = args(4).toBoolean
+    
     // read queries
     val f = Source.fromFile(queryFile)
     val queries = f.getLines().toArray.map(line => {
@@ -45,11 +47,12 @@ object TrajRangeQuery {
     t = nanoTime
     trajRDD.cache()
     if (m == "single") {
-      val partitionedRDD = new HashPartitioner(numPartitions).partition(trajRDD)
+
+      val partitionedRDD = if(partition) new HashPartitioner(numPartitions).partition(trajRDD) else trajRDD
       partitionedRDD.cache
       partitionedRDD.count
       for ((s, t) <- queries) {
-        val sRDD = partitionedRDD.filter(_.intersects(s, t))
+        val sRDD = partitionedRDD.filter(_.intersects(s, t)).filter(x => x.toGeometry.intersects(s))
         println(sRDD.count)
       }
       println(s"Single range query ${(nanoTime - t) * 1e-9} s" )
@@ -57,7 +60,7 @@ object TrajRangeQuery {
     else if (m == "multi") {
       val sQuery = queries.map(x => toPolygon(x._1))
       val tQuery = queries.map(x => x._2)
-      val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+      val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions, partition)
       val res = selector.queryWithInfo(trajRDD).flatMap{
         case(_, qArray) => qArray.map((_, 1))
       }.reduceByKey(_+_)
