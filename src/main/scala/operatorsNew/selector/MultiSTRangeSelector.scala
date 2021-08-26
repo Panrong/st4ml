@@ -27,9 +27,10 @@ class MultiSTRangeSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Array[Poly
     val repartitionedRDD = if(partition) partitioner.partition(dataRDD) else dataRDD
     val queries = sQuery.zip(tQuery).zipWithIndex
     repartitionedRDD.map(o => {
+      lazy val geom =  o.toGeometry
       val intersections = if (accurate)
         queries.filter(q =>
-        o.toGeometry.intersects(q._1._1) && o.intersects(q._1._2))
+        geom.intersects(q._1._1) && o.intersects(q._1._2))
         .map(_._2)
       else queries.filter(q =>
         o.intersects(q._1._1, q._1._2))

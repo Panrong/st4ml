@@ -47,12 +47,11 @@ object TrajRangeQuery {
     t = nanoTime
     trajRDD.cache()
     if (m == "single") {
-
       val partitionedRDD = if (partition) new HashPartitioner(numPartitions).partition(trajRDD) else trajRDD
       partitionedRDD.cache
       partitionedRDD.count
       for ((s, t) <- queries) {
-        val sRDD = partitionedRDD.filter(_.intersects(s, t)).filter(x => x.toGeometry.intersects(s))
+        val sRDD = partitionedRDD.filter(x => x.intersects(t) && x.toGeometry.intersects(s))
         println(sRDD.count)
       }
       println(s"Single range query ${(nanoTime - t) * 1e-9} s")
