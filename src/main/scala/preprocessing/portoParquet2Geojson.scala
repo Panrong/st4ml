@@ -1,0 +1,48 @@
+package preprocessing
+
+import experiments.TrajConversionTest.T
+import instances.{Duration, Point, Trajectory}
+import org.apache.spark.sql.SparkSession
+import utils.Config
+import utils.TimeParsing.timeLong2String
+
+object portoParquet2Geojson {
+  case class geometry(coordinates: Seq[Seq[Double]], `type`: String = "LineString")
+
+  case class properties(TIMESTAMP: Long)
+
+  def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder()
+      .appName("portoParquet2Geojson")
+      .master(Config.get("master"))
+      .getOrCreate()
+
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+
+    val fileName = args(0)
+    val res = args(1)
+    val readDs = spark.read.parquet(fileName)
+    import spark.implicits._
+    val trajRDD = readDs.as[T].rdd.map(x => {
+      val entries = x.entries.map(p => (Point(p.lon, p.lat), Duration(p.t), None))
+      Trajectory(entries, x.id)
+    })
+    val formattedRDD = trajRDD.map(traj => {
+      val id = traj.data
+      val start = timeLong2String(traj.duration.start).split(" ").head
+      val end = timeLong2String(traj.duration.end).split(" ").head
+      val coords = traj.entries.map(_.spatial).map(p => Seq(p.getX, p.getY)).toSeq
+      val `type` = "Feature"
+
+      (geometry(coords), id, properties(traj.duration.start), `type`, start, end)
+    })
+    import spark.implicits._
+    val df = formattedRDD.toDF("geometry", "id", "properties", "type", "start", "end")
+    df.show(5, false)
+    df.printSchema()
+    df.write.json(res)
+
+    sc.stop
+  }
+}
