@@ -31,7 +31,7 @@ object portoParquet2Geojson {
     val formattedRDD = trajRDD.map(traj => {
       val id = traj.data
       val start = timeLong2String(traj.duration.start).split(" ").head
-      val end = timeLong2String(traj.duration.end).split(" ").head
+      val end = traj.duration.end
       val coords = traj.entries.map(_.spatial).map(p => Seq(p.getX, p.getY)).toSeq
       val `type` = "Feature"
 
@@ -41,7 +41,7 @@ object portoParquet2Geojson {
     val df = formattedRDD.toDF("geometry", "id", "properties", "type", "start", "end")
     df.show(5, false)
     df.printSchema()
-    df.write.json(res)
+    df.repartition(256).write.json(res)
 
     sc.stop
   }
