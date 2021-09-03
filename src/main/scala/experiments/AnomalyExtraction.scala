@@ -33,6 +33,7 @@ object AnomalyExtraction {
     val readDs = spark.read.parquet(fileName)
     import spark.implicits._
     val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id))
+    eventRDD.cache()
     val t = nanoTime()
     val extractor = new AnomalyExtractor[Event[Point, None.type, String]]
     val res = extractor.extract(eventRDD, tRange, ranges)
