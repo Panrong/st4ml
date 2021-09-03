@@ -2,6 +2,7 @@ package preprocessing
 
 import instances.{Duration, Point, Trajectory}
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.{col, to_date}
 import utils.Config
 import utils.TimeParsing.timeLong2String
 
@@ -27,7 +28,8 @@ object portoEventParquet2Csv {
     readDs.withColumnRenamed("lon", "longitude")
       .withColumnRenamed("lat", "latitude")
       .withColumnRenamed("t", "timestamp")
-      .select("id", "latitude", "longitude", "timestamp")
+      .withColumn("date", to_date(col("timestamp"),"yyyy-MM-dd"))
+      .select("id", "latitude", "longitude", "timestamp", "date")
       .repartition(256).write.csv(res)
 
     sc.stop
