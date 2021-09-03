@@ -42,6 +42,7 @@ object AnomalyExtraction {
     import spark.implicits._
     val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id))
       .repartition(numPartitions)
+    println(eventRDD.count)
     eventRDD.cache()
 
     //    // extract
