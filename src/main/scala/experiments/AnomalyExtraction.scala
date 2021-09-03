@@ -41,6 +41,7 @@ object AnomalyExtraction {
     val readDs = spark.read.parquet(fileName)
     import spark.implicits._
     val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id))
+      .repartition(numPartitions)
     eventRDD.cache()
 
     //    // extract
@@ -53,7 +54,7 @@ object AnomalyExtraction {
     val res = extractPerWeekAnomaly(tRange)(eventRDD)
     println(res)
 
-    println(s"Multi range query ${(nanoTime - t) * 1e-9} s")
+    println(s"Weekly anomaly extraction ${(nanoTime - t) * 1e-9} s")
   }
 
   def longToWeek(t: Long): Int = {
