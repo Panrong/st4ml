@@ -8,7 +8,7 @@ import utils.Config
 import java.lang.System.nanoTime
 import scala.io.Source
 
-object anomalyExtraction {
+object AnomalyExtraction {
   def main(args: Array[String]): Unit = {
     val fileName = args(0)
     val queryFile = args(1)
@@ -32,7 +32,7 @@ object anomalyExtraction {
     // read events
     val readDs = spark.read.parquet(fileName)
     import spark.implicits._
-    val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id)) 
+    val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id))
     val t = nanoTime()
     val extractor = new AnomalyExtractor[Event[Point, None.type, String]]
     val res = extractor.extract(eventRDD, tRange, ranges)
