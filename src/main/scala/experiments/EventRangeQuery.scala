@@ -1,18 +1,17 @@
 package experiments
 
 import instances.Extent.toPolygon
-import instances.{Duration, Extent, Point, Event}
+import instances.{Duration, Event, Extent, Point}
 import operatorsNew.selector.MultiSTRangeSelector
-import operatorsNew.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source
 
-case class P(id: String, lon: Double, lat: Double, t: Long)
-
 object EventRangeQuery {
+  case class P(id: String, lon: Double, lat: Double, t: Long)
+
   def main(args: Array[String]): Unit = {
     val fileName = args(0)
     val queryFile = args(1)
@@ -40,7 +39,6 @@ object EventRangeQuery {
     import spark.implicits._
     val eventRDD = readDs.as[P].rdd.map(x => Event(Point(x.lon, x.lat), Duration(x.t), d = x.id))
 
-    println(eventRDD.count)
     println(s"Data loading ${(nanoTime - t) * 1e-9} s")
     t = nanoTime
     eventRDD.cache()

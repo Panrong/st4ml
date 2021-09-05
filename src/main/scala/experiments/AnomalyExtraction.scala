@@ -1,8 +1,6 @@
 package experiments
 
 import instances.{Duration, Event, Extent, Point}
-import operatorsNew.extractor.AnomalyExtractor
-import operatorsNew.selector.DefaultSelector
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import utils.Config
@@ -17,6 +15,8 @@ object AnomalyExtraction {
   /*
   find number of anomalies in each week
    */
+  case class P(id: String, lon: Double, lat: Double, t: Long)
+
   def main(args: Array[String]): Unit = {
     val fileName = args(0)
     val queryFile = args(1)
@@ -30,12 +30,12 @@ object AnomalyExtraction {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    // read queries
-    val f = Source.fromFile(queryFile)
-    val ranges = f.getLines().toArray.map(line => {
-      val r = line.split(" ")
-      Extent(r(0).toDouble, r(1).toDouble, r(2).toDouble, r(3).toDouble).toPolygon
-    })
+//    // read queries
+//    val f = Source.fromFile(queryFile)
+//    val ranges = f.getLines().toArray.map(line => {
+//      val r = line.split(" ")
+//      Extent(r(0).toDouble, r(1).toDouble, r(2).toDouble, r(3).toDouble).toPolygon
+//    })
 
     // read events
     val readDs = spark.read.parquet(fileName)
