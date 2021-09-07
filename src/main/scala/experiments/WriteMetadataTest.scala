@@ -47,8 +47,10 @@ object WriteMetadataTest extends App {
 
   import java.io._
 
-  val pw = new PrintWriter(new File(metadata))
-  for(x <- partitionInfo) {
+  val f = new File(metadata)
+  f.createNewFile()
+  val pw = new PrintWriter(f)
+  for (x <- partitionInfo) {
     pw.write(s"${x._1} ${x._2.xMin} ${x._2.yMin} ${x._2.xMax} ${x._2.yMax}\n")
   }
   pw.close()
