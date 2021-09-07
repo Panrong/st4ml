@@ -31,7 +31,7 @@ object TrajSpeedExtraction {
 
     val t = nanoTime
 
-    val speedRDD = trajRDD.map(x => x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6)
+    val speedRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
     val res = speedRDD.collect
     println(s"Avg speed extraction ${(nanoTime - t) * 1e-9} s")
     println(res.take(5).deep)
