@@ -34,14 +34,17 @@ object LoadingWithMetaDataTest {
     /** test loading with metadata */
     // parse metadata
     val partitionInfo = mutable.Map[Int, Extent]()
+    val partitionNum = mutable.Map[Int, Int]()
     val f = Source.fromFile(metadata)
     for (line <- f.getLines) {
       val x = line.split(" ").map(_.toDouble)
       partitionInfo(x(0).toInt) = Extent(x(1), x(2), x(3), x(4))
+      partitionNum(x(0).toInt) = x(5).toInt
     }
 
     val sRange = Extent(range(0), range(1), range(2), range(3))
-    val relatedPartitions = partitionInfo.filter(_._2.intersects(sRange)).keys.toArray
+    val relatedPartitions = partitionInfo.filter(x => x._2.intersects(sRange)
+      && partitionNum(x._1) > 0).keys.toArray
     val dirs = relatedPartitions.map(x => fileName + s"/pId=$x")
     val readDs = spark.read.parquet(dirs: _*)
 
@@ -57,6 +60,7 @@ object LoadingWithMetaDataTest {
     println(s"Loading with metadata ${(nanoTime - t) * 1e-9} s")
 
     /** test loading without metadata */
+    t = nanoTime()
     val readDs2 = spark.read.parquet(fileName)
 
     val trajRDD2 = readDs2.as[T].rdd.map(x => {

@@ -35,15 +35,20 @@ object WriteMetadataTest extends App {
   })
   println(trajRDD.count)
   val partitioner = new STRPartitioner(numPartitions, Some(0.2))
-  val partitionedRDD = partitioner.partition(trajRDD).mapPartitionsWithIndex {
+  val partitionedRDD = partitioner.partition(trajRDD)
+  val partitionedRDDWithPId = partitionedRDD.mapPartitionsWithIndex {
     case (idx, partition) => partition.map(x => (x, idx))
   }
-  val trajDf = partitionedRDD.map(x => {
+  val trajDf = partitionedRDDWithPId.map(x => {
     val entries = x._1.entries.map(e => E(e.spatial.getX, e.spatial.getY, e.temporal.start))
     TwP(x._1.data, entries, x._2)
   }).toDF
   trajDf.write.partitionBy("pId").parquet(res)
   val partitionInfo = partitioner.partitionRange
+
+  val partitionCount = partitionedRDD.mapPartitionsWithIndex {
+    case (idx, partition) => Iterator((idx, partition.size))
+  }.collect.toMap
 
   import java.io._
 
@@ -51,7 +56,7 @@ object WriteMetadataTest extends App {
   f.createNewFile()
   val pw = new PrintWriter(f)
   for (x <- partitionInfo) {
-    pw.write(s"${x._1} ${x._2.xMin} ${x._2.yMin} ${x._2.xMax} ${x._2.yMax}\n")
+    pw.write(s"${x._1} ${x._2.xMin} ${x._2.yMin} ${x._2.xMax} ${x._2.yMax} ${partitionCount(x._1)}\n")
   }
   pw.close()
 
