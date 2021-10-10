@@ -3,7 +3,7 @@ package experiments
 import instances.GeometryImplicits.withExtraPointOps
 import instances.{Duration, Entry, Extent, Point, Polygon, SpatialMap, Trajectory}
 import operatorsNew.converter.Traj2SpatialMapConverter
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -39,7 +39,7 @@ object RegionalSpeedTest {
       Trajectory(entries, x.id)
     })
 
-    val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(trajRDD)
 
     //    val res = sc.parallelize(Array(

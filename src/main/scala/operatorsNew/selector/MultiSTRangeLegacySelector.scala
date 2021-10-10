@@ -7,10 +7,10 @@ import org.locationtech.jts.geom.Polygon
 
 import scala.reflect.ClassTag
 
-class MultiSTRangeSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
-                                                              tQuery: Array[Duration],
-                                                              numPartitions: Int,
-                                                              partition: Boolean = true) extends Selector[R] {
+class MultiSTRangeLegacySelector[R <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                                                    tQuery: Array[Duration],
+                                                                    numPartitions: Int,
+                                                                    partition: Boolean = true) extends LegacySelector[R] {
   val partitioner: HashPartitioner = new HashPartitioner(numPartitions)
 
   assert(sQuery.length == tQuery.length, "The spatial and temporal queries must have the same length.")

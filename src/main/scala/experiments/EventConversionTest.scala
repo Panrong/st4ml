@@ -2,7 +2,7 @@ package experiments
 
 import instances.{Duration, Event, Extent, Point}
 import operatorsNew.converter.{Event2SpatialMapConverter, Event2TimeSeriesConverter, Event2TrajConverter}
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -37,7 +37,7 @@ object EventConversionTest {
       Event(Point(x.lon, x.lat), new Duration(x.t, x.t), None, x.id)
     })
     type I = Event[Point, None.type, String]
-    val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[I](sQuery, tQuery, numPartitions)
     val res = selector.query(eventRDD)
     println(res.count)
     // selection done

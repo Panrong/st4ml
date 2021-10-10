@@ -2,7 +2,7 @@ package experiments
 
 import instances.{Duration, Extent, Point, SpatialMap, Trajectory}
 import operatorsNew.converter.{Traj2EventConverter, Traj2RasterConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -40,7 +40,7 @@ object TrajConversionTest {
       Trajectory(entries, x.id)
     })
 
-    val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(trajRDD)
     res.cache()
     println(res.count)

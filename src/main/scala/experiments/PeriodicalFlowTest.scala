@@ -2,7 +2,7 @@ package experiments
 
 import instances.{Duration, Event, Extent, Point}
 import operatorsNew.converter.Event2TimeSeriesConverter
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -35,7 +35,7 @@ object PeriodicalFlowTest {
       Event(Point(x.lon, x.lat), Duration(x.t), d = x.id)
     })
 
-    val selector = new DefaultSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(eventRDD)
     // selection done
 

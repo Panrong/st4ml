@@ -1,15 +1,17 @@
 package operatorsNew.selector
 
-import instances.{Duration, Instance}
+import instances.{Duration, Extent, Instance}
 import operatorsNew.selector.partitioner.HashPartitioner
 import org.apache.spark.rdd.RDD
 import org.locationtech.jts.geom.Polygon
 
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-class MultiTemporalRangeSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
-                                                                    tQuery: Array[Duration],
-                                                                    numPartitions: Int) extends Selector[R] {
+class MultiSpatialRangeLegacySelector[R <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                                                         tQuery: Duration,
+                                                                         numPartitions: Int) extends LegacySelector[R] {
+
   val partitioner: HashPartitioner = new HashPartitioner(numPartitions)
 
   override def query(dataRDD: RDD[R]): RDD[R] = {
@@ -23,9 +25,9 @@ class MultiTemporalRangeSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Poly
     val repartitionedRDD = partitioner.partition(dataRDD)
     repartitionedRDD.map(instance => {
       val intersections = {
-        if (!instance.intersects(sQuery)) Array[Int]()
+        if (!instance.intersects(tQuery)) Array[Int]()
         else {
-          tQuery.zipWithIndex
+          sQuery.zipWithIndex
             .filter(range => instance.intersects(range._1)).map(_._2)
         }
       }
@@ -34,9 +36,9 @@ class MultiTemporalRangeSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Poly
       .filter(x => !x._2.isEmpty)
   }
 
-  def intersects(instance: R, sQuery: Polygon, tQuery: Array[Duration]): Boolean = {
-    if (instance.intersects(sQuery)) {
-      for (range <- tQuery) {
+  def intersects(instance: R, sQuery: Array[Polygon], tQuery: Duration): Boolean = {
+    if (instance.intersects(tQuery)) {
+      for (range <- sQuery) {
         if (instance.intersects(range)) return true
       }
     }

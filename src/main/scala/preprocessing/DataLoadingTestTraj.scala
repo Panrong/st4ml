@@ -1,7 +1,7 @@
 package preprocessing
 
 import instances.{Duration, Extent, Point, Trajectory}
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import preprocessing.geoJson2ParquetTraj.T
 import utils.Config
@@ -39,7 +39,7 @@ object DataLoadingTestTraj {
       Trajectory(pointArr, durationArr, valueArr, x.id)
     })
 
-    val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
 
     val res = selector.query(trajectoryRDD).count
     println(res)

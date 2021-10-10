@@ -2,7 +2,7 @@ package examples
 
 import instances.{Duration, Event, Extent, Point, TimeSeries}
 import operatorsNew.converter.Event2TimeSeriesConverter
-import operatorsNew.selector.MultiSTRangeSelector
+import operatorsNew.selector.MultiSTRangeLegacySelector
 import operatorsNew.selector.partitioner.STRPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
@@ -42,7 +42,7 @@ object flowTs {
     //    println(countRDD.collect.sortBy(_._1).deep)
 
 
-    val selector = new MultiSTRangeSelector[Event[Point, None.type, String]](stGrids.map(x => new Extent(x._1(0), x._1(1), x._1(2), x._1(3)).toPolygon),
+    val selector = new MultiSTRangeLegacySelector[Event[Point, None.type, String]](stGrids.map(x => new Extent(x._1(0), x._1(1), x._1(2), x._1(3)).toPolygon),
       stGrids.map(x => Duration(x._2(0), x._2(1))),
       numPartitions = grids.length)
 

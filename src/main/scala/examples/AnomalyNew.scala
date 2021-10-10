@@ -5,7 +5,7 @@ import instances.{Duration, Event, Extent, Point}
 import operatorsNew.OperatorSet
 import operatorsNew.converter.DoNothingConverter
 import operatorsNew.extractor.AnomalyExtractor
-import operatorsNew.selector.MultiSpatialRangeSelector
+import operatorsNew.selector.MultiSpatialRangeLegacySelector
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ParquetReader
@@ -47,7 +47,7 @@ object AnomalyNew {
     val operator = new OperatorSet {
       type I = Event[Point, None.type, String]
       type O = Event[Point, None.type, String]
-      val selector = new MultiSpatialRangeSelector(sQueries, tQuery, numPartitions)
+      val selector = new MultiSpatialRangeLegacySelector(sQueries, tQuery, numPartitions)
       val converter = new DoNothingConverter[I]
       val extractor = new AnomalyExtractor[O]
     }

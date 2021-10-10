@@ -1,6 +1,6 @@
 package operatorsNew.selector.partitioner
 
-import instances.{Extent, Instance}
+import instances.{Duration, Extent, Instance}
 import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
@@ -9,11 +9,11 @@ abstract class SpatialPartitioner extends Serializable {
   var partitionRange: Map[Int, Extent]
   var samplingRate: Option[Double]
 
-  def partition[T <: Instance[_,_,_] : ClassTag](dataRDD: RDD[T]): RDD[T]
-  def partitionWDup[T <: Instance[_,_,_] : ClassTag](dataRDD: RDD[T]): RDD[T]
+  def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T]
 
-  def calPartitionRanges[T <: Instance[_,_,_]](rdd: RDD[(Int, T)]):
-  Map[Int, Extent] = {
+  def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T]
+
+  def calPartitionRanges[T <: Instance[_, _, _]](rdd: RDD[(Int, T)]): Map[Int, Extent] = {
     rdd.mapPartitionsWithIndex {
       case (id, iter) =>
         var xMin = 180.0
@@ -30,5 +30,6 @@ abstract class SpatialPartitioner extends Serializable {
         Iterator((id, new Extent(xMin, yMin, xMax, yMax)))
     }.collect().toMap
   }
+
 
 }

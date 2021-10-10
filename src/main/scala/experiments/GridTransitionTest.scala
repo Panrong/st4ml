@@ -2,7 +2,7 @@ package experiments
 
 import instances._
 import operatorsNew.converter.Traj2RasterConverter
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -41,7 +41,7 @@ object GridTransitionTest {
       Trajectory(entries, x.id)
     })
 
-    val selector = new DefaultSelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val res = selector.query(trajRDD)
 
     //    val res = sc.parallelize(Array(

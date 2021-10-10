@@ -1,7 +1,7 @@
 package preprocessing
 
 import instances.{Duration, Event, Extent, Point}
-import operatorsNew.selector.DefaultSelector
+import operatorsNew.selector.DefaultLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -35,7 +35,7 @@ object DataLoadingTestEvent {
     val eventRDD = readDs.as[E].rdd.map(x => {
       Event(Point(x.lon, x.lat), new Duration(x.t, x.t), None, x.id)
     })
-    val selector = new DefaultSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
+    val selector = new DefaultLegacySelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions)
 
     val res = selector.query(eventRDD).count
     println(res)

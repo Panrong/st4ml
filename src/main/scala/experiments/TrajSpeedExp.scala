@@ -4,7 +4,7 @@ import experiments.TrajSpeedSpark.{genGrids, genSTGrids}
 import instances.Extent.toPolygon
 import instances.GeometryImplicits.withExtraPointOps
 import instances.{Duration, Extent, Trajectory}
-import operatorsNew.selector.MultiSTRangeSelector
+import operatorsNew.selector.MultiSTRangeLegacySelector
 import org.apache.spark.sql.SparkSession
 import org.locationtech.jts.geom.Polygon
 import preprocessing.ParquetReader
@@ -39,7 +39,7 @@ object TrajSpeedExp {
 
     val trajRDD = ParquetReader.readSyntheticTraj(trajFile)
 
-    val selector = new MultiSTRangeSelector[Trajectory[None.type, String]](sQ, tQ, numPartitions)
+    val selector = new MultiSTRangeLegacySelector[Trajectory[None.type, String]](sQ, tQ, numPartitions)
     val selectedRDD = selector.queryWithInfo(trajRDD)
     val speedRDD = selectedRDD.flatMap {
       case (traj, qArr) => qArr.map(q => (traj, q))

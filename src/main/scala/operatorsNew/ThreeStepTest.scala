@@ -26,7 +26,7 @@ object ThreeStepTest {
     val operatorSet = new OperatorSet {
       type I = Event[Point, None.type, String]
       type O = Event[Point, None.type, String]
-      val selector = new DefaultSelector[I](sQuery, tQuery, numPartitions)
+      val selector = new DefaultLegacySelector[I](sQuery, tQuery, numPartitions)
       val converter = new DoNothingConverter[I]
       val extractor = new AnomalyExtractor[O]
     }
@@ -71,7 +71,7 @@ object ThreeStepTest {
     )
 
     println("Testing multi spatial range selection: ")
-    val msrs = new MultiSpatialRangeSelector[Event[Point, None.type, String]](sQueries.map(_.toPolygon),
+    val msrs = new MultiSpatialRangeLegacySelector[Event[Point, None.type, String]](sQueries.map(_.toPolygon),
       tQueries.head,
       numPartitions)
     val msrsRes = msrs.query(inputRDD)
@@ -85,7 +85,7 @@ object ThreeStepTest {
     println(s"Benchmark0 number: ${msrsBenchmark.count}")
 
     println("Testing multi temporal range selection: ")
-    val mtrs = new MultiTemporalRangeSelector[Event[Point, None.type, String]](sQueries.head,
+    val mtrs = new MultiTemporalRangeLegacySelector[Event[Point, None.type, String]](sQueries.head,
       tQueries,
       numPartitions)
     val mtrsRes = mtrs.query(inputRDD)
@@ -99,7 +99,7 @@ object ThreeStepTest {
     println(s"Benchmark0 number: ${mtrsBenchmark.count}")
 
     println("Testing multi ST range selection: ")
-    val mstrs = new MultiSTRangeSelector[Event[Point, None.type, String]](sQueries.map(_.toPolygon),
+    val mstrs = new MultiSTRangeLegacySelector[Event[Point, None.type, String]](sQueries.map(_.toPolygon),
       tQueries,
       numPartitions)
     val mstrsRes = mstrs.query(inputRDD)

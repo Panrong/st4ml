@@ -2,7 +2,7 @@ package experiments
 
 import instances.Extent.toPolygon
 import instances.{Duration, Event, Extent, Point}
-import operatorsNew.selector.MultiSTRangeSelector
+import operatorsNew.selector.MultiSTRangeLegacySelector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -45,7 +45,7 @@ object EventRangeQuery {
 
     val sQuery = queries.map(x => toPolygon(x._1))
     val tQuery = queries.map(x => x._2)
-    val selector = new MultiSTRangeSelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions, partition)
+    val selector = new MultiSTRangeLegacySelector[Event[Point, None.type, String]](sQuery, tQuery, numPartitions, partition)
     val res = selector.queryWithInfo(eventRDD, true).flatMap {
       case (_, qArray) => qArray.map((_, 1))
     }.reduceByKey(_ + _)

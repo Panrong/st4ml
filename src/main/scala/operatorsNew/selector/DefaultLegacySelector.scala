@@ -7,9 +7,9 @@ import org.locationtech.jts.geom.Polygon
 
 import scala.reflect.ClassTag
 
-class DefaultSelector[R <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
-                                                         tQuery: Duration,
-                                                         numPartitions: Int) extends Selector[R] {
+class DefaultLegacySelector[R <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
+                                                               tQuery: Duration,
+                                                               numPartitions: Int) extends LegacySelector[R] {
   val partitioner: HashPartitioner = new HashPartitioner(numPartitions)
   var partitionedRDD: Option[RDD[R]] = None
 
