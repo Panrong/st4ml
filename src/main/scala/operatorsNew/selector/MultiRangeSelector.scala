@@ -137,3 +137,15 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
       .map(_.asInstanceOf[(I, Array[Int])])
   }
 }
+
+object MultiRangeSelector {
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                               tQuery: Array[Duration],
+                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](sQuery, tQuery, partitioner)
+
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                               tQuery: Array[Duration],
+                                               numPartitions: Int): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](sQuery, tQuery, partitioner)
+}
