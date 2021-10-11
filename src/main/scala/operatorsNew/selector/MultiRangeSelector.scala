@@ -1,7 +1,7 @@
 package operatorsNew.selector
 
 import instances.{Duration, Event, Geometry, Instance, Polygon, Trajectory}
-import operatorsNew.selector.partitioner.SpatialPartitioner
+import operatorsNew.selector.partitioner.{HashPartitioner, SpatialPartitioner}
 import operatorsNew.selector.SelectionUtils._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
@@ -147,5 +147,21 @@ object MultiRangeSelector {
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
                                                tQuery: Array[Duration],
                                                numPartitions: Int): MultiRangeSelector[I] =
-    new MultiRangeSelector[I](sQuery, tQuery, partitioner)
+    new MultiRangeSelector[I](sQuery, tQuery, new HashPartitioner(numPartitions))
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                               tQuery: Duration,
+                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](sQuery, Array.fill(sQuery.length)(tQuery), partitioner)
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
+                                               tQuery: Array[Duration],
+                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](Array.fill(tQuery.length)(sQuery), tQuery, partitioner)
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
+                                               tQuery: Duration,
+                                               numPartitions: Int): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](sQuery, Array.fill(sQuery.length)(tQuery), new HashPartitioner(numPartitions))
+  def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
+                                               tQuery: Array[Duration],
+                                               numPartitions: Int): MultiRangeSelector[I] =
+    new MultiRangeSelector[I](Array.fill(tQuery.length)(sQuery), tQuery, new HashPartitioner(numPartitions))
 }
