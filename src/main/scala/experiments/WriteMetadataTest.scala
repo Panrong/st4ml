@@ -40,18 +40,18 @@ object WriteMetadataTest extends App {
   //  println(trajRDD.take(5).deep)
   //  trajRDD.toDs().write.parquet("datasets/traj_example_parquet_customized")
 
-  //  /** read trajectory dataset of ST-Tool format */
-  //  val trajDs = spark.read.parquet("datasets/traj_example_parquet_customized").as[T]
-  //  val trajRDD = trajDs.toRdd
-  //  println(trajRDD.count)
-  //
-  //  /** partition trajRDD and persist on disk */
-  //  val partitioner = new STRPartitioner(numPartitions, Some(0.2))
-  //  val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
-  //  val trajDsWithPid = partitionedRDDWithPId.toDs()
-  //  trajDsWithPid.show(5, truncate = false)
-  //  pInfo.toDisk("datasets/tmpMetadata")
-  ////  trajDsWithPid.toDisk("datasets/persisted_traj")
+    /** read trajectory dataset of ST-Tool format */
+    val trajDs = spark.read.parquet("datasets/traj_example_parquet_customized").as[T]
+    val trajRDD = trajDs.toRdd
+    println(trajRDD.count)
+
+    /** partition trajRDD and persist on disk */
+    val partitioner = new STRPartitioner(numPartitions, Some(0.2))
+    val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
+    val trajDsWithPid = partitionedRDDWithPId.toDs()
+    trajDsWithPid.show(5, truncate = false)
+    pInfo.toDisk("datasets/tmpMetadata")
+  //  trajDsWithPid.toDisk("datasets/persisted_traj")
   //
   //  /** load persisted partitioned trajRDD and metadata */
   //  /** usually not used since this is to load everything */
@@ -72,19 +72,19 @@ object WriteMetadataTest extends App {
   //    event.entries.head.value, event.data)).toDS()
   //  eventDs.write.parquet("event_example_parquet_customized")
 
-  /** read event dataset of ST-Tool format */
-  val eventDs = spark.read.parquet("datasets/event_example_parquet_customized").as[E]
-  val eventRDD = eventDs.toRdd
-  eventRDD.take(5).foreach(println)
-  println(eventRDD.count)
-  /** partition trajRDD and persist on disk */
-  val partitioner = new STRPartitioner(numPartitions, Some(0.2))
-  val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
-  println(pInfo.deep)
-  val EventDsWithPid = partitionedRDDWithPId.toDs()
-  EventDsWithPid.show(5, truncate = false)
-  pInfo.toDisk("datasets/eventMetadata")
-  EventDsWithPid.toDisk("datasets/persisted_event")
+//  /** read event dataset of ST-Tool format */
+//  val eventDs = spark.read.parquet("datasets/event_example_parquet_customized").as[E]
+//  val eventRDD = eventDs.toRdd
+//  eventRDD.take(5).foreach(println)
+//  println(eventRDD.count)
+//  /** partition trajRDD and persist on disk */
+//  val partitioner = new STRPartitioner(numPartitions, Some(0.2))
+//  val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
+//  println(pInfo.deep)
+//  //  val EventDsWithPid = partitionedRDDWithPId.toDs()
+//  //  EventDsWithPid.show(5, truncate = false)
+//  pInfo.toDisk("datasets/eventMetadata")
+//  partitionedRDDWithPId.toDisk("datasets/persisted_event")
 
   sc.stop()
 }

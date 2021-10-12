@@ -15,13 +15,14 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
                                                   partitioner: SpatialPartitioner) extends Serializable with Ss {
 
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
-    val metaData = LoadMetadata(metaDataDir)
+    val metaData = LoadPartitionInfo(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(sQuery)
         && x._3.intersects(tQuery)
         && x._4 > 0)
       .map(_._1)
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
+    if(dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
     spark.read.parquet(dirs: _*)
   }
 

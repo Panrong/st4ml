@@ -21,7 +21,7 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
     val totalSRange = sQuery.foldRight(Polygon.empty)(_.union(_).getEnvelope.asInstanceOf[Polygon])
     val totalTRange = Duration(tQuery.map(_.start).min, tQuery.map(_.end).max)
-    val metaData = LoadMetadata(metaDataDir)
+    val metaData = LoadPartitionInfo(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(totalSRange)
         && x._3.intersects(totalTRange)

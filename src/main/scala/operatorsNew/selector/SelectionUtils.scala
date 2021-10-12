@@ -55,7 +55,7 @@ object SelectionUtils {
     }
   }
 
-  object LoadMetadata extends Ss {
+  object LoadPartitionInfo extends Ss {
     def apply(dir: String): Array[(Long, Extent, Duration, Long)] = {
       import spark.implicits._
       val metadataDs = spark.read.json(dir).as[PartitionInfo]
@@ -97,7 +97,8 @@ object SelectionUtils {
     val spark: SparkSession = SparkSession.builder.getOrCreate()
   }
 
-  implicit class EventFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) extends Ss {
+
+  implicit class EventRDDFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) extends Ss {
 
     import spark.implicits._
 
@@ -114,7 +115,7 @@ object SelectionUtils {
     }
   }
 
-  implicit class PEventFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[(Event[S, V, D], Int)]) extends Ss {
+  implicit class PEventRDDFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[(Event[S, V, D], Int)]) extends Ss {
 
     import spark.implicits._
 
@@ -129,10 +130,14 @@ object SelectionUtils {
         EwP(shape, timeStamp, v, d, pId)
       }
     }.toDS
+
+    def toDisk(dataDir: String,
+               vFunc: V => Option[String] = x => if (x.isInstanceOf[None.type]) None else Some(x.toString),
+               dFunc: D => String = _.toString,
+               maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
   }
 
-
-  implicit class TrajFuncs[V: ClassTag, D: ClassTag](rdd: RDD[Trajectory[V, D]]) extends Ss {
+  implicit class TrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[Trajectory[V, D]]) extends Ss {
 
     import spark.implicits._
 
@@ -146,7 +151,7 @@ object SelectionUtils {
     }
   }
 
-  implicit class PTrajFuncs[V: ClassTag, D: ClassTag](rdd: RDD[(Trajectory[V, D], Int)]) extends Ss {
+  implicit class PTrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[(Trajectory[V, D], Int)]) extends Ss {
     // partitioned traj
 
     import spark.implicits._
@@ -160,6 +165,11 @@ object SelectionUtils {
 
       }.toDS
     }
+
+    def toDisk(dataDir: String,
+               vFunc: V => Option[String] = x => if (x.isInstanceOf[None.type]) None else Some(x.toString),
+               dFunc: D => String = x => x.toString,
+               maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
   }
 
   implicit class TrajDsFuncs(ds: Dataset[T]) extends Ss {
@@ -219,6 +229,18 @@ object SelectionUtils {
   }
 
   implicit class PEventDsFuncs(ds: Dataset[EwP]) extends Ss {
+    def toRdd: RDD[(Event[Geometry, Option[String], String], Int)] = {
+      ds.rdd.map(x => {
+        val shape = x.shape
+        val s = String2Geometry(shape)
+        val t = Duration(x.timeStamp(0), x.timeStamp(1))
+        val v = x.v
+        val d = x.d
+        val pId = x.pId
+        (Event(s, t, v, d), pId)
+      })
+    }
+
     def toDisk(dataDir: String, maxRecords: Int = 10000): Unit = {
       ds.toDF.write
         .option("maxRecordsPerFile", maxRecords)
