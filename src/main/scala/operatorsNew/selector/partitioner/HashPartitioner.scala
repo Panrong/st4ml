@@ -6,7 +6,7 @@ import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 import scala.util.Random
 
-class HashPartitioner(numPartitions: Int) extends SpatialPartitioner with Serializable {
+class HashPartitioner(override val numPartitions: Int) extends STPartitioner with Serializable {
   override var samplingRate: Option[Double] = None
   val multiplier = 16
 

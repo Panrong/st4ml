@@ -42,18 +42,15 @@ object WriteMetadataTest extends App {
   val trajDs = spark.read.parquet(fileName).as[T]
   val trajRDD = trajDs.toRdd
 
-
-  import spark.implicits._
-
   println(trajRDD.count)
 
   /** partition trajRDD and persist on disk */
-  val partitioner = new STRPartitioner(numPartitions, Some(0.2))
+  val partitioner = new TemporalPartitioner(numPartitions, Some(0.2))
   val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
   val trajDsWithPid = partitionedRDDWithPId.toDs()
-  trajDsWithPid.show(5, truncate = false)
+  trajDsWithPid.show(2, truncate = false)
   pInfo.toDisk(metadata)
-  //  trajDsWithPid.toDisk("datasets/persisted_traj")
+  trajDsWithPid.toDisk(res)
   //
   //  /** load persisted partitioned trajRDD and metadata */
   //  /** usually not used since this is to load everything */

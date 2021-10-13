@@ -1,16 +1,16 @@
 package operatorsNew.selector.partitioner
 
-import instances._
+import instances.{Geometry, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
 
-class STRPartitioner(numPartitions: Int,
+class STRPartitioner(override val numPartitions: Int,
                      override var samplingRate: Option[Double] = None,
                      threshold: Double = 0)
-  extends SpatialPartitioner {
+  extends STPartitioner {
   var partitionRange: Map[Int, Extent] = Map()
 
   def getPartitionRange[T <: Instance[_, _, _]](dataRDD: RDD[T]): Map[Int, Extent] = {
@@ -145,7 +145,7 @@ class STRPartitioner(numPartitions: Int,
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
-  override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+  override def partition[T <: Instance[_<:Geometry, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
@@ -159,7 +159,7 @@ class STRPartitioner(numPartitions: Int,
    *
    * @param dataRDD      : data RDD
    * @param partitionMap : Map (id -> range as rectangle)
-   * @tparam T : type of spatial dataRDD, extending geometry.Shape
+   * @tparam T : type of spatial dataRDD, extending geometry.Shapenum
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
   def partition[T <: Instance[_,_,_] : ClassTag](dataRDD: RDD[T], partitionMap: Map[Int, Extent]): RDD[T] = {
@@ -266,10 +266,7 @@ class STRPartitioner(numPartitions: Int,
       .map(_.swap)
   }
 
-  def getSamplingRate[T <: Instance[_, _, _]](dataRDD: RDD[T]): Double = {
-    val dataSize = dataRDD.count
-    max(min(1000 / dataSize.toDouble, 0.5), 100 * numPartitions / dataSize.toDouble)
-  }
+
 
 }
 

@@ -1,7 +1,7 @@
 package operatorsNew.selector
 
 import instances._
-import operatorsNew.selector.partitioner.SpatialPartitioner
+import operatorsNew.selector.partitioner.STPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
@@ -15,7 +15,7 @@ object SelectionUtils {
                            count: Long
                           )
 
-  implicit class InstanceFuncs[T <: Instance[_, _, _] : ClassTag](rdd: RDD[T]) extends Ss {
+  implicit class InstanceFuncs[T <: Instance[_<:Geometry, _, _] : ClassTag](rdd: RDD[T]) extends Ss {
     def calPartitionInfo(rdd: RDD[(T, Int)]): Array[(Int, Extent, Duration, Int)] = {
       rdd.mapPartitionsWithIndex {
         case (id, iter) =>
@@ -41,9 +41,9 @@ object SelectionUtils {
       }.collect
     }
 
-    def stPartition[P <: SpatialPartitioner : ClassTag](partitioner: P): RDD[T] = partitioner.partition(rdd)
+    def stPartition[P <: STPartitioner : ClassTag](partitioner: P): RDD[T] = partitioner.partition(rdd)
 
-    def stPartitionWithInfo[P <: SpatialPartitioner : ClassTag](partitioner: P): (RDD[(T, Int)], Array[PartitionInfo]) = {
+    def stPartitionWithInfo[P <: STPartitioner : ClassTag](partitioner: P): (RDD[(T, Int)], Array[PartitionInfo]) = {
       val partitionedRDD = partitioner.partition(rdd)
       val pRDD = partitionedRDD.mapPartitionsWithIndex {
         case (idx, partition) => partition.map(x => (x, idx))

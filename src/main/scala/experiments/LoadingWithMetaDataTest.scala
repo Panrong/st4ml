@@ -3,7 +3,7 @@ package experiments
 import instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
 import operatorsNew.converter.Event2TrajConverter
 import operatorsNew.selector.SelectionUtils.EwP
-import operatorsNew.selector.partitioner.{HashPartitioner, SpatialPartitioner}
+import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
 import org.apache.spark.sql.SparkSession
 import operatorsNew.selector.{MultiRangeSelector, Selector}
 import utils.Config

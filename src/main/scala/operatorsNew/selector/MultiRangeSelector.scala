@@ -1,7 +1,7 @@
 package operatorsNew.selector
 
 import instances.{Duration, Event, Geometry, Instance, Polygon, Trajectory}
-import operatorsNew.selector.partitioner.{HashPartitioner, SpatialPartitioner}
+import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
 import operatorsNew.selector.SelectionUtils._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 
 class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
                                                             tQuery: Array[Duration],
-                                                            partitioner: SpatialPartitioner) extends Serializable with Ss {
+                                                            partitioner: STPartitioner) extends Serializable with Ss {
   assert(sQuery.length == tQuery.length, "The lengths of sQuery and tQuery must equal.")
 
   type SttEvent = Event[Geometry, Option[String], String]
@@ -141,7 +141,7 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
 object MultiRangeSelector {
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
                                                tQuery: Array[Duration],
-                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+                                               partitioner: STPartitioner): MultiRangeSelector[I] =
     new MultiRangeSelector[I](sQuery, tQuery, partitioner)
 
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
@@ -150,11 +150,11 @@ object MultiRangeSelector {
     new MultiRangeSelector[I](sQuery, tQuery, new HashPartitioner(numPartitions))
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
                                                tQuery: Duration,
-                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+                                               partitioner: STPartitioner): MultiRangeSelector[I] =
     new MultiRangeSelector[I](sQuery, Array.fill(sQuery.length)(tQuery), partitioner)
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
                                                tQuery: Array[Duration],
-                                               partitioner: SpatialPartitioner): MultiRangeSelector[I] =
+                                               partitioner: STPartitioner): MultiRangeSelector[I] =
     new MultiRangeSelector[I](Array.fill(tQuery.length)(sQuery), tQuery, partitioner)
   def apply[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygon],
                                                tQuery: Duration,
