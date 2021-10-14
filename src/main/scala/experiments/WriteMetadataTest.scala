@@ -20,6 +20,7 @@ object WriteMetadataTest extends App {
   val numPartitions = args(1).toInt
   val res = args(2)
   val metadata = args(3)
+  val m = args(4)
 
   val spark = SparkSession.builder()
     .appName("MetaDataTest")
@@ -38,21 +39,22 @@ object WriteMetadataTest extends App {
   //  println(trajRDD.take(5).deep)
   //  trajRDD.toDs().write.parquet("datasets/traj_example_parquet_customized")
 
+  if (m == "traj") {
+    /** TEST TRAJ */
+    /** read trajectory dataset of ST-Tool format */
+    val trajDs = spark.read.parquet(fileName).as[T]
+    val trajRDD = trajDs.toRdd
+    println(trajRDD.count)
+    /** partition trajRDD and persist on disk */
+    val partitioner = new TSTRPartitioner(numPartitions, Some(1))
+    val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
+    val trajDsWithPid = partitionedRDDWithPId.toDs()
+    trajDsWithPid.show(2, truncate = false)
+    pInfo.toDisk(metadata)
+    trajDsWithPid.toDisk(res)
 
-//  /** TEST TRAJ */
-//  /** read trajectory dataset of ST-Tool format */
-//  val trajDs = spark.read.parquet(fileName).as[T]
-//  val trajRDD = trajDs.toRdd
-//  println(trajRDD.count)
-//  /** partition trajRDD and persist on disk */
-//  val partitioner = new TSTRPartitioner(numPartitions, Some(1))
-//  val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
-//  val trajDsWithPid = partitionedRDDWithPId.toDs()
-//  trajDsWithPid.show(2, truncate = false)
-//  pInfo.toDisk(metadata)
-//  trajDsWithPid.toDisk(res)
-//  /** END TEST TRAJ */
-
+    /** END TEST TRAJ */
+  }
   //
   //  /** load persisted partitioned trajRDD and metadata */
   //  /** usually not used since this is to load everything */
@@ -72,6 +74,7 @@ object WriteMetadataTest extends App {
   //    Array(event.entries.head.temporal.start, event.entries.head.temporal.end),
   //    event.entries.head.value, event.data)).toDS()
   //  eventDs.write.parquet("event_example_parquet_customized")
+  else if (m == "event") {
     /** TEST EVENT */
     /** read event dataset of ST-Tool format */
     val eventDs = spark.read.parquet(fileName).as[E]
@@ -81,10 +84,12 @@ object WriteMetadataTest extends App {
     /** partition trajRDD and persist on disk */
     val partitioner = new TSTRPartitioner(numPartitions, Some(0.2))
     val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
-      val EventDsWithPid = partitionedRDDWithPId.toDs()
-      EventDsWithPid.show(2, truncate = false)
+    val EventDsWithPid = partitionedRDDWithPId.toDs()
+    EventDsWithPid.show(2, truncate = false)
     pInfo.toDisk(metadata)
     partitionedRDDWithPId.toDisk(res)
+
     /** END TEST EVENT */
+  }
   sc.stop()
 }
