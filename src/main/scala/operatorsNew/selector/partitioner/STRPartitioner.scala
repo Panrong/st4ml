@@ -145,7 +145,7 @@ class STRPartitioner(override val numPartitions: Int,
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
-  override def partition[T <: Instance[_<:Geometry, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+  override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val partitionMap = getPartitionRange(dataRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)

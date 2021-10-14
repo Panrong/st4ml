@@ -10,7 +10,7 @@ abstract class STPartitioner extends Serializable {
   val numPartitions: Int
   var samplingRate: Option[Double]
 
-  def partition[T <: Instance[_<:Geometry, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T]
+  def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T]
 
   def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T]
 

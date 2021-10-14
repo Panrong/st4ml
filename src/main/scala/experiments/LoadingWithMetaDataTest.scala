@@ -20,7 +20,7 @@ object LoadingWithMetaDataTest {
     val metadata = args(2)
     val sRange = args(3).split(",").map(_.toDouble) // -8.446832 41.010165 -7.932837 41.381359
     val tRange = args(4).split(",").map(_.toLong)
-
+    val instance = args(5)
     val spark = SparkSession.builder()
       .appName("LoadingWithMetaDataTest")
       .master(Config.get("master"))
@@ -30,14 +30,15 @@ object LoadingWithMetaDataTest {
     sc.setLogLevel("ERROR")
 
     //    val wholeSpatial = Extent(-8.7, 41, -7.87, 41.42)
-    val wholeSpatial = Extent(-8.632746, 41.141376, -8.62668, 41.154516)
-
+    //    val wholeSpatial = Extent(-8.632746, 41.141376, -8.62668, 41.154516)
+    val wholeSpatial = Extent(sRange(0), sRange(1), sRange(2), sRange(3))
     //    val wholeTemporal = Duration(1372636800, 1404172800)
-    val wholeTemporal = Duration(1372636858, 1372637188)
-    type T = Event[Point, Option[String], String]
+    //    val wholeTemporal = Duration(1372636858, 1372637188)
+    val wholeTemporal = Duration(tRange(0), tRange(1))
+
     var t = nanoTime()
 
-    for (ratio <- List(0.2, 0.4, 0.6, 0.8, 1.0)) {
+    for (ratio <- List(0.4, 0.6, 0.8, 1.0)) {
       val start1 = nextDouble * (1 - sqrt(ratio))
       val start2 = nextDouble * (1 - sqrt(ratio))
       val start3 = nextDouble * (1 - ratio)
@@ -50,23 +51,43 @@ object LoadingWithMetaDataTest {
       )
       //      println(ratio, spatial.getCoordinates.deep, temporal)
       //      println(spatial.getArea / wholeSpatial.getArea, temporal.seconds / wholeTemporal.seconds.toDouble)
+      if (instance == "event") {
+        type EVT = Event[Point, Option[String], String]
 
-      /** event */
-      // metadata
-      t = nanoTime()
-      val selector = Selector[T](spatial, temporal, numPartitions)
-      val rdd1 = selector.select(fileName, metadata)
-      println(rdd1.count)
-      println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
+        // metadata
+        t = nanoTime()
+        val selector = Selector[EVT](spatial, temporal, numPartitions)
+        val rdd1 = selector.select(fileName, metadata)
+        println(rdd1.count)
+        println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
 
-      //no metadata
-      t = nanoTime()
-      import spark.implicits._
-      val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd
-      val rdd2 = eventRDD.filter(_.intersects(spatial, temporal))
-      println(rdd2.count)
-      println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
+        //no metadata
+        t = nanoTime()
+        import spark.implicits._
+        val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd
+        val rdd2 = eventRDD.filter(_.intersects(spatial, temporal))
+        println(rdd2.count)
+        println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
+      }
 
+      else if (instance == "traj") {
+        type TRAJ = Trajectory[Option[String], String]
+
+        // metadata
+        t = nanoTime()
+        val selector = Selector[TRAJ](spatial, temporal, numPartitions)
+        val rdd1 = selector.select(fileName, metadata)
+        println(rdd1.count)
+        println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
+
+        //no metadata
+        t = nanoTime()
+        import spark.implicits._
+        val trajRDD = spark.read.parquet(fileName).drop("pId").as[T].toRdd
+        val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
+        println(rdd2.count)
+        println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
+      }
       //    val multiSelector = new MultiRangeSelector[T](Array(spatial), Array(temporal), new HashPartitioner(numPartitions))
       //    val rdd1M = multiSelector.selectWithInfo(fileName, metadata)
       //    rdd1M.take(5).foreach(println)
