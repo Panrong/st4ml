@@ -15,7 +15,7 @@ object SelectionUtils {
                            count: Long
                           )
 
-  implicit class InstanceFuncs[T <: Instance[_<:Geometry, _, _] : ClassTag](rdd: RDD[T]) extends Ss {
+  implicit class InstanceFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[T]) {
     def calPartitionInfo(rdd: RDD[(T, Int)]): Array[(Int, Extent, Duration, Int)] = {
       rdd.mapPartitionsWithIndex {
         case (id, iter) =>
@@ -55,8 +55,9 @@ object SelectionUtils {
     }
   }
 
-  object LoadPartitionInfo extends Ss {
+  object LoadPartitionInfo {
     def apply(dir: String): Array[(Long, Extent, Duration, Long)] = {
+      val spark: SparkSession = SparkSession.builder.getOrCreate()
       import spark.implicits._
       val metadataDs = spark.read.json(dir).as[PartitionInfo]
       metadataDs.rdd.map(x => (x.pId,
@@ -67,8 +68,9 @@ object SelectionUtils {
     }
   }
 
-  implicit class PartitionInfoFunc(pInfo: Array[PartitionInfo]) extends Ss {
+  implicit class PartitionInfoFunc(pInfo: Array[PartitionInfo]) {
     def toDisk(metadataDir: String): Unit = {
+      val spark: SparkSession = SparkSession.builder.getOrCreate()
       val pInfoDf = spark.createDataFrame(pInfo)
       pInfoDf.coalesce(1).write.json(metadataDir)
     }
@@ -93,12 +95,13 @@ object SelectionUtils {
   case class TwP(points: Array[TrajPoint], d: String, pId: Int)
 
   /** rdd2Df conversion functions */
-  trait Ss {
+  //  trait Ss {
+  //    val spark: SparkSession = SparkSession.builder.getOrCreate()
+  //  }
+
+
+  implicit class EventRDDFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) {
     val spark: SparkSession = SparkSession.builder.getOrCreate()
-  }
-
-
-  implicit class EventRDDFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) extends Ss {
 
     import spark.implicits._
 
@@ -115,7 +118,8 @@ object SelectionUtils {
     }
   }
 
-  implicit class PEventRDDFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[(Event[S, V, D], Int)]) extends Ss {
+  implicit class PEventRDDFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[(Event[S, V, D], Int)]) {
+    val spark: SparkSession = SparkSession.builder.getOrCreate()
 
     import spark.implicits._
 
@@ -137,7 +141,8 @@ object SelectionUtils {
                maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
   }
 
-  implicit class TrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[Trajectory[V, D]]) extends Ss {
+  implicit class TrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[Trajectory[V, D]]) {
+    val spark: SparkSession = SparkSession.builder.getOrCreate()
 
     import spark.implicits._
 
@@ -151,8 +156,9 @@ object SelectionUtils {
     }
   }
 
-  implicit class PTrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[(Trajectory[V, D], Int)]) extends Ss {
+  implicit class PTrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[(Trajectory[V, D], Int)]) {
     // partitioned traj
+    val spark: SparkSession = SparkSession.builder.getOrCreate()
 
     import spark.implicits._
 
@@ -172,7 +178,7 @@ object SelectionUtils {
                maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
   }
 
-  implicit class TrajDsFuncs(ds: Dataset[T]) extends Ss {
+  implicit class TrajDsFuncs(ds: Dataset[T]) {
     def toRdd: RDD[Trajectory[Option[String], String]] = {
       ds.rdd.map(traj => {
         val data = traj.d
@@ -193,7 +199,7 @@ object SelectionUtils {
     }
   }
 
-  implicit class PTrajDsFuncs(ds: Dataset[TwP]) extends Ss {
+  implicit class PTrajDsFuncs(ds: Dataset[TwP]) {
     def toRdd: RDD[(Trajectory[Option[String], String], Int)] = {
       ds.rdd.map(trajWId => {
         val data = trajWId.d
@@ -215,7 +221,7 @@ object SelectionUtils {
     }
   }
 
-  implicit class EventDsFuncs(ds: Dataset[E]) extends Ss {
+  implicit class EventDsFuncs(ds: Dataset[E]) {
     def toRdd: RDD[Event[Geometry, Option[String], String]] = {
       ds.rdd.map(x => {
         val shape = x.shape
@@ -228,7 +234,7 @@ object SelectionUtils {
     }
   }
 
-  implicit class PEventDsFuncs(ds: Dataset[EwP]) extends Ss {
+  implicit class PEventDsFuncs(ds: Dataset[EwP]) {
     def toRdd: RDD[(Event[Geometry, Option[String], String], Int)] = {
       ds.rdd.map(x => {
         val shape = x.shape

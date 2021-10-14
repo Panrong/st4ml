@@ -1,9 +1,8 @@
 package operatorsNew.selector.partitioner
 
 import instances.{Duration, Extent, Instance}
-import operatorsNew.selector.SelectionUtils.Ss
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, functions}
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
 import scala.collection.mutable
 import scala.math.{floor, sqrt}
@@ -13,8 +12,8 @@ class TSTRPartitioner(override val numPartitions: Int,
                       override var samplingRate: Option[Double] = None,
                       ref: String = "start",
                       threshold: Double = 0)
-  extends STPartitioner with Ss {
-
+  extends STPartitioner {
+  val spark: SparkSession = SparkSession.builder.getOrCreate()
   val tNumPartition: Int = sqrt(numPartitions).toInt
   val sNumPartition: Int = numPartitions / tNumPartition
 

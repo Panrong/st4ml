@@ -1,16 +1,17 @@
 package operatorsNew.selector.partitioner
 
 import instances.{Duration, Instance}
-import operatorsNew.selector.SelectionUtils.Ss
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 
 import scala.reflect.ClassTag
 
 class TemporalPartitioner(override val numPartitions: Int,
                           override var samplingRate: Option[Double] = None,
-                          ref: String = "start") extends STPartitioner with Ss {
+                          ref: String = "start") extends STPartitioner {
 
   var slots = new Array[Duration](0)
+  val spark: SparkSession = SparkSession.builder.getOrCreate()
 
   def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))

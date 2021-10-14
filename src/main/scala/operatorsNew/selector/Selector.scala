@@ -4,7 +4,7 @@ import instances._
 import operatorsNew.selector.SelectionUtils._
 import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.locationtech.jts.geom.Polygon
 
 import scala.collection.mutable
@@ -12,8 +12,8 @@ import scala.reflect.ClassTag
 
 class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
                                                   tQuery: Duration,
-                                                  partitioner: STPartitioner) extends Serializable with Ss {
-
+                                                  partitioner: STPartitioner) extends Serializable  {
+  val spark: SparkSession = SparkSession.builder.getOrCreate()
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
     val metaData = LoadPartitionInfo(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
@@ -43,6 +43,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {
+
     import spark.implicits._
     val pInstanceDf = loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.head(1).head.get(0) match {
