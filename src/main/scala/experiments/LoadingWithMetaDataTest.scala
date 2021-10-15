@@ -64,7 +64,7 @@ object LoadingWithMetaDataTest {
         //no metadata
         t = nanoTime()
         import spark.implicits._
-        val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd
+        val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd.repartition(numPartitions)
         val rdd2 = eventRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
@@ -83,7 +83,7 @@ object LoadingWithMetaDataTest {
         //no metadata
         t = nanoTime()
         import spark.implicits._
-        val trajRDD = spark.read.parquet(fileName).drop("pId").as[T].toRdd
+        val trajRDD = spark.read.parquet(fileName).drop("pId").as[T].toRdd.repartition(numPartitions)
         val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
