@@ -30,6 +30,7 @@ object LoadingWithMetaDataTest {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+    val random = new scala.util.Random(1)
 
     //    val wholeSpatial = Extent(-8.7, 41, -7.87, 41.42)
     //    val wholeSpatial = Extent(-8.632746, 41.141376, -8.62668, 41.154516)
@@ -42,9 +43,9 @@ object LoadingWithMetaDataTest {
 
 
     println(ratio)
-    val start1 = nextDouble * (1 - sqrt(ratio))
-    val start2 = nextDouble * (1 - sqrt(ratio))
-    val start3 = nextDouble * (1 - ratio)
+    val start1 = random.nextDouble * (1 - sqrt(ratio))
+    val start2 = random.nextDouble * (1 - sqrt(ratio))
+    val start3 = random.nextDouble * (1 - ratio)
     val spatial = Extent(wholeSpatial.xMin + start1 * (wholeSpatial.xMax - wholeSpatial.xMin),
       wholeSpatial.yMin + start2 * (wholeSpatial.yMax - wholeSpatial.yMin),
       wholeSpatial.xMin + (start1 + sqrt(ratio)) * (wholeSpatial.xMax - wholeSpatial.xMin),
