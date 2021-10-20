@@ -39,6 +39,7 @@ object LoadingWithMetaDataTest {
     var t = nanoTime()
 
     for (ratio <- List(0.4, 0.6, 0.8, 1.0)) {
+      println(ratio)
       val start1 = nextDouble * (1 - sqrt(ratio))
       val start2 = nextDouble * (1 - sqrt(ratio))
       val start3 = nextDouble * (1 - ratio)
@@ -64,10 +65,11 @@ object LoadingWithMetaDataTest {
         //no metadata
         t = nanoTime()
         import spark.implicits._
-        val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd.repartition(numPartitions)
+        val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd//.repartition(numPartitions)
         val rdd2 = eventRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
+        eventRDD.unpersist()
       }
 
       else if (instance == "traj") {
@@ -83,7 +85,8 @@ object LoadingWithMetaDataTest {
         //no metadata
         t = nanoTime()
         import spark.implicits._
-        val trajRDD = spark.read.parquet(fileName).drop("pId").as[T].toRdd.repartition(numPartitions)
+        val trajRDD = spark.read.parquet(fileName).drop("pId").as[T].toRdd//.repartition(numPartitions)
+        println(s"no metadata: ${trajRDD.count}")
         val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")

@@ -51,7 +51,8 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       case _: mutable.WrappedArray[_] => pInstanceDf.as[T].toRdd
       case _ => throw new ClassCastException("instance type not supported.")
     }
-    pInstanceRDD.stPartition(partitioner)
+    println(s"metadata: ${pInstanceRDD.count}")
+    pInstanceRDD//.stPartition(partitioner)
       .filter(_.intersects(sQuery, tQuery))
       .map(_.asInstanceOf[I])
   }
