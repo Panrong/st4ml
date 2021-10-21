@@ -56,7 +56,7 @@ object SelectionUtils {
   }
 
   object LoadPartitionInfo {
-    def apply(dir: String): Array[(Long, Extent, Duration, Long)] = {
+    def apply(dir: String): RDD[(Long, Extent, Duration, Long)] = {
       val spark: SparkSession = SparkSession.builder.getOrCreate()
       import spark.implicits._
       val metadataDs = spark.read.json(dir).as[PartitionInfo]
@@ -64,7 +64,7 @@ object SelectionUtils {
         Extent(x.spatial(0), x.spatial(1), x.spatial(2), x.spatial(3)), Duration(x.temporal(0),
         x.temporal(1)),
         x.count)
-      ).collect
+      )
     }
   }
 

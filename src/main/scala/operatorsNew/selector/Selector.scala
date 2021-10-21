@@ -12,17 +12,18 @@ import scala.reflect.ClassTag
 
 class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
                                                   tQuery: Duration,
-                                                  partitioner: STPartitioner) extends Serializable  {
+                                                  partitioner: STPartitioner) extends Serializable {
   val spark: SparkSession = SparkSession.builder.getOrCreate()
+
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
     val metaData = LoadPartitionInfo(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(sQuery)
         && x._3.intersects(tQuery)
         && x._4 > 0)
-      .map(_._1)
+      .map(_._1).collect
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
-    if(dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
+    if (dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
     spark.read.parquet(dirs: _*)
   }
 
@@ -51,8 +52,8 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       case _: mutable.WrappedArray[_] => pInstanceDf.as[T].toRdd
       case _ => throw new ClassCastException("instance type not supported.")
     }
-//    println(s"metadata: ${pInstanceRDD.count}")
-    pInstanceRDD//.stPartition(partitioner)
+    //    println(s"metadata: ${pInstanceRDD.count}")
+    pInstanceRDD //.stPartition(partitioner)
       .filter(_.intersects(sQuery, tQuery))
       .map(_.asInstanceOf[I])
   }
