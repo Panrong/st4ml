@@ -95,7 +95,7 @@ object LoadingWithMetaDataTest {
         import spark.implicits._
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
-        println(s"no metadata: ${trajRDD.count}")
+//        println(s"no metadata: ${trajRDD.count}")
         val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
