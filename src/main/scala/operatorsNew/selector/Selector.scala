@@ -4,6 +4,7 @@ import instances._
 import operatorsNew.selector.SelectionUtils._
 import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.locationtech.jts.geom.Polygon
 
@@ -24,8 +25,9 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       .map(_._1).collect
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
     if (dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
-    spark.read.parquet(dirs: _*)
-  }
+    //    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
+    //    spark.read.parquet(dirs: _*)
+    spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions:_*))  }
 
   def selectTraj(dataDir: String, metaDataDir: String): RDD[Trajectory[Option[String], String]] = {
     import spark.implicits._
