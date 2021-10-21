@@ -4,6 +4,7 @@ import instances.{Duration, Event, Geometry, Instance, Polygon, Trajectory}
 import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
 import operatorsNew.selector.SelectionUtils._
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.collection.mutable
@@ -27,8 +28,9 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
         && x._3.intersects(totalTRange)
         && x._4 > 0)
       .map(_._1).collect
-    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
-    spark.read.parquet(dirs: _*)
+//    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
+//    spark.read.parquet(dirs: _*)
+    spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions:_*))
   }
 
   def selectEvent(dataDir: String, metaDataDir: String): RDD[SttEvent] = {
