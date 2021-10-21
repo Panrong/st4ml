@@ -26,7 +26,7 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
       x._2.intersects(totalSRange)
         && x._3.intersects(totalTRange)
         && x._4 > 0)
-      .map(_._1)
+      .map(_._1).collect
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
     spark.read.parquet(dirs: _*)
   }
