@@ -8,6 +8,7 @@ import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.locationtech.jts.geom.Polygon
 
+import java.lang.System.nanoTime
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
@@ -17,17 +18,21 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
   val spark: SparkSession = SparkSession.builder.getOrCreate()
 
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
-    val metaData = LoadPartitionInfo(metaDataDir)
+    val t = nanoTime
+//    val metaData = LoadPartitionInfo(metaDataDir).collect
+    val metaData = LoadPartitionInfoLocal(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(sQuery)
         && x._3.intersects(tQuery)
         && x._4 > 0)
-      .map(_._1).collect
+      .map(_._1)
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
+    println(s"get related partitions: ${(nanoTime-t) * 1e-9}")
     if (dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
     //    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
     //    spark.read.parquet(dirs: _*)
-    spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions:_*))  }
+    spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions:_*))
+  }
 
   def selectTraj(dataDir: String, metaDataDir: String): RDD[Trajectory[Option[String], String]] = {
     import spark.implicits._

@@ -5,6 +5,7 @@ import operatorsNew.selector.partitioner.STPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 object SelectionUtils {
@@ -65,6 +66,23 @@ object SelectionUtils {
         x.temporal(1)),
         x.count)
       )
+    }
+  }
+
+  object LoadPartitionInfoLocal {
+    def apply(dir: String): Array[(Long, Extent, Duration, Long)] = {
+      import scala.util.parsing.json._
+      val f = scala.io.Source.fromFile(dir)
+      f.getLines.map(line =>  {
+        val map = JSON.parseFull(line).get.asInstanceOf[Map[String, Any]]
+        val pId = map("pId").asInstanceOf[Double].toLong
+        val coordinates = map("spatial").asInstanceOf[List[Double]]
+        val spatial = new Extent(coordinates.head, coordinates(1), coordinates(2), coordinates(3))
+        val t = map("temporal").asInstanceOf[List[Double]].map(_.toLong)
+        val temporal = new Duration(t.head, t(1))
+        val count = map("count").asInstanceOf[Double].toLong
+        (pId, spatial, temporal, count)
+      }).toArray
     }
   }
 

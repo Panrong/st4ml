@@ -54,7 +54,7 @@ object LoadingWithMetaDataTest {
       wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong
     )
     //      println(ratio, spatial.getCoordinates.deep, temporal)
-    //      println(spatial.getArea / wholeSpatial.getArea, temporal.seconds / wholeTemporal.seconds.toDouble)
+    //          println(spatial.getArea / wholeSpatial.getArea, temporal.seconds / wholeTemporal.seconds.toDouble)
     if (instance == "event") {
       type EVT = Event[Point, Option[String], String]
       if (useMetadata) {
