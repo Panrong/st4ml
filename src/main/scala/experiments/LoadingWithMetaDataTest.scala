@@ -8,6 +8,8 @@ import org.apache.spark.sql.SparkSession
 import operatorsNew.selector.{MultiRangeSelector, Selector}
 import utils.Config
 import operatorsNew.selector.SelectionUtils._
+import org.apache.spark.rdd.RDD
+
 import scala.util.Random.nextDouble
 import java.lang.System.nanoTime
 import scala.math.sqrt
@@ -93,10 +95,12 @@ object LoadingWithMetaDataTest {
       // no metadata
       else {
         t = nanoTime()
-        import spark.implicits._
-        val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
-        val trajRDD = trajDf.toRdd //.repartition(numPartitions)
-        //        println(s"no metadata total: ${trajRDD.count}")
+        //        import spark.implicits._
+        //        val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
+        //        val trajRDD = trajDf.toRdd //.repartition(numPartitions)
+        //        //        println(s"no metadata total: ${trajRDD.count}")
+
+        val trajRDD = readTrajJson(fileName)
         val partitioner = new HashPartitioner(numPartitions)
         val rdd2 = partitioner.partition(trajRDD).filter(_.intersects(spatial, temporal))
         println(rdd2.count)
@@ -104,5 +108,42 @@ object LoadingWithMetaDataTest {
       }
     }
     spark.stop()
+  }
+
+  case class P(
+                latitude: String,
+                longitude: String,
+                timestamp: String
+              )
+
+  case class TmpTraj(
+                      id: String,
+                      points: Array[P]
+                    )
+
+  def readTrajJson(fileName: String): RDD[Trajectory[None.type, String]] = {
+
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    val df = spark.read.option("multiline", "true").json(fileName)
+    df.as[TmpTraj].rdd
+      .filter(tmpTraj => tmpTraj.points.length != 0)
+      .map(tmpTraj => {
+        val traj = tmpTraj.points.length match {
+          case 0 => Trajectory(Array(Point(0, 0), Point(0, 0)), Array(Duration(-1), Duration(-1)), Array(None, None), tmpTraj.id)
+          case 1 => Trajectory(Array(Point(0, 0), Point(0, 0)), Array(Duration(-1), Duration(-1)), Array(None, None), tmpTraj.id)
+          case _ =>
+            try {
+              val points = tmpTraj.points.map(p =>
+                Point(p.longitude.toDouble, p.latitude.toDouble))
+              val durs = tmpTraj.points.map(p => Duration(p.timestamp.toLong))
+              Trajectory(points, durs, Array(None), tmpTraj.id)
+            }
+            catch {
+              case _: Throwable => Trajectory(Array(Point(0, 0), Point(0, 0)), Array(Duration(-1), Duration(-1)), Array(None, None), tmpTraj.id)
+            }
+        }
+        traj
+      })
   }
 }
