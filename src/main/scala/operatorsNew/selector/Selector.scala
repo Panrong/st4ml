@@ -21,13 +21,15 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
     val t = nanoTime
 //    val metaData = LoadPartitionInfo(metaDataDir).collect
     val metaData = LoadPartitionInfoLocal(metaDataDir)
+    println(s"redundancy ${metaData.map(_._4).sum}")
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(sQuery)
         && x._3.intersects(tQuery)
         && x._4 > 0)
       .map(_._1)
+    println(s"related partitions: ${relatedPartitions.length}")
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
-    println(s"get related partitions: ${(nanoTime-t) * 1e-9}")
+//    println(s"get related partitions: ${(nanoTime-t) * 1e-9}")
     if (dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
     //    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
     //    spark.read.parquet(dirs: _*)
