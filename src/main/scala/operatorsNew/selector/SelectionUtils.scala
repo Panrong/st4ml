@@ -44,8 +44,10 @@ object SelectionUtils {
 
     def stPartition[P <: STPartitioner : ClassTag](partitioner: P): RDD[T] = partitioner.partition(rdd)
 
-    def stPartitionWithInfo[P <: STPartitioner : ClassTag](partitioner: P): (RDD[(T, Int)], Array[PartitionInfo]) = {
-      val partitionedRDD = partitioner.partition(rdd)
+    def stPartitionWithInfo[P <: STPartitioner : ClassTag](partitioner: P,
+                                                           duplicate: Boolean = false): (RDD[(T, Int)], Array[PartitionInfo]) = {
+      val partitionedRDD = if (duplicate) partitioner.partitionWDup(rdd)
+      else partitioner.partition(rdd)
       val pRDD = partitionedRDD.mapPartitionsWithIndex {
         case (idx, partition) => partition.map(x => (x, idx))
       }
@@ -73,7 +75,7 @@ object SelectionUtils {
     def apply(dir: String): Array[(Long, Extent, Duration, Long)] = {
       import scala.util.parsing.json._
       val f = scala.io.Source.fromFile(dir)
-      f.getLines.map(line =>  {
+      f.getLines.map(line => {
         val map = JSON.parseFull(line).get.asInstanceOf[Map[String, Any]]
         val pId = map("pId").asInstanceOf[Double].toLong
         val coordinates = map("spatial").asInstanceOf[List[Double]]

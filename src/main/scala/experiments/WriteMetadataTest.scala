@@ -40,6 +40,7 @@ object WriteMetadataTest extends App {
   //  trajRDD.toDs().write.parquet("datasets/traj_example_parquet_customized")
 
   if (m == "traj") {
+
     /** TEST TRAJ */
     /** read trajectory dataset of ST-Tool format */
     val trajDs = spark.read.parquet(fileName).as[T]
@@ -47,7 +48,7 @@ object WriteMetadataTest extends App {
     println(trajRDD.count)
     /** partition trajRDD and persist on disk */
     val partitioner = new TSTRPartitioner(numPartitions, Some(1))
-    val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
+    val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner, true)
     val trajDsWithPid = partitionedRDDWithPId.toDs()
     trajDsWithPid.show(2, truncate = false)
     pInfo.toDisk(metadata)

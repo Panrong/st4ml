@@ -96,6 +96,7 @@ object LoadingWithMetaDataTest {
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
         //        println(s"no metadata total: ${trajRDD.count}")
+
         val partitioner = new HashPartitioner(numPartitions)
         val partitionedRDD = partitioner.partition(trajRDD)
         partitionedRDD.count
