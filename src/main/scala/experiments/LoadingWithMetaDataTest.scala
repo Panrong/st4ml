@@ -85,12 +85,9 @@ object LoadingWithMetaDataTest {
       type TRAJ = Trajectory[Option[String], String]
 
       if (useMetadata) {
-        t = nanoTime()
         // metadata
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
         val rdd1 = selector.select(fileName, metadata)
-        println(rdd1.count)
-        println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
       }
       // no metadata
       else {
@@ -99,11 +96,14 @@ object LoadingWithMetaDataTest {
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
         //        println(s"no metadata total: ${trajRDD.count}")
-
         val partitioner = new HashPartitioner(numPartitions)
-        val rdd2 = partitioner.partition(trajRDD).filter(_.intersects(spatial, temporal))
+        val partitionedRDD = partitioner.partition(trajRDD)
+        partitionedRDD.count
+        println(s"data loading：${(nanoTime() - t) * 1e-9} s.")
+        t = nanoTime()
+        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
-        println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
+        println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
     }
     spark.stop()

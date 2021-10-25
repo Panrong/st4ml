@@ -53,7 +53,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {
-
+    var t = nanoTime()
     import spark.implicits._
     val pInstanceDf = loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.head(1).head.get(0) match {
@@ -61,10 +61,17 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       case _: mutable.WrappedArray[_] => pInstanceDf.as[T].toRdd
       case _ => throw new ClassCastException("instance type not supported.")
     }
+    val partitionedRDD = pInstanceRDD.stPartition(partitioner)
     //    println(s"metadata: ${pInstanceRDD.count}")
-    pInstanceRDD //.stPartition(partitioner)
+    partitionedRDD.count
+    println(s"data loading：${(nanoTime() - t) * 1e-9} s.")
+    t = nanoTime()
+    val rdd1 = partitionedRDD
       .filter(_.intersects(sQuery, tQuery))
       .map(_.asInstanceOf[I])
+    println(rdd1.count)
+    println(s"metadata selection time: ${(nanoTime() - t) * 1e-9} s.")
+    rdd1
   }
 }
 
