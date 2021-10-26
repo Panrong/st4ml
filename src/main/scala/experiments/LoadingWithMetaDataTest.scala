@@ -89,8 +89,8 @@ object LoadingWithMetaDataTest {
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
         import instances.GeometryImplicits.withExtraPointOps
         val t = nanoTime()
-        val rdd1 = selector.selectTraj(fileName, metadata).map(traj =>
-          traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
+        val rdd1 = selector.selectTraj(fileName, metadata)
+        //          .map(traj => traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
         println(rdd1.count)
         println(s"total time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
@@ -101,15 +101,12 @@ object LoadingWithMetaDataTest {
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
         //        println(s"no metadata total: ${trajRDD.count}")
-
         val partitioner = new HashPartitioner(numPartitions)
         val partitionedRDD = partitioner.partition(trajRDD)
         partitionedRDD.count
-        println(s"data loading：${(nanoTime() - t) * 1e-9} s.")
-        t = nanoTime()
         import instances.GeometryImplicits.withExtraPointOps
-        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal)).map(traj =>
-          traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
+        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal))
+        //          .map(traj => traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
         println(rdd2.count)
         println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
