@@ -64,7 +64,7 @@ object LoadingWithMetaDataTest {
         // metadata
         t = nanoTime()
         val selector = Selector[EVT](spatial, temporal, numPartitions)
-        val rdd1 = selector.select(fileName, metadata)
+        val rdd1 = selector.selectEvent(fileName, metadata)
         println(rdd1.count)
         println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
       }
@@ -89,10 +89,10 @@ object LoadingWithMetaDataTest {
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
         import instances.GeometryImplicits.withExtraPointOps
         val t = nanoTime()
-        val rdd1 = selector.select(fileName, metadata).map(traj =>
+        val rdd1 = selector.selectTraj(fileName, metadata).map(traj =>
           traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
-        rdd1.collect()
-        println(s" total time: ${(nanoTime() - t) * 1e-9} s.\n")
+        println(rdd1.count)
+        println(s"total time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
       // no metadata
       else {
