@@ -87,7 +87,12 @@ object LoadingWithMetaDataTest {
       if (useMetadata) {
         // metadata
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-        val rdd1 = selector.select(fileName, metadata)
+        import instances.GeometryImplicits.withExtraPointOps
+        val t = nanoTime()
+        val rdd1 = selector.select(fileName, metadata).map(traj =>
+          traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
+        rdd1.collect()
+        println(s" total time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
       // no metadata
       else {
@@ -102,7 +107,9 @@ object LoadingWithMetaDataTest {
         partitionedRDD.count
         println(s"data loading：${(nanoTime() - t) * 1e-9} s.")
         t = nanoTime()
-        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal))
+        import instances.GeometryImplicits.withExtraPointOps
+        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal)).map(traj =>
+          traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
         println(rdd2.count)
         println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
