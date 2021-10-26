@@ -1,10 +1,11 @@
 package experiments
 
-import instances.{Duration, Point, Trajectory}
+import instances.{Duration, Extent, Point, Trajectory}
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
 import java.lang.System.nanoTime
+import scala.math.sqrt
 
 object LoadingTest extends App {
   var spark = SparkSession.builder()
@@ -18,12 +19,28 @@ object LoadingTest extends App {
   val fileName = args(0)
   val m = args(1)
   var t = nanoTime
+  val sRange = args(2).split(",").map(_.toDouble) // -8.446832 41.010165 -7.932837 41.381359
+  val tRange = args(3).split(",").map(_.toLong)
+  val ratio = args(4).toDouble
+  val wholeSpatial = Extent(sRange(0), sRange(1), sRange(2), sRange(3))
+  val wholeTemporal = Duration(tRange(0), tRange(1))
+  println(ratio)
+  val random = new scala.util.Random(1)
+
+  val start1 = random.nextDouble * (1 - sqrt(ratio))
+  val start2 = random.nextDouble * (1 - sqrt(ratio))
+  val start3 = random.nextDouble * (1 - ratio)
+  val spatial = Extent(wholeSpatial.xMin + start1 * (wholeSpatial.xMax - wholeSpatial.xMin),
+    wholeSpatial.yMin + start2 * (wholeSpatial.yMax - wholeSpatial.yMin),
+    wholeSpatial.xMin + (start1 + sqrt(ratio)) * (wholeSpatial.xMax - wholeSpatial.xMin),
+    wholeSpatial.yMin + (start2 + sqrt(ratio)) * (wholeSpatial.yMax - wholeSpatial.yMin)).toPolygon
+  val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
+    wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
   if (m == "csv") {
     val df = spark.read.option("header", "true")
       .option("numPartitions", 256)
       .csv(fileName)
 
-    val samplingRate = 15
     val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4)
 
     val resRDD = trajRDD.map(row => {
@@ -39,10 +56,14 @@ object LoadingTest extends App {
         Trajectory(points, ts, points.indices.map(_ => None).toArray, tripID)
       }
       catch {
-        case _: Throwable => Trajectory(Array(Point(0, 0), Point(0, 0)), Array(Duration(0), Duration(0)), Array(None, None), "")
+        case _: Throwable =>
+          Trajectory(Array(Point(0, 0), Point(0, 0)), Array(Duration(0), Duration(0)), Array(None, None), "")
       }
     })
     println(resRDD.count)
+
+    val filteredRDD = resRDD.filter(_.intersects(spatial, temporal))
+    println(filteredRDD.count)
     println((nanoTime - t) * 1e-9)
   }
   else {
