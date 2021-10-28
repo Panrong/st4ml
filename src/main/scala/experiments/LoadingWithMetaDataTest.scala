@@ -97,7 +97,7 @@ object LoadingWithMetaDataTest {
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
         val partitioner = new HashPartitioner(numPartitions)
-        val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
+        val rdd2 = partitioner.partition(trajRDD.filter(_.intersects(spatial, temporal)))
         println(rdd2.count)
         println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
