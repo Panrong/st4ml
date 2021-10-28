@@ -26,17 +26,17 @@ object LoadingTest extends App {
   val wholeTemporal = Duration(tRange(0), tRange(1))
   println(ratio)
   val random = new scala.util.Random(1)
-  val start1 = random.nextDouble * (1 - sqrt(ratio))
-  val start2 = random.nextDouble * (1 - sqrt(ratio))
-  val start3 = random.nextDouble * (1 - ratio)
-  val spatial = Extent(wholeSpatial.xMin + start1 * (wholeSpatial.xMax - wholeSpatial.xMin),
-    wholeSpatial.yMin + start2 * (wholeSpatial.yMax - wholeSpatial.yMin),
-    wholeSpatial.xMin + (start1 + sqrt(ratio)) * (wholeSpatial.xMax - wholeSpatial.xMin),
-    wholeSpatial.yMin + (start2 + sqrt(ratio)) * (wholeSpatial.yMax - wholeSpatial.yMin)).toPolygon
-  val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
-    wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
 
   if (m == "csv") {
+    val start1 = random.nextDouble * (1 - sqrt(ratio))
+    val start2 = random.nextDouble * (1 - sqrt(ratio))
+    val start3 = random.nextDouble * (1 - ratio)
+    val spatial = Extent(wholeSpatial.xMin + start1 * (wholeSpatial.xMax - wholeSpatial.xMin),
+      wholeSpatial.yMin + start2 * (wholeSpatial.yMax - wholeSpatial.yMin),
+      wholeSpatial.xMin + (start1 + sqrt(ratio)) * (wholeSpatial.xMax - wholeSpatial.xMin),
+      wholeSpatial.yMin + (start2 + sqrt(ratio)) * (wholeSpatial.yMax - wholeSpatial.yMin)).toPolygon
+    val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
+      wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
     val df = spark.read.option("header", "true")
       .option("numPartitions", 256)
       .csv(fileName)
