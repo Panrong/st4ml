@@ -2,6 +2,7 @@ package preprocessing
 
 import org.apache.spark.sql.SparkSession
 import geometry.{Point, Trajectory}
+import instances.Duration
 import org.apache.spark.rdd.RDD
 
 object ReadTrajJsonFile {
@@ -70,6 +71,26 @@ object ReadTrajJsonFile {
         Trajectory(tripID, startTime, points)
       })
     }
+  }
 
+  def select(fileName: String, num: Int = Double.PositiveInfinity.toInt): RDD[instances.Trajectory[None.type, String]] = {
+    val spark = SparkSession.builder().getOrCreate()
+    val samplingRate = 15
+    val inputDF = spark.read.json(fileName).limit(num)
+    println(inputDF.count())
+    inputDF.createOrReplaceTempView("jsonTable")
+    import spark.implicits._
+
+    val trajDF = spark.sql("SELECT geometry.coordinates, id, properties.TIMESTAMP FROM jsonTable")
+    val trajDS = trajDF.as[Traj]
+    trajDS.rdd.map(x => {
+      val tripID = x.id
+      val startTime = x.TIMESTAMP.toLong
+      val ts = x.coordinates.indices.map(x => {
+        Duration(x * samplingRate + startTime)
+      }).toArray
+      val points = x.coordinates.map(x => instances.Point(x(0), x(1)))
+      instances.Trajectory(points, ts, ts.map(_ => None), tripID)
+    })
   }
 }

@@ -2,6 +2,7 @@ package experiments
 
 import instances.{Duration, Extent, Point, Trajectory}
 import org.apache.spark.sql.SparkSession
+import preprocessing.ReadTrajFile
 import utils.Config
 
 import java.lang.System.nanoTime
@@ -28,6 +29,8 @@ object LoadingTest extends App {
   val random = new scala.util.Random(1)
 
   if (m == "csv") {
+    val wholeSpatial = Extent(sRange(0), sRange(1), sRange(2), sRange(3))
+    val wholeTemporal = Duration(tRange(0), tRange(1))
     val start1 = random.nextDouble * (1 - sqrt(ratio))
     val start2 = random.nextDouble * (1 - sqrt(ratio))
     val start3 = random.nextDouble * (1 - ratio)
@@ -38,7 +41,7 @@ object LoadingTest extends App {
     val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
       wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
     val df = spark.read.option("header", "true")
-      .option("numPartitions", 256)
+      //      .option("numPartitions", 256)
       .csv(fileName)
 
     val trajRDD = df.rdd.filter(row => row(8).toString.split(',').length >= 4)
@@ -60,6 +63,24 @@ object LoadingTest extends App {
     })
 
     val filteredRDD = resRDD.filter(_.isDefined).filter(_.get.intersects(spatial, temporal))
+    println(filteredRDD.count)
+    println((nanoTime - t) * 1e-9)
+  }
+  else if(m =="geojson") {
+    val wholeSpatial = Extent(sRange(0), sRange(1), sRange(2), sRange(3))
+    val wholeTemporal = Duration(tRange(0), tRange(1))
+    val start1 = random.nextDouble * (1 - sqrt(ratio))
+    val start2 = random.nextDouble * (1 - sqrt(ratio))
+    val start3 = random.nextDouble * (1 - ratio)
+    val spatial = Extent(wholeSpatial.xMin + start1 * (wholeSpatial.xMax - wholeSpatial.xMin),
+      wholeSpatial.yMin + start2 * (wholeSpatial.yMax - wholeSpatial.yMin),
+      wholeSpatial.xMin + (start1 + sqrt(ratio)) * (wholeSpatial.xMax - wholeSpatial.xMin),
+      wholeSpatial.yMin + (start2 + sqrt(ratio)) * (wholeSpatial.yMax - wholeSpatial.yMin)).toPolygon
+    val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
+      wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
+    import preprocessing.ReadTrajJsonFile.select
+    val resRDD = select(fileName)
+    val filteredRDD = resRDD.filter(_.intersects(spatial, temporal))
     println(filteredRDD.count)
     println((nanoTime - t) * 1e-9)
   }
