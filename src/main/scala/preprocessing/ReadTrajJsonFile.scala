@@ -73,11 +73,12 @@ object ReadTrajJsonFile {
     }
   }
 
-  def select(fileName: String, num: Int = Double.PositiveInfinity.toInt): RDD[instances.Trajectory[None.type, String]] = {
+  def select(fileName: String): RDD[instances.Trajectory[None.type, String]] = {
     val spark = SparkSession.builder().getOrCreate()
     val samplingRate = 15
-    val inputDF = spark.read.json(fileName).limit(num)
-    println(inputDF.count())
+    val inputDF = spark.read
+      .option("numPartitions", 256)
+      .json(fileName)
     inputDF.createOrReplaceTempView("jsonTable")
     import spark.implicits._
 
