@@ -66,7 +66,7 @@ object LoadingTest {
         }
       })
       val partitioner = new HashPartitioner(256)
-      val filteredRDD = partitioner.partition(resRDD.filter(_.isDefined).filter(_.get.intersects(spatial, temporal)))
+      val filteredRDD = partitioner.partition(resRDD.filter(_.isDefined).filter(_.get.intersects(spatial, temporal)).map(_.get))
       println(filteredRDD.count)
       println((nanoTime - t) * 1e-9)
     }
