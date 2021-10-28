@@ -65,8 +65,8 @@ object LoadingTest {
             None
         }
       })
-
-      val filteredRDD = resRDD.filter(_.isDefined).filter(_.get.intersects(spatial, temporal))
+      val partitioner = new HashPartitioner(256)
+      val filteredRDD = partitioner.partition(resRDD.filter(_.isDefined).filter(_.get.intersects(spatial, temporal)))
       println(filteredRDD.count)
       println((nanoTime - t) * 1e-9)
     }
@@ -84,7 +84,8 @@ object LoadingTest {
         wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
       import preprocessing.ReadTrajJsonFile.select
       val resRDD = select(fileName)
-      val filteredRDD = resRDD.filter(_.intersects(spatial, temporal))
+      val partitioner = new HashPartitioner(256)
+      val filteredRDD = partitioner.partition(resRDD.filter(_.intersects(spatial, temporal)))
       println(filteredRDD.count)
       println((nanoTime - t) * 1e-9)
     }
@@ -101,9 +102,9 @@ object LoadingTest {
       val temporal = Duration(wholeTemporal.start + (start3 * (wholeTemporal.end - wholeTemporal.start)).toLong,
         wholeTemporal.start + ((start3 + ratio) * (wholeTemporal.end - wholeTemporal.start)).toLong)
       val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
-      val trajRDD = trajDf.toRdd //.repartition(numPartitions)
-      println(s"num partitions: ${trajRDD.getNumPartitions}")
-      val rdd2 = trajRDD.filter(_.intersects(spatial, temporal))
+      val trajRDD = trajDf.toRdd
+      val partitioner = new HashPartitioner(256)
+      val rdd2 = partitioner.partition(trajRDD.filter(_.intersects(spatial, temporal)))
       println(rdd2.count)
       println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
     }
