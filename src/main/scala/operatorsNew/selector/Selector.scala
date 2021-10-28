@@ -37,16 +37,16 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
     import spark.implicits._
     val pInstanceDf = loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.as[T].toRdd
-    pInstanceRDD.stPartition(partitioner)
-      .filter(_.intersects(sQuery, tQuery))
+    pInstanceRDD
+      .filter(_.intersects(sQuery, tQuery)).stPartition(partitioner)
   }
 
   def selectEvent(dataDir: String, metaDataDir: String): RDD[Event[Geometry, Option[String], String]] = {
     import spark.implicits._
     val pInstanceDf = loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.as[E].toRdd
-    pInstanceRDD.stPartition(partitioner)
-      .filter(_.intersects(sQuery, tQuery))
+    pInstanceRDD
+      .filter(_.intersects(sQuery, tQuery)).stPartition(partitioner)
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {
