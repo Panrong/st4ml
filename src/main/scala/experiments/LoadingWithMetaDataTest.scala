@@ -60,7 +60,6 @@ object LoadingWithMetaDataTest {
     if (instance == "event") {
       type EVT = Event[Point, Option[String], String]
       if (useMetadata) {
-
         // metadata
         t = nanoTime()
         val selector = Selector[EVT](spatial, temporal, numPartitions)
@@ -74,7 +73,8 @@ object LoadingWithMetaDataTest {
         import spark.implicits._
         val eventRDD = spark.read.parquet(fileName).drop("pId").as[E].toRdd //.repartition(numPartitions)
         val partitioner = new HashPartitioner(numPartitions)
-        val rdd2 = partitioner.partition(eventRDD).filter(_.intersects(spatial, temporal))
+        val rdd2 = if (eventRDD.getNumPartitions < numPartitions) partitioner.partition(eventRDD).filter(_.intersects(spatial, temporal))
+        else eventRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata: ${(nanoTime() - t) * 1e-9} s.\n")
         eventRDD.unpersist()
@@ -83,14 +83,11 @@ object LoadingWithMetaDataTest {
 
     else if (instance == "traj") {
       type TRAJ = Trajectory[Option[String], String]
-
       if (useMetadata) {
         // metadata
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-        import instances.GeometryImplicits.withExtraPointOps
         val t = nanoTime()
         val rdd1 = selector.selectTraj(fileName, metadata)
-        //          .map(traj => traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
         println(rdd1.count)
         println(s"total time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
@@ -100,13 +97,10 @@ object LoadingWithMetaDataTest {
         import spark.implicits._
         val trajDf = spark.read.parquet(fileName).drop("pId").as[T]
         val trajRDD = trajDf.toRdd //.repartition(numPartitions)
-        //        println(s"no metadata total: ${trajRDD.count}")
         val partitioner = new HashPartitioner(numPartitions)
         val partitionedRDD = partitioner.partition(trajRDD)
-        partitionedRDD.count
-        import instances.GeometryImplicits.withExtraPointOps
-        val rdd2 = partitionedRDD.filter(_.intersects(spatial, temporal))
-        //          .map(traj => traj.entries.last.spatial.greatCircle(traj.entries.head.spatial) / (traj.entries.last.temporal.end - traj.entries.head.temporal.start))
+        val rdd2 = if (partitionedRDD.getNumPartitions < numPartitions) partitioner.partition(partitionedRDD).filter(_.intersects(spatial, temporal))
+        else partitionedRDD.filter(_.intersects(spatial, temporal))
         println(rdd2.count)
         println(s"no metadata selection time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
