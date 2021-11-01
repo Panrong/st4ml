@@ -38,8 +38,10 @@ object SelectionUtils {
             if (next.duration.end > tMax) tMax = next.duration.end
             count += 1
           }
-          Iterator((id, new Extent(xMin, yMin, xMax, yMax), Duration(tMin, tMax), count))
-      }.collect
+          if (count == 0) Iterator(None)
+          else Iterator(Some((id, new Extent(xMin, yMin, xMax, yMax), Duration(tMin, tMax), count)))
+      }.filter(_.isDefined).map(_.get)
+        .collect
     }
 
     def stPartition[P <: STPartitioner : ClassTag](partitioner: P): RDD[T] = partitioner.partition(rdd)
