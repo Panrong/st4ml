@@ -82,7 +82,7 @@ object ConversionExp {
       val ranges = splitSpatial(sRange, xSplit, ySplit)
       val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(inputRDD)
+      else converter.convertFast(inputRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */

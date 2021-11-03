@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 
 class TemporalPartitioner(override val numPartitions: Int,
                           override var samplingRate: Option[Double] = None,
-                          ref: String = "start") extends STPartitioner {
+                          ref: String = "center") extends STPartitioner {
 
   var slots = new Array[Duration](0)
   val spark: SparkSession = SparkSession.builder.getOrCreate()

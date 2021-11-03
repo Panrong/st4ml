@@ -1,6 +1,6 @@
 package operatorsNew.selector.partitioner
 
-import instances.{Duration, Extent, Instance}
+import instances.{Duration, Event, Extent, Instance}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 
 class TSTRPartitioner(override val numPartitions: Int,
                       override var samplingRate: Option[Double] = None,
-                      ref: String = "start",
+                      ref: String = "center",
                       threshold: Double = 0)
   extends STPartitioner {
   val spark: SparkSession = SparkSession.builder.getOrCreate()
@@ -28,12 +28,23 @@ class TSTRPartitioner(override val numPartitions: Int,
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
     for (i <- 0 until tNumPartition) {
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
+        .map(x => Event(x.spatialCenter, Duration(0))) // the duration is not used, just put 0 to make it instance
       val sRanges = getPartitionRange(samples)
       for (s <- sRanges)
-        stRanges += ((i * tNumPartition + s._1) -> (tRanges(i), s._2))
+        stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
     val idxRDD = dataRDD.map(x => {
-      val idxs = stRanges.filter(st => x.intersects(st._2._2, st._2._1))
+      //      val idxs = stRanges.filter(st => x.intersects(st._2._2, st._2._1))
+      //      val idx = if (idxs.isEmpty) {
+      //        stRanges.filter(st => st._2._1.intersects(x.duration))
+      //          .mapValues(st => st._2.distance(x.spatialCenter))
+      //          .minBy(_._2)._1
+      //      }
+      //      else idxs.head._1
+      val idxs = stRanges.filter(st => {
+        val centroid = x.center
+        Event(centroid._1, Duration(centroid._2)).intersects(st._2._2, st._2._1)
+      })
       val idx = if (idxs.isEmpty) {
         stRanges.filter(st => st._2._1.intersects(x.duration))
           .mapValues(st => st._2.distance(x.spatialCenter))

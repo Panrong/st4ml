@@ -49,6 +49,7 @@ object WriteMetadataTest extends App {
     /** partition trajRDD and persist on disk */
     val partitioner = new TSTRPartitioner(numPartitions, Some(1))
     val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
+//    pInfo.foreach(println)
     val trajDsWithPid = partitionedRDDWithPId.toDs()
     trajDsWithPid.show(2, truncate = false)
     pInfo.toDisk(metadata)
