@@ -1,20 +1,58 @@
 package operatorsNew.converter
 
 import instances.{Duration, Entry, Extent, Point, Polygon, SpatialMap, Trajectory}
+import operators.selection.indexer.RTree
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
 class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM,
-                                                              sArray: Array[Polygon],
-                                                              d: DSM = None) extends Converter {
+                                               sArray: Array[Polygon],
+                                               d: DSM = None) extends Converter {
   type I = Trajectory[V, D]
   type O = SpatialMap[VSM, DSM]
   val sMap: Array[(Int, Polygon)] = sArray.zipWithIndex.map(_.swap)
+  var rTree: Option[RTree[geometry.Rectangle]] = None
+
+  def buildRTree(spatials: Array[Polygon]): RTree[geometry.Rectangle] = {
+    val r = math.sqrt(spatials.length).toInt
+    val entries = spatials.map(s => {
+      val e = Extent(s.getEnvelopeInternal)
+      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
+    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
+    RTree[geometry.Rectangle](entries, r)
+  }
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val trajs = partition.toArray
       val emptySm = SpatialMap.empty[I](sArray)
       Iterator(emptySm.attachInstance(trajs)
+        .mapValue(f)
+        .mapData(_ => d))
+    })
+  }
+
+  /** use MBR instead of line string for overlapping */
+  def convertFast(input: RDD[I]): RDD[O] = {
+    input.mapPartitions(partition => {
+      val trajs = partition.toArray
+      val emptySm = SpatialMap.empty[I](sArray)
+      Iterator(emptySm.attachInstance(trajs, trajs.map(_.extent.toPolygon))
+        .mapValue(f)
+        .mapData(_ => d))
+    })
+  }
+
+  // using MBR, not precise
+  def convertWithRTree(input: RDD[I]): RDD[O] = {
+    rTree = Some(buildRTree(sMap.map(_._2)))
+    val spark = SparkSession.builder().getOrCreate()
+    val rTreeBc = spark.sparkContext.broadcast(rTree)
+    input.mapPartitions(partition => {
+      val trajs = partition.toArray
+      val emptySm = SpatialMap.empty[I](sArray)
+      emptySm.rTree = rTreeBc.value
+      Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.extent.toPolygon))
         .mapValue(f)
         .mapData(_ => d))
     })

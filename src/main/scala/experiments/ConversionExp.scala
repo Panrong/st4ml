@@ -1,8 +1,8 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point, Polygon}
+import instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
 import operators.selection.indexer.RTree
-import operatorsNew.converter.Event2SpatialMapConverter
+import operatorsNew.converter.{Event2SpatialMapConverter, Traj2SpatialMapConverter}
 import operatorsNew.selector.SelectionUtils.{E, T}
 import operatorsNew.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
@@ -64,11 +64,32 @@ object ConversionExp {
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
-      /** print converted result */
-      val sms = convertedRDD.collect
-      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      println(sm.entries.map(_.value.length).deep)
-      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+    }
+
+    else if (m == "2") {
+      type TRAJ = Trajectory[None.type, String]
+      val inputRDD = spark.read.parquet(fileName).drop("pId").as[T]
+        .toRdd.map(_.asInstanceOf[TRAJ])
+      val partitioner = new HashPartitioner(numPartitions)
+      val selectedRDD = partitioner.partition(inputRDD)
+      println(selectedRDD.count)
+      val t = nanoTime()
+      val ranges = splitSpatial(sRange, xSplit, ySplit)
+      val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
+      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
+      else converter.convert(inputRDD)
+      println(convertedRDD.count)
+      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
 
     sc.stop
