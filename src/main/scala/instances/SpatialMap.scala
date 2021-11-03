@@ -14,7 +14,7 @@ class SpatialMap[V, D](
   var rTree: Option[RTree[geometry.Rectangle]] = None
 
   require(validation,
-    s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
+    s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
 
   def isSpatialDisjoint: Boolean = {
     if (spatials.length > 1) {

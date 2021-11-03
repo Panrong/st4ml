@@ -1,9 +1,10 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Polygon, Point}
+import instances.{Duration, Event, Extent, Point, Polygon}
 import operators.selection.indexer.RTree
 import operatorsNew.converter.Event2SpatialMapConverter
 import operatorsNew.selector.SelectionUtils.{E, T}
+import operatorsNew.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -11,15 +12,15 @@ import java.lang.System.nanoTime
 
 object ConversionExp {
   def main(args: Array[String]): Unit = {
-//    val entries = Array(
-//      (geometry.Point(Array(0,0)), "a", 1),
-//      (geometry.Point(Array(1,0)), "b", 2),
-//      (geometry.Point(Array(0,1)), "c", 3),
-//      (geometry.Point(Array(2,2)), "d", 4),
-//    )
-//    val rtree = RTree(entries, 2)
-//    val selected = rtree.range(geometry.Rectangle(Array(1,1, 2,2)))
-//    println(selected.deep)
+    //    val entries = Array(
+    //      (geometry.Point(Array(0,0)), "a", 1),
+    //      (geometry.Point(Array(1,0)), "b", 2),
+    //      (geometry.Point(Array(0,1)), "c", 3),
+    //      (geometry.Point(Array(2,2)), "d", 4),
+    //    )
+    //    val rtree = RTree(entries, 2)
+    //    val selected = rtree.range(geometry.Rectangle(Array(1,1, 2,2)))
+    //    println(selected.deep)
     val spark = SparkSession.builder()
       .appName("LoadingTest")
       .master(Config.get("master"))
@@ -30,7 +31,8 @@ object ConversionExp {
     sc.setLogLevel("ERROR")
 
     val fileName = args(0)
-    val m = args(1)
+    val numPartitions = args(1).toInt
+    val m = args(2)
 
     /**
      * 1 for event to spatial map
@@ -41,29 +43,32 @@ object ConversionExp {
      * 6 for traj to time series
      */
 
-    val sRange = args(2).split(",").map(_.toDouble)
-    val tRange = args(3).split(",").map(_.toLong)
-    val xSplit = args(4).toInt
-    val ySplit = args(5).toInt
-    val useRTree = args(6).toBoolean
+    val sRange = args(3).split(",").map(_.toDouble)
+    val tRange = args(4).split(",").map(_.toLong)
+    val xSplit = args(5).toInt
+    val ySplit = args(6).toInt
+    val useRTree = args(7).toBoolean
 
     if (m == "1") {
       val inputRDD = spark.read.parquet(fileName).drop("pId").as[E]
         .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
-      println(inputRDD.count)
+      val partitioner = new HashPartitioner(numPartitions)
+      val selectedRDD = partitioner.partition(inputRDD)
+      println(selectedRDD.count)
       val t = nanoTime()
       val ranges = splitSpatial(sRange, xSplit, ySplit)
       val converter = new Event2SpatialMapConverter[Point,
         None.type, String, Array[Event[Point, None.type, String]], None.type](x => x, ranges)
-      val convertedRDD = if(useRTree) converter.convertWithRTree(inputRDD)
+      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
       else converter.convert(inputRDD)
       println(convertedRDD.count)
-      println(s" conversion time: ${(nanoTime - t) * 1e-9} s")
+      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
       /** print converted result */
       val sms = convertedRDD.collect
       val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
       println(sm.entries.map(_.value.length).deep)
+      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
 
     sc.stop
@@ -75,14 +80,9 @@ object ConversionExp {
     val xMax = spatialRange(2)
     val yMax = spatialRange(3)
     val xStep = (xMax - xMin) / xSplit
-    val xs = (0 to xSplit).map(x => x * xStep + xMin).sliding(2)
+    val xs = (0 to xSplit).map(x => x * xStep + xMin).sliding(2).toArray
     val yStep = (yMax - yMin) / ySplit
-    val ys = (0 to ySplit).map(y => y * yStep + yMin).sliding(2)
-
-    xs.flatMap(x =>
-      ys.map(y => (x, y))).map(r => {
-      Extent(r._1(0), r._2(0), r._1(1), r._2(1)).toPolygon
-    })
-      .toArray
+    val ys = (0 to ySplit).map(y => y * yStep + yMin).sliding(2).toArray
+    for (x <- xs; y <- ys) yield Extent(x(0), y(0), x(1), y(1)).toPolygon
   }
 }
