@@ -1,5 +1,7 @@
 package instances
 
+import operators.selection.indexer.RTree
+
 import scala.reflect.ClassTag
 
 class SpatialMap[V, D](
@@ -8,6 +10,8 @@ class SpatialMap[V, D](
   extends Instance[Polygon, V, D] {
 
   lazy val spatials: Array[Polygon] = entries.map(_.spatial)
+
+  var rTree: Option[RTree[geometry.Rectangle]] = None
 
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
@@ -80,6 +84,28 @@ class SpatialMap[V, D](
       Utils.getBinIndices(spatials, geomArr)
   }
 
+
+  def getSpatialIndexRTree[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
+    Utils.getBinIndicesRTree(rTree.get, geomArr)
+  }
+
+  def getSpatialIndexToObjRTree[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
+    if (geomArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getSpatialIndexRTree(geomArr)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
+  }
+
   def getSpatialIndexToObj[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
     if (geomArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -128,8 +154,15 @@ class SpatialMap[V, D](
   (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
-
     val entryIndexToInstance = getSpatialIndexToObj(instanceArr, geomArr)
+    createSpatialMap(entryIndexToInstance)
+  }
+
+  def attachInstanceRTree[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
+  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+    require(instanceArr.length == geomArr.length,
+      "the length of two arguments must match")
+    val entryIndexToInstance = getSpatialIndexToObjRTree(instanceArr, geomArr)
     createSpatialMap(entryIndexToInstance)
   }
 
@@ -138,6 +171,7 @@ class SpatialMap[V, D](
     val geomArr = instanceArr.map(_.toGeometry)
     attachInstance(instanceArr, geomArr)
   }
+
 
   // todo: handle different order of the same spatials
   def merge[T : ClassTag](

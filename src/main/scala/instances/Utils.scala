@@ -1,5 +1,7 @@
 package instances
 
+import operators.selection.indexer.RTree
+
 object Utils {
 
   // methods for calculating an overall Polygon
@@ -62,4 +64,12 @@ object Utils {
     )
   }
 
+  def getBinIndicesRTree[T <: Geometry](RTree: RTree[geometry.Rectangle], queryArr: Array[T]): Array[Array[Int]] = {
+    val qArray = queryArr.map(x => {
+      val extent = Extent(x.getEnvelopeInternal)
+      geometry.Rectangle(Array(extent.xMin, extent.yMin, extent.xMax, extent.yMax))
+    })
+    qArray.map(query => RTree.range(query).map(_._2.toInt))
+
+  }
 }

@@ -7,11 +7,11 @@ import org.locationtech.jts.geom.Envelope
 case class ExtentRangeError(msg: String) extends Exception(msg)
 
 case class Extent(
-  xMin: Double,
-  yMin: Double,
-  xMax: Double,
-  yMax: Double
-) extends Ordered[Extent]{
+                   xMin: Double,
+                   yMin: Double,
+                   xMax: Double,
+                   yMax: Double
+                 ) extends Ordered[Extent] {
 
   // Validation
   if (xMin > xMax) {
@@ -51,24 +51,24 @@ case class Extent(
     !(other.xMax < xMin || other.xMin > xMax) &&
       !(other.yMax < yMin || other.yMin > yMax)
 
-  def intersects(x: Double, y:Double): Boolean =
+  def intersects(x: Double, y: Double): Boolean =
     x >= xMin && x <= xMax && y >= yMin && y <= yMax
-    
+
   def intersects(g: Geometry): Boolean =
     intersects(Extent(g.getEnvelopeInternal))
-    
+
   def contains(other: Extent): Boolean = {
-    if (isEmpty) false  // Empty extent contains nothing
+    if (isEmpty) false // Empty extent contains nothing
     else
       other.xMin >= xMin &&
         other.xMax <= xMax &&
         other.yMin >= yMin &&
         other.yMax <= yMax
   }
-  
+
   def contains(x: Double, y: Double): Boolean =
     x > xMin && x < xMax && y > yMin && y < yMax
-    
+
   def contains(g: Geometry): Boolean =
     contains(Extent(g.getEnvelopeInternal))
 
@@ -77,25 +77,25 @@ case class Extent(
     if (intersects(other)) 0
     else {
       val dx =
-        if(xMax < other.xMin)
+        if (xMax < other.xMin)
           other.xMin - xMax
-        else if(xMin > other.xMax)
+        else if (xMin > other.xMax)
           xMin - other.xMax
         else
           0.0
 
       val dy =
-        if(yMax < other.yMin)
+        if (yMax < other.yMin)
           other.yMin - yMax
-        else if(yMin > other.yMax)
+        else if (yMin > other.yMax)
           yMin - other.yMax
         else
           0.0
 
       // if either is zero, the extents overlap either vertically or horizontally
-      if(dx == 0.0)
+      if (dx == 0.0)
         dy
-      else if(dy == 0.0)
+      else if (dy == 0.0)
         dx
       else
         math.sqrt(dx * dx + dy * dy)
@@ -123,41 +123,41 @@ case class Extent(
    *
    * Return type signals:
    *
-   *   -1 this extent comes first
-   *    0 the extents have the same lower-left corner
-   *    1 the other extent comes first
+   * -1 this extent comes first
+   * 0 the extents have the same lower-left corner
+   * 1 the other extent comes first
    */
   def compare(other: Extent): Int = {
     var cmp = yMin compare other.yMin
     if (cmp != 0) return cmp
-    
+
     cmp = xMin compare other.xMin
     if (cmp != 0) return cmp
-    
+
     cmp = yMax compare other.yMax
     if (cmp != 0) return cmp
-    
+
     xMax compare other.xMax
   }
-  
-  def combine(other: Extent): Extent = 
+
+  def combine(other: Extent): Extent =
     Extent(
-      if(xMin < other.xMin) xMin else other.xMin,
-      if(yMin < other.yMin) yMin else other.yMin,
-      if(xMax > other.xMax) xMax else other.xMax,
-      if(yMax > other.yMax) yMax else other.yMax
+      if (xMin < other.xMin) xMin else other.xMin,
+      if (yMin < other.yMin) yMin else other.yMin,
+      if (xMax > other.xMax) xMax else other.xMax,
+      if (yMax > other.yMax) yMax else other.yMax
     )
-    
+
   def |(other: Extent): Extent = combine(other)
-  
+
   def expandToInclude(other: Extent): Extent = combine(other)
-  
-  def expandToInclude(x: Double, y: Double): Extent = 
+
+  def expandToInclude(x: Double, y: Double): Extent =
     Extent(
-      if(xMin < x) xMin else x,
-      if(yMin < y) yMin else y,
-      if(xMax > x) xMax else x,
-      if(yMax > y) yMax else y
+      if (xMin < x) xMin else x,
+      if (yMin < y) yMin else y,
+      if (xMax > x) xMax else x,
+      if (yMax > y) yMax else y
     )
 
   def expandToInclude(p: Point): Extent = expandToInclude(p.x, p.y)
@@ -193,7 +193,7 @@ case class Extent(
       xMax + delta,
       yMax + delta
     )
-  
+
   override def equals(other: Any): Boolean =
     other match {
       case o: Extent =>
@@ -237,13 +237,17 @@ object Extent {
     new Extent(xMin, yMin, xMax, yMax)
   }
 
-//  def apply(envelopes: Array[Envelope]): Extent = {
-//    val xMin = envelopes.map(_.getMinX).min
-//    val xMax = envelopes.map(_.getMaxX).max
-//    val yMin = envelopes.map(_.getMinY).min
-//    val yMax = envelopes.map(_.getMaxY).max
-//    new Extent(xMin, yMin, xMax, yMax)
-//  }
+  def apply(a: Array[Double]): Extent = {
+    new Extent(a(0), a(1), a(2), a(3))
+  }
+
+  //  def apply(envelopes: Array[Envelope]): Extent = {
+  //    val xMin = envelopes.map(_.getMinX).min
+  //    val xMax = envelopes.map(_.getMaxX).max
+  //    val yMin = envelopes.map(_.getMinY).min
+  //    val yMax = envelopes.map(_.getMaxY).max
+  //    new Extent(xMin, yMin, xMax, yMax)
+  //  }
 
   implicit def toPolygon(extent: Extent): Polygon =
     extent.toPolygon
