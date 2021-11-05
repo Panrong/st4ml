@@ -22,6 +22,7 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
     }
     RTree[Polygon](entries, r, dimension = 3)
   }
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val trajs = partition.toArray
@@ -31,6 +32,7 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
         .mapData(_ => d))
     })
   }
+
   def convertWithRTree(input: RDD[I]): RDD[O] = {
     rTree = Some(buildRTree(polygonArr, durArr))
     val spark = SparkSession.builder().getOrCreate()

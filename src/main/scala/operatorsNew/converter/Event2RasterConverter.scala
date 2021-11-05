@@ -10,7 +10,6 @@ class Event2RasterConverter[S <: Geometry, V, D, VR, DR](f: Array[Event[S, V, D]
                                                          d: DR = None) extends Converter {
   type I = Event[S, V, D]
   type O = Raster[Polygon, VR, DR]
-
   var rTree: Option[RTree[Polygon]] = None
 
   def buildRTree(polygonArr: Array[Polygon],
