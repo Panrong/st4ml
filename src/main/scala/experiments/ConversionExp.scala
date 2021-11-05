@@ -103,10 +103,10 @@ object ConversionExp {
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
-      //      val sms = convertedRDD.collect
+      //      val sms = convertedRDD.map(x => x.mapValue(x => Array(x.length))).collect
       //      println(sms.head.entries.length)
       //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      //      println(sm.entries.map(_.value.length).deep)
+      //      println(sm.entries.map(_.value.sum).deep)
       //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "4") {
@@ -126,12 +126,12 @@ object ConversionExp {
       else converter.convert(inputRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-      /** print converted result */
-      val sms = convertedRDD.collect
-      println(sms.head.entries.length)
-      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      println(sm.entries.map(_.value.length).deep)
-      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //            /** print converted result */
+      //            val sms = convertedRDD.collect
+      //            println(sms.head.entries.length)
+      //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //            println(sm.entries.map(_.value.length).deep)
+      //            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
       //          val entries = Array(

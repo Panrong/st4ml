@@ -89,17 +89,17 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
   }
 
-
   def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, String)] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
     val st = new mutable.Stack[RTreeNode]()
+    val extent = Event(query.extent.toPolygon, query.duration)
     if (intersect(root.mMbr, query) && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (intersect(mbr, query)) st.push(node)
+            if (intersect(mbr, extent)) st.push(node)
         }
       } else {
         now.mChild.foreach {
