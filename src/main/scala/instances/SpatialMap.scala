@@ -1,17 +1,18 @@
 package instances
 
-import operators.selection.indexer.RTree
+import operators.selection.indexer.RTreeDeprecated
 
 import scala.reflect.ClassTag
 
 class SpatialMap[V, D](
-  override val entries: Array[Entry[Polygon, V]],
-  override val data: D)
+                        override val entries: Array[Entry[Polygon, V]],
+                        override val data: D)
   extends Instance[Polygon, V, D] {
 
   lazy val spatials: Array[Polygon] = entries.map(_.spatial)
 
-  var rTree: Option[RTree[geometry.Rectangle]] = None
+  //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
+  var rTree: Option[RTree[Polygon]] = None
 
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
@@ -53,9 +54,9 @@ class SpatialMap[V, D](
       data)
 
   override def mapEntries[V1](
-    f1: Polygon => Polygon,
-    f2: Duration => Duration,
-    f3: V => V1): SpatialMap[V1, D] =
+                               f1: Polygon => Polygon,
+                               f2: Duration => Duration,
+                               f3: V => V1): SpatialMap[V1, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -85,11 +86,31 @@ class SpatialMap[V, D](
   }
 
 
-  def getSpatialIndexRTree[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
+  //  def getSpatialIndexRTreeDeprecated[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
+  //    Utils.getBinIndicesRTreeDeprecated(rTreeDeprecated.get, geomArr)
+  //  }
+
+  def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G]): Array[Array[Int]] = {
     Utils.getBinIndicesRTree(rTree.get, geomArr)
   }
 
-  def getSpatialIndexToObjRTree[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
+  //  def getSpatialIndexToObjRTreeDeprecated[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
+  //    if (geomArr.isEmpty) {
+  //      Map.empty[Int, Array[T]]
+  //    } else {
+  //      val indices = getSpatialIndexRTreeDeprecated(geomArr)
+  //      objArr.zip(indices)
+  //        .filter(_._2.length > 0)
+  //        .flatMap { case (geom, indexArr) =>
+  //          for {
+  //            idx <- indexArr
+  //          } yield (geom, idx)
+  //        }
+  //        .groupBy(_._2)
+  //        .mapValues(x => x.map(_._1))
+  //    }
+  //  }
+  def getSpatialIndexToObjRTree[T: ClassTag, G <: Geometry : ClassTag](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
     if (geomArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {
@@ -124,8 +145,8 @@ class SpatialMap[V, D](
   }
 
   def createSpatialMap[T: ClassTag](
-    spatialIndexToObj: Map[Int, Array[T]],
-  ): SpatialMap[Array[T], D] = {
+                                     spatialIndexToObj: Map[Int, Array[T]],
+                                   ): SpatialMap[Array[T], D] = {
     if (spatialIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
         if (spatialIndexToObj.contains(entryWithIdx._2)) {
@@ -135,7 +156,7 @@ class SpatialMap[V, D](
           entryWithIdx._1.value.asInstanceOf[Array[T]]
         }
       )
-      val newTemporals = newValues.map (value => Utils.getDuration(value))
+      val newTemporals = newValues.map(value => Utils.getDuration(value))
       val newEntries = (spatials, newTemporals, newValues).zipped.toArray.map(Entry(_))
       SpatialMap(newEntries, data)
     }
@@ -144,13 +165,13 @@ class SpatialMap[V, D](
     }
   }
 
-  def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T])
-    (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  def attachGeometry[T <: Geometry : ClassTag](geomArr: Array[T])
+                                              (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     val entryIndexToGeom = getSpatialIndexToObj(geomArr, geomArr)
     createSpatialMap(entryIndexToGeom)
   }
 
-  def attachInstance[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
+  def attachInstance[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
   (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
@@ -158,7 +179,14 @@ class SpatialMap[V, D](
     createSpatialMap(entryIndexToInstance)
   }
 
-  def attachInstanceRTree[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
+  //  def attachInstanceRTreeDeprecated[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
+  //  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  //    require(instanceArr.length == geomArr.length,
+  //      "the length of two arguments must match")
+  //    val entryIndexToInstance = getSpatialIndexToObjRTreeDeprecated(instanceArr, geomArr)
+  //    createSpatialMap(entryIndexToInstance)
+  //  }
+  def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
   (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
@@ -166,21 +194,21 @@ class SpatialMap[V, D](
     createSpatialMap(entryIndexToInstance)
   }
 
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T])
-    (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
+                                                       (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     val geomArr = instanceArr.map(_.toGeometry)
     attachInstance(instanceArr, geomArr)
   }
 
 
   // todo: handle different order of the same spatials
-  def merge[T : ClassTag](
-    other: SpatialMap[Array[T], _]
-  )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], None.type] = {
+  def merge[T: ClassTag](
+                          other: SpatialMap[Array[T], _]
+                        )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], None.type] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>
@@ -191,14 +219,14 @@ class SpatialMap[V, D](
   }
 
   def merge[T](
-    other: SpatialMap[T, D],
-    valueCombiner: (V, T) => V,
-    dataCombiner: (D, D) => D
-  ): SpatialMap[V, D] = {
+                other: SpatialMap[T, D],
+                valueCombiner: (V, T) => V,
+                dataCombiner: (D, D) => D
+              ): SpatialMap[V, D] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       valueCombiner(x._1, x._2)
     )
     val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>
@@ -209,14 +237,14 @@ class SpatialMap[V, D](
     SpatialMap(newEntries, newData)
   }
 
-  def merge[T : ClassTag](
-    other: SpatialMap[Array[T], D],
-    dataCombiner: (D, D) => D
-  )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  def merge[T: ClassTag](
+                          other: SpatialMap[Array[T], D],
+                          dataCombiner: (D, D) => D
+                        )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newTemporals = entries.map(_.temporal).zip(other.entries.map(_.temporal)).map(x =>

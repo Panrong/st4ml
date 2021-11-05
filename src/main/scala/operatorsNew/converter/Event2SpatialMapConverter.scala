@@ -1,7 +1,7 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, SpatialMap}
-import operators.selection.indexer.RTree
+import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, RTree, SpatialMap}
+import operators.selection.indexer.RTreeDeprecated
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -13,15 +13,24 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
 
   val sMap: Array[(Int, Polygon)] = sArray.zipWithIndex.map(_.swap)
 
-  var rTree: Option[RTree[geometry.Rectangle]] = None
+  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
+  var rTree: Option[RTree[Polygon]] = None
 
-  def buildRTree(spatials: Array[Polygon]): RTree[geometry.Rectangle] = {
+
+  //  def buildRTreeDeprecated(spatials: Array[Polygon]): RTreeDeprecated[geometry.Rectangle] = {
+  //
+  //    val r = math.sqrt(spatials.length).toInt
+  //    val entries = spatials.map(s => {
+  //      val e = Extent(s.getEnvelopeInternal)
+  //      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
+  //    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
+  //    RTreeDeprecated[geometry.Rectangle](entries, r)
+  //  }
+
+  def buildRTree(spatials: Array[Polygon]): RTree[Polygon] = {
     val r = math.sqrt(spatials.length).toInt
-    val entries = spatials.map(s => {
-      val e = Extent(s.getEnvelopeInternal)
-      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
-    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-    RTree[geometry.Rectangle](entries, r)
+    val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
+    RTree[Polygon](entries, r)
   }
 
   override def convert(input: RDD[I]): RDD[O] = {
@@ -34,7 +43,21 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
     })
   }
 
-  def convertWithRTree(input:RDD[I]):RDD[O] = {
+  //  def convertWithRTreeDeprecated(input: RDD[I]): RDD[O] = {
+  //    rTreeDeprecated = Some(buildRTreeDeprecated(sMap.map(_._2)))
+  //    val spark = SparkSession.builder().getOrCreate()
+  //    val rTreeBc = spark.sparkContext.broadcast(rTreeDeprecated)
+  //    input.mapPartitions(partition => {
+  //      val events = partition.toArray
+  //      val emptySm = SpatialMap.empty[I](sArray)
+  //      emptySm.rTreeDeprecated = rTreeBc.value
+  //      Iterator(emptySm.attachInstanceRTreeDeprecated(events, events.map(_.extent.toPolygon))
+  //        .mapValue(f)
+  //        .mapData(_ => d))
+  //    })
+  //  }
+
+  def convertWithRTree(input: RDD[I]): RDD[O] = {
     rTree = Some(buildRTree(sMap.map(_._2)))
     val spark = SparkSession.builder().getOrCreate()
     val rTreeBc = spark.sparkContext.broadcast(rTree)

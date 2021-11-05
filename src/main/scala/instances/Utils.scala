@@ -1,6 +1,8 @@
 package instances
 
-import operators.selection.indexer.RTree
+import operators.selection.indexer.RTreeDeprecated
+
+import scala.reflect.ClassTag
 
 object Utils {
 
@@ -64,12 +66,14 @@ object Utils {
     )
   }
 
-  def getBinIndicesRTree[T <: Geometry](RTree: RTree[geometry.Rectangle], queryArr: Array[T]): Array[Array[Int]] = {
+  def getBinIndicesRTreeDeprecated[T <: Geometry](RTree: RTreeDeprecated[geometry.Rectangle], queryArr: Array[T]): Array[Array[Int]] = {
     val qArray = queryArr.map(x => {
       val extent = Extent(x.getEnvelopeInternal)
       geometry.Rectangle(Array(extent.xMin, extent.yMin, extent.xMax, extent.yMax))
     })
     qArray.map(query => RTree.range(query).map(_._2.toInt))
-
+  }
+  def getBinIndicesRTree[T <: Geometry: ClassTag](RTree: RTree[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
+    queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
 }

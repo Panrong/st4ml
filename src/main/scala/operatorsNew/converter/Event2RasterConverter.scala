@@ -1,6 +1,6 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, Raster}
+import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, RTree, Raster}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -11,11 +11,38 @@ class Event2RasterConverter[S <: Geometry, V, D, VR, DR](f: Array[Event[S, V, D]
   type I = Event[S, V, D]
   type O = Raster[Polygon, VR, DR]
 
+  var rTree: Option[RTree[Polygon]] = None
+
+  def buildRTree(polygonArr: Array[Polygon],
+                 durArr: Array[Duration]): RTree[Polygon] = {
+    val r = math.sqrt(polygonArr.length).toInt
+    var entries = new Array[(Polygon, String, Int)](0)
+    for (i <- polygonArr.indices) {
+      polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
+      entries = entries :+ (polygonArr(i).copy.asInstanceOf[Polygon], i.toString, i)
+    }
+    RTree[Polygon](entries, r, dimension = 3)
+  }
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
-      val trajs = partition.toArray
+      val events = partition.toArray
       val emptyRaster = Raster.empty[I](polygonArr, durArr)
-      Iterator(emptyRaster.attachInstance(trajs)
+      Iterator(emptyRaster.attachInstance(events)
+        .mapValue(f)
+        .mapData(_ => d))
+    })
+  }
+
+  def convertWithRTree(input: RDD[I]): RDD[O] = {
+    rTree = Some(buildRTree(polygonArr, durArr))
+    val spark = SparkSession.builder().getOrCreate()
+    val rTreeBc = spark.sparkContext.broadcast(rTree)
+    input.mapPartitions(partition => {
+      val events = partition.toArray
+      val emptyRaster = Raster.empty[I](polygonArr, durArr)
+      emptyRaster.rTree = rTreeBc.value
+      Iterator(emptyRaster.attachInstanceRTree(events)
         .mapValue(f)
         .mapData(_ => d))
     })

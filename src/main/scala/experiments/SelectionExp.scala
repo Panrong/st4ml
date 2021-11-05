@@ -2,7 +2,7 @@ package experiments
 
 import geometry.{Point, Rectangle, Shape}
 import operators.convertion.Traj2PointConverter
-import operators.selection.indexer.RTree
+import operators.selection.indexer.RTreeDeprecated
 import operators.selection.partitioner.HashPartitioner
 import operators.selection.selectionHandler.TemporalSelector
 import org.apache.spark.rdd.RDD
@@ -130,13 +130,13 @@ object SelectionExp extends App {
                                   var capacity: Option[Int] = None) {
 
     SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
-      Array(classOf[RTree[_]],
+      Array(classOf[RTreeDeprecated[_]],
         classOf[Rectangle],
         classOf[Shape]))
 
-    var rTreeRDD: Option[RDD[(Int, RTree[Point])]] = None
+    var rTreeRDD: Option[RDD[(Int, RTreeDeprecated[Point])]] = None
 
-    def genRTreeRDD(dataRDD: RDD[Point]): RDD[(Int, RTree[Point])] = {
+    def genRTreeRDD(dataRDD: RDD[Point]): RDD[(Int, RTreeDeprecated[Point])] = {
       val c = capacity.getOrElse({
         val dataSize = dataRDD.count
         max((dataSize / dataRDD.getNumPartitions / 100).toInt, 100)
@@ -159,8 +159,8 @@ object SelectionExp extends App {
           val entries = contents.map(x => (x, x.id))
             .zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
           val rtree = entries.length match {
-            case 0 => RTree(entries, 0)
-            case _ => RTree(entries, c)
+            case 0 => RTreeDeprecated(entries, 0)
+            case _ => RTreeDeprecated(entries, c)
           }
           List((pIndex, rtree)).iterator
         })

@@ -2,7 +2,7 @@ package operators.selection.selectionHandler
 
 import geometry.{Rectangle, Shape}
 import org.apache.spark.rdd.RDD
-import operators.selection.indexer.RTree
+import operators.selection.indexer.RTreeDeprecated
 import org.apache.spark.sql.SparkSession
 
 import scala.math.max
@@ -12,7 +12,7 @@ case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
                         var capacity: Option[Int] = None) extends SpatialHandler {
 
   SparkSession.builder.getOrCreate().sparkContext.getConf.registerKryoClasses(
-    Array(classOf[RTree[_]],
+    Array(classOf[RTreeDeprecated[_]],
       classOf[Rectangle],
       classOf[Shape]))
 
@@ -40,8 +40,8 @@ case class RTreeHandler(override val partitionRange: Map[Int, Rectangle],
         val entries = contents.map(x => (x, x.id))
           .zipWithIndex.toArray.map(x => (x._1._1, x._1._2, x._2))
         val rtree = entries.length match {
-          case 0 => RTree(entries, 0)
-          case _ => RTree(entries, c)
+          case 0 => RTreeDeprecated(entries, 0)
+          case _ => RTreeDeprecated(entries, c)
         }
         List((pIndex, rtree)).iterator
       })

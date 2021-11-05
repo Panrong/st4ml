@@ -49,10 +49,10 @@ class NNOrdering() extends Ordering[(_, Double)] {
   def compare(a: (_, Double), b: (_, Double)): Int = -a._2.compare(b._2)
 }
 
-case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
+case class RTreeDeprecated[T <: Shape](root: RTreeNode) extends Index with Serializable {
   var numEntries: Int = 0
 
-  def setNumEntries(n: Int): RTree[T] = {
+  def setNumEntries(n: Int): RTreeDeprecated[T] = {
     numEntries = n
     this
   }
@@ -302,7 +302,7 @@ case class RTree[T <: Shape](root: RTreeNode) extends Index with Serializable {
   }
 }
 
-object RTree {
+object RTreeDeprecated {
   //  def apply(entries: Array[(Point, Int)], max_entries_per_node: Int): RTree = {
   //    val dimension = entries(0)._1.coordinates.length
   //    val entries_len = entries.length.toDouble
@@ -400,11 +400,11 @@ object RTree {
   //    new RTree(root)
   //  }
 
-  def apply[T <: Shape : ClassTag](entries: Array[(T, String, Int)], max_entries_per_node: Int): RTree[T] = {
+  def apply[T <: Shape : ClassTag](entries: Array[(T, String, Int)], max_entries_per_node: Int): RTreeDeprecated[T] = {
     val entries_len = entries.length.toDouble
     if (entries_len == 0) {
       val root = new RTreeNode(Rectangle(Array(0, 0, 0, 0)), new Array[RTreeEntry](0), false)
-      new RTree(root).setNumEntries(0)
+      new RTreeDeprecated(root).setNumEntries(0)
     }
     else {
       val dimension = entries(0)._1.mbr.low.coordinates.length
@@ -505,7 +505,7 @@ object RTree {
 
       val mbr = Rectangle(min ++ max)
       val root = RTreeNode(mbr, cur_rtree_nodes)
-      new RTree(root).setNumEntries(entries_len.toInt)
+      new RTreeDeprecated(root).setNumEntries(entries_len.toInt)
     }
   }
 }

@@ -2,13 +2,13 @@ package instances
 
 import scala.reflect.ClassTag
 
-class Raster[S <: Geometry, V, D](
-  override val entries: Array[Entry[S, V]],
-  override val data: D)
+class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
+                                  override val data: D)
   extends Instance[S, V, D] {
 
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
+  var rTree: Option[RTree[Polygon]] = None
 
   override def mapSpatial(f: S => S): Raster[S, V, D] =
     Raster(
@@ -38,9 +38,9 @@ class Raster[S <: Geometry, V, D](
       data)
 
   override def mapEntries[V1](
-    f1: S => S,
-    f2: Duration => Duration,
-    f3: V => V1): Raster[S, V1, D] =
+                               f1: S => S,
+                               f2: Duration => Duration,
+                               f3: V => V1): Raster[S, V1, D] =
     Raster(
       entries.map(entry =>
         Entry(
@@ -62,9 +62,9 @@ class Raster[S <: Geometry, V, D](
       f(data))
 
   def getEntryIndex[G <: Geometry](
-    queryArr: Array[(G, Duration)],
-    how: String
-  ): Array[Array[Int]] =
+                                    queryArr: Array[(G, Duration)],
+                                    how: String
+                                  ): Array[Array[Int]] =
     queryArr.map(q =>
       entries
         .zipWithIndex
@@ -73,9 +73,9 @@ class Raster[S <: Geometry, V, D](
     )
 
   def getEntryIndex[G <: Geometry](
-    queryArr: Array[Array[(G, Duration)]],
-    how: String
-  ): Array[Array[Int]] =
+                                    queryArr: Array[Array[(G, Duration)]],
+                                    how: String
+                                  ): Array[Array[Int]] =
     queryArr.map(q =>
       entries
         .zipWithIndex
@@ -85,30 +85,33 @@ class Raster[S <: Geometry, V, D](
         .map(_._2)
     )
 
+  def getEntryIndexRTree[I <: Instance[_,_,_]:ClassTag](queryArr: Array[I]): Array[Array[Int]] =
+    queryArr.map(query => rTree.get.range3d(query).map(_._2.toInt))
+
   def getEntryIndex[G <: Geometry](
-    geomArr: Array[G],
-    durArr: Array[Duration],
-    how: String
-  ): Array[Array[Int]] = {
+                                    geomArr: Array[G],
+                                    durArr: Array[Duration],
+                                    how: String
+                                  ): Array[Array[Int]] = {
     val queryArr = geomArr.zip(durArr)
     getEntryIndex(queryArr, how)
   }
 
   def getEntryIndex[G <: Geometry](
-    geomArr: Array[G],
-    timestampArr: Array[Long],
-    how: String
-  ): Array[Array[Int]] = {
+                                    geomArr: Array[G],
+                                    timestampArr: Array[Long],
+                                    how: String
+                                  ): Array[Array[Int]] = {
     val durArr = timestampArr.map(t => Duration(t))
     val queryArr = geomArr.zip(durArr)
     getEntryIndex(queryArr, how)
   }
 
   def getEntryIndexToObj[T: ClassTag, G <: Geometry](
-    objArr: Array[T],
-    queryArr: Array[(G, Duration)],
-    how: String
-  ): Map[Int, Array[T]] = {
+                                                      objArr: Array[T],
+                                                      queryArr: Array[(G, Duration)],
+                                                      how: String
+                                                    ): Map[Int, Array[T]] = {
     if (queryArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {
@@ -126,14 +129,34 @@ class Raster[S <: Geometry, V, D](
   }
 
   def getEntryIndexToObj[T: ClassTag, G <: Geometry](
-    objArr: Array[T],
-    queryArr: Array[Array[(G, Duration)]],
-    how: String
-  ): Map[Int, Array[T]] = {
+                                                      objArr: Array[T],
+                                                      queryArr: Array[Array[(G, Duration)]],
+                                                      how: String
+                                                    ): Map[Int, Array[T]] = {
     if (queryArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {
       val indices = getEntryIndex(queryArr, how)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
+  }
+
+  def getEntryIndexToObjRTree[T<:Instance[_,_,_]: ClassTag, G <: Geometry](
+                                                      objArr: Array[T],
+                                                      how: String
+                                                    ): Map[Int, Array[T]] = {
+    if (objArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getEntryIndexRTree(objArr)
       objArr.zip(indices)
         .filter(_._2.length > 0)
         .flatMap { case (geom, indexArr) =>
@@ -147,8 +170,8 @@ class Raster[S <: Geometry, V, D](
   }
 
   def createRaster[T: ClassTag](
-    entryIndexToObj: Map[Int, Array[T]],
-  ): Raster[S, Array[T], D] = {
+                                 entryIndexToObj: Map[Int, Array[T]],
+                               ): Raster[S, Array[T], D] = {
     if (entryIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
         if (entryIndexToObj.contains(entryWithIdx._2)) {
@@ -171,11 +194,11 @@ class Raster[S <: Geometry, V, D](
   /**
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachGeometry[T <: Geometry: ClassTag, G <: Geometry: ClassTag](
-    geomArr: Array[T],
-    queryArr: Array[(G, Duration)],
-    how: String = "both"
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+  def attachGeometry[T <: Geometry : ClassTag, G <: Geometry : ClassTag](
+                                                                          geomArr: Array[T],
+                                                                          queryArr: Array[(G, Duration)],
+                                                                          how: String = "both"
+                                                                        )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(geomArr.length == queryArr.length,
       "the length of the first two arguments must match")
     val entryIndexToGeom = getEntryIndexToObj(geomArr, queryArr, how)
@@ -188,34 +211,41 @@ class Raster[S <: Geometry, V, D](
    *
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](
-    instanceArr: Array[T],
-    how: String
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
-      val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
-      val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
-      createRaster(entryIndexToInstance)
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](
+                                                         instanceArr: Array[T],
+                                                         how: String
+                                                       )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
+    val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
+    createRaster(entryIndexToInstance)
   }
 
   /**
    *
    * */
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](
-    instanceArr: Array[T]
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
-    val queryArr = instanceArr.map(x => (x.extent.toPolygon, x.duration))
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](
+                                                         instanceArr: Array[T]
+                                                       )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val queryArr = instanceArr.map(x => (x.toGeometry, x.duration))
     val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, "both")
+    createRaster(entryIndexToInstance)
+  }
+
+  def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](
+                                                         instanceArr: Array[T]
+                                                       )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    val entryIndexToInstance = getEntryIndexToObjRTree(instanceArr, "both")
     createRaster(entryIndexToInstance)
   }
 
   /**
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstance[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag](
-    instanceArr: Array[T],
-    queryArr: Array[(G, Duration)],
-    how: String = "both"
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+  def attachInstance[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag](
+                                                                                   instanceArr: Array[T],
+                                                                                   queryArr: Array[(G, Duration)],
+                                                                                   how: String = "both"
+                                                                                 )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(instanceArr.length == queryArr.length,
       "the length of the first two arguments must match")
     val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
@@ -227,11 +257,11 @@ class Raster[S <: Geometry, V, D](
    *
    * the "how" argument could be "spatial", "temporal", "both" or "either"
    * */
-  def attachInstanceExact[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag](
-    instanceArr: Array[T],
-    queryArr: Array[Array[(G, Duration)]],
-    how: String = "both"
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+  def attachInstanceExact[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag](
+                                                                                        instanceArr: Array[T],
+                                                                                        queryArr: Array[Array[(G, Duration)]],
+                                                                                        how: String = "both"
+                                                                                      )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     require(instanceArr.length == queryArr.length,
       "the length of the first two arguments must match")
     val entryIndexToInstance = getEntryIndexToObj(instanceArr, queryArr, how)
@@ -240,9 +270,9 @@ class Raster[S <: Geometry, V, D](
 
 
   // todo: handle different order of the same spatials
-  def merge[T : ClassTag](
-    other: Raster[S, Array[T], _]
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], None.type] = {
+  def merge[T: ClassTag](
+                          other: Raster[S, Array[T], _]
+                        )(implicit ev: Array[T] =:= V): Raster[S, Array[T], None.type] = {
     val spatials = entries.map(_.spatial)
     val temproals = entries.map(_.temporal)
     require(spatials sameElements other.entries.map(_.spatial),
@@ -250,18 +280,18 @@ class Raster[S <: Geometry, V, D](
     require(temproals sameElements other.entries.map(_.temporal),
       "cannot merge Raster with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
     Raster(newEntries, None)
   }
 
-  def merge[T : ClassTag](
-    other: Raster[S, V, D],
-    valueCombiner: (V, V) => V,
-    dataCombiner: (D, D) => D
-  ): Raster[S, V, D] = {
+  def merge[T: ClassTag](
+                          other: Raster[S, V, D],
+                          valueCombiner: (V, V) => V,
+                          dataCombiner: (D, D) => D
+                        ): Raster[S, V, D] = {
     val spatials = entries.map(_.spatial)
     val temproals = entries.map(_.temporal)
     require(spatials sameElements other.entries.map(_.spatial),
@@ -269,7 +299,7 @@ class Raster[S <: Geometry, V, D](
     require(temproals sameElements other.entries.map(_.temporal),
       "cannot merge Raster with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       valueCombiner(x._1, x._2)
     )
     val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
@@ -277,10 +307,10 @@ class Raster[S <: Geometry, V, D](
     Raster(newEntries, newData)
   }
 
-  def merge[T : ClassTag](
-    other: Raster[S, Array[T], D],
-    dataCombiner: (D, D) => D
-  )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+  def merge[T: ClassTag](
+                          other: Raster[S, Array[T], D],
+                          dataCombiner: (D, D) => D
+                        )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     val spatials = entries.map(_.spatial)
     val temproals = entries.map(_.temporal)
     require(spatials sameElements other.entries.map(_.spatial),
@@ -288,14 +318,13 @@ class Raster[S <: Geometry, V, D](
     require(temproals sameElements other.entries.map(_.temporal),
       "cannot merge Raster with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newEntries = (spatials, temproals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
     Raster(newEntries, newData)
   }
-
 
 
   override def toGeometry: Polygon = extent.toPolygon

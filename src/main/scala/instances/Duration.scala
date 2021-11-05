@@ -44,8 +44,8 @@ case class Duration(start: Long, end: Long) {
   }
 
   def plusSeconds(deltaStart: Long, deltaEnd: Long): Duration = Duration(
-    start+deltaStart,
-    end+deltaEnd
+    start + deltaStart,
+    end + deltaEnd
   )
 
 
@@ -79,7 +79,7 @@ object Duration {
   }
 
   def apply(durations: Array[Duration]): Duration = {
-    val nonEmptyDurations = durations.filter(! _.isEmpty)
+    val nonEmptyDurations = durations.filter(!_.isEmpty)
     if (nonEmptyDurations.nonEmpty) {
       val start = durations.map(_.start).min
       val end = durations.map(_.end).max
@@ -87,6 +87,11 @@ object Duration {
     } else {
       Duration.empty
     }
+  }
+
+  def apply(arr: Array[Long]): Duration = {
+    assert(arr.length == 2,s"The array length for a duration should be two. Got ${arr.length}")
+    Duration(arr(0), arr(1))
   }
 }
 

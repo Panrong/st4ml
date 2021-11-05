@@ -3,7 +3,7 @@ package examples
 import org.apache.spark.sql.SparkSession
 
 import geometry.Point
-import operators.selection.indexer.RTree
+import operators.selection.indexer.RTreeDeprecated
 
 object BuildIndex {
   def main(args: Array[String]): Unit = {

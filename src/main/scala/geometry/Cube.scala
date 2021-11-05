@@ -3,8 +3,8 @@ package geometry
 import scala.math.{max, min}
 
 case class Cube(coordinates: Array[Double], ID: String = "0") extends Shape with Serializable {
-  require(coordinates.length == 4,
-    s"Rectangle should have 6 coordinates(xMin, yMin, xMax, yMax,tMin, tMax) " +
+  require(coordinates.length == 6,
+    s"Cube should have 6 coordinates(xMin, yMin, xMax, yMax, tMin, tMax) " +
       s"while ${coordinates.mkString("Array(", ", ", ")")} has ${coordinates.length} dimensions.")
   val xMin: Double = coordinates(0)
   val xMax: Double = coordinates(2)
