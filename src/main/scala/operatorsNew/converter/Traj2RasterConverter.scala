@@ -14,7 +14,7 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon] = {
-    val r = (math.sqrt(polygonArr.length) / 2).toInt
+    val r = math.pow(polygonArr.length, 1.0 / 3).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- polygonArr.indices) {
       polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))

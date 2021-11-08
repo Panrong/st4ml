@@ -84,8 +84,9 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     //             println( shape.intersects(instance.toGeometry) &&
     //               Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
     //             )
+    val dur = shape.getUserData.asInstanceOf[Array[Double]]
     shape.intersects(extent) &&
-      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(duration)
+      !(dur(1) < duration.start || duration.end < dur(0))
   }
 
   def intersect[S <: Geometry : ClassTag](shape: S, geometry: Geometry, duration: Duration): Boolean = {
@@ -95,8 +96,9 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     //             println( shape.intersects(instance.toGeometry) &&
     //               Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
     //             )
+    val dur = shape.getUserData.asInstanceOf[Array[Double]]
     shape.intersects(geometry) &&
-      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(duration)
+      !(dur(1) < duration.start || duration.end < dur(0))
   }
 
   def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, String)] = {
