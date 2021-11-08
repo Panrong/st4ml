@@ -4,6 +4,8 @@ import instances.{Duration, Entry, Geometry, LineString, Polygon, RTree, Raster,
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
+import java.lang.System.nanoTime
+
 class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
                                          polygonArr: Array[Polygon],
                                          durArr: Array[Duration],
@@ -34,7 +36,9 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
   }
 
   def convertWithRTree(input: RDD[I]): RDD[O] = {
+    val t1 = nanoTime()
     rTree = Some(buildRTree(polygonArr, durArr))
+    println(s"RTree building time: ${(nanoTime - t1) * 1e-9} s")
     val spark = SparkSession.builder().getOrCreate()
     val rTreeBc = spark.sparkContext.broadcast(rTree)
     input.mapPartitions(partition => {
