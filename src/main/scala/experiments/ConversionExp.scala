@@ -54,7 +54,7 @@ object ConversionExp {
       val converter = new Event2SpatialMapConverter[Point,
         None.type, String, Array[Event[Point, None.type, String]], None.type](x => x, ranges)
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(inputRDD)
+      else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
@@ -76,14 +76,14 @@ object ConversionExp {
       val ranges = splitSpatial(sRange, xSplit, ySplit)
       val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convertFast(inputRDD)
+      else converter.convertFast(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-      //      /** print converted result */
-      //      val sms = convertedRDD.collect
-      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      //      println(sm.entries.map(_.value.length).deep)
-      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+            /** print converted result */
+            val sms = convertedRDD.collect
+            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+            println(sm.entries.map(_.value.length).deep)
+            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "3") {
       val inputRDD = spark.read.parquet(fileName).drop("pId").as[E]
@@ -99,7 +99,7 @@ object ConversionExp {
         String, Array[Event[Point, None.type, String]], None.type](
         x => x, stRanges.map(_._1), stRanges.map(_._2))
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(inputRDD)
+      else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
@@ -123,7 +123,7 @@ object ConversionExp {
         String, Array[Trajectory[None.type, String]], None.type](
         x => x, stRanges.map(_._1), stRanges.map(_._2))
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(inputRDD)
+      else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
