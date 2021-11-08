@@ -77,43 +77,46 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     ans.toArray
   }
 
-  def intersect[I <: Instance[_, _, _] : ClassTag,
-    S <: Geometry : ClassTag](shape: S, instance: I): Boolean = {
+  def intersect[S <: Geometry : ClassTag](shape: S, extent: Extent, duration: Duration): Boolean = {
     //             println(shape)
     //             println(instance)
     //             println(Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)))
     //             println( shape.intersects(instance.toGeometry) &&
     //               Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
     //             )
-    shape.intersects(instance.extent) &&
-      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
+    shape.intersects(extent) &&
+      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(duration)
   }
-  def intersectLeaf[I <: Instance[_, _, _] : ClassTag,
-    S <: Geometry : ClassTag](shape: S, instance: I): Boolean = {
+
+  def intersect[S <: Geometry : ClassTag](shape: S, geometry: Geometry, duration: Duration): Boolean = {
     //             println(shape)
     //             println(instance)
     //             println(Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)))
     //             println( shape.intersects(instance.toGeometry) &&
     //               Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
     //             )
-    shape.intersects(instance.toGeometry) &&
-      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
+    shape.intersects(geometry) &&
+      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(duration)
   }
+
   def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, String)] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
+    val extent = query.extent
+    val geometry = query.toGeometry
+    val duration = query.duration
     val st = new mutable.Stack[RTreeNode]()
-    if (intersect(root.mMbr, query) && root.mChild.nonEmpty) st.push(root)
+    if (intersect(root.mMbr, extent, duration) && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (intersect(mbr, query)) st.push(node)
+            if (intersect(mbr, extent, duration)) st.push(node)
         }
       } else {
         now.mChild.foreach {
           case RTreeLeafEntry(shape: T, mData, _) =>
-            if (intersectLeaf(shape, query)) ans += ((shape, mData))
+            if (intersect(shape, geometry, duration)) ans += ((shape, mData))
         }
       }
     }
