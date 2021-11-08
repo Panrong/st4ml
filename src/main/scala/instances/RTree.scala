@@ -284,13 +284,13 @@ object RTree {
         val left_center = dim match {
           case 0 => left._1.getCentroid.getCoordinate.x
           case 1 => left._1.getCentroid.getCoordinate.y
-          case 2 => left._1.getUserData.asInstanceOf[Array[Double]].sum / 2.0
+          case 2 => left._1.getUserData.asInstanceOf[Array[Double]].sum
           case _ => throw new ArithmeticException(s"dimension should be < 3. Got $dim.")
         }
         val right_center = dim match {
           case 0 => right._1.getCentroid.getCoordinate.x
           case 1 => right._1.getCentroid.getCoordinate.y
-          case 2 => left._1.getUserData.asInstanceOf[Array[Double]].sum / 2.0
+          case 2 => left._1.getUserData.asInstanceOf[Array[Double]].sum
           case _ => throw new ArithmeticException(s"dimension should be < 3. Got $dim.")
         }
         left_center < right_center
