@@ -113,7 +113,7 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (intersect(mbr, extent, duration)) st.push(node)
+            if (intersect(mbr, geometry, duration)) st.push(node)
         }
       } else {
         now.mChild.foreach {
