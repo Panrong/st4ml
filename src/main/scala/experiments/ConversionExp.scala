@@ -79,11 +79,11 @@ object ConversionExp {
       else converter.convertFast(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-            /** print converted result */
-            val sms = convertedRDD.collect
-            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-            println(sm.entries.map(_.value.length).deep)
-            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      /** print converted result */
+      val sms = convertedRDD.collect
+      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      println(sm.entries.map(_.value.length).deep)
+      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "3") {
       val inputRDD = spark.read.parquet(fileName).drop("pId").as[E]
@@ -126,12 +126,37 @@ object ConversionExp {
       else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-      //            /** print converted result */
-      //            val sms = convertedRDD.collect
-      //            println(sms.head.entries.length)
-      //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      //            println(sm.entries.map(_.value.length).deep)
-      //            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      println(sms.head.entries.length)
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+    }
+    // fake one
+    else if (m == "5") {
+      val inputRDD = spark.read.parquet(fileName).drop("pId").as[T]
+        .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
+      val partitioner = new HashPartitioner(numPartitions)
+      val selectedRDD = partitioner.partition(inputRDD).map(x => Event(x.extent.toPolygon, x.duration, None, x.data))
+      println(selectedRDD.count)
+      val t = nanoTime()
+      val sRanges = splitSpatial(sRange, xSplit, ySplit)
+      val tRanges = splitTemporal(tRange, tSplit)
+      val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
+      val converter = new Event2RasterConverter[Polygon, None.type,
+        String, Array[Event[Polygon, None.type, String]], None.type](
+        x => x, stRanges.map(_._1), stRanges.map(_._2))
+      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
+      else converter.convert(selectedRDD)
+      println(convertedRDD.count)
+      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      println(sms.head.entries.length)
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
       //          val entries = Array(

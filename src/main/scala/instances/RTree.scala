@@ -79,7 +79,18 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
 
   def intersect[I <: Instance[_, _, _] : ClassTag,
     S <: Geometry : ClassTag](shape: S, instance: I): Boolean = {
-    //             intln(shape)
+    //             println(shape)
+    //             println(instance)
+    //             println(Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)))
+    //             println( shape.intersects(instance.toGeometry) &&
+    //               Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
+    //             )
+    shape.intersects(instance.extent) &&
+      Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
+  }
+  def intersectLeaf[I <: Instance[_, _, _] : ClassTag,
+    S <: Geometry : ClassTag](shape: S, instance: I): Boolean = {
+    //             println(shape)
     //             println(instance)
     //             println(Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)))
     //             println( shape.intersects(instance.toGeometry) &&
@@ -88,7 +99,6 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     shape.intersects(instance.toGeometry) &&
       Duration(shape.getUserData.asInstanceOf[Array[Double]].map(_.toLong)).intersects(instance.duration)
   }
-
   def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, String)] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
     val st = new mutable.Stack[RTreeNode]()
@@ -103,7 +113,7 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       } else {
         now.mChild.foreach {
           case RTreeLeafEntry(shape: T, mData, _) =>
-            if (intersect(shape, query)) ans += ((shape, mData))
+            if (intersectLeaf(shape, query)) ans += ((shape, mData))
         }
       }
     }
