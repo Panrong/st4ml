@@ -4,9 +4,6 @@ import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, RTre
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
-import scala.collection.mutable
-import scala.reflect.ClassTag
-
 // map each partition to a time series
 class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S, V, D]] => VTS,
                                                                tArray: Array[Duration],
@@ -23,6 +20,7 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
       .zipWithIndex.map(x => (x._1, x._2.toString, x._2))
     RTree[Polygon](entries, r)
   }
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val events = partition.toArray
@@ -32,6 +30,7 @@ class Event2TimeSeriesConverter[S <: Geometry, V, D, VTS, DTS](f: Array[Event[S,
         .mapData(_ => d))
     })
   }
+
   def convertWithRTree(input: RDD[I]): RDD[O] = {
     rTree = Some(buildRTree(tMap.map(_._2)))
     val spark = SparkSession.builder().getOrCreate()

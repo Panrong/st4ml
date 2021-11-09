@@ -2,7 +2,7 @@ package experiments
 
 import instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
 import instances.RTree
-import operatorsNew.converter.{Event2RasterConverter, Event2SpatialMapConverter, Event2TimeSeriesConverter, Traj2RasterConverter, Traj2SpatialMapConverter}
+import operatorsNew.converter.{Event2RasterConverter, Event2SpatialMapConverter, Event2TimeSeriesConverter, Traj2RasterConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
 import operatorsNew.selector.SelectionUtils.{E, T}
 import operatorsNew.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
@@ -133,7 +133,7 @@ object ConversionExp {
       //      println(sm.entries.map(_.value.length).deep)
       //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
-    // fake one
+
     else if (m == "5") {
       val inputRDD = spark.read.parquet(fileName).drop("pId").as[E]
         .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
@@ -149,12 +149,34 @@ object ConversionExp {
       else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-      /** print converted result */
-      val sms = convertedRDD.collect
-      println(sms.head.entries.length)
-      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      println(sm.entries.map(_.value.length).deep)
-      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      println(sms.head.entries.length)
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+    }
+    else if (m == "6") {
+      val inputRDD = spark.read.parquet(fileName).drop("pId").as[T]
+        .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
+      val partitioner = new HashPartitioner(numPartitions)
+      val selectedRDD = partitioner.partition(inputRDD)
+      println(selectedRDD.count)
+      val t = nanoTime()
+      val tRanges = splitTemporal(tRange, tSplit)
+      val converter = new Traj2TimeSeriesConverter[None.type,
+        String, Array[Trajectory[None.type, String]], None.type](
+        x => x, tRanges)
+      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
+      else converter.convert(selectedRDD)
+      println(convertedRDD.count)
+      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+      //      /** print converted result */
+      //      val sms = convertedRDD.collect
+      //      println(sms.head.entries.length)
+      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //      println(sm.entries.map(_.value.length).deep)
+      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
       //          val entries = Array(

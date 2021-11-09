@@ -1,6 +1,6 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Point, TimeSeries, Trajectory}
+import instances.{Duration, Entry, Extent, Point, Polygon, RTree, TimeSeries, Trajectory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -10,12 +10,34 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
   type I = Trajectory[V, D]
   type O = TimeSeries[VTS, DTS]
   val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
+  var rTree: Option[RTree[Polygon]] = None
+
+  def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
+    val r = math.sqrt(temporals.length).toInt
+    val entries = temporals.map(t => Extent(t.start, 0, t.end, 1).toPolygon)
+      .zipWithIndex.map(x => (x._1, x._2.toString, x._2))
+    RTree[Polygon](entries, r)
+  }
 
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val trajs = partition.toArray
       val emptyTs = TimeSeries.empty[I](tArray)
       Iterator(emptyTs.attachInstance(trajs)
+        .mapValue(f)
+        .mapData(_ => d))
+    })
+  }
+
+  def convertWithRTree(input: RDD[I]): RDD[O] = {
+    rTree = Some(buildRTree(tMap.map(_._2)))
+    val spark = SparkSession.builder().getOrCreate()
+    val rTreeBc = spark.sparkContext.broadcast(rTree)
+    input.mapPartitions(partition => {
+      val trajs = partition.toArray
+      val emptyTs = TimeSeries.empty[I](tArray)
+      emptyTs.rTree = rTreeBc.value
+      Iterator(emptyTs.attachInstanceRTree(trajs)
         .mapValue(f)
         .mapData(_ => d))
     })

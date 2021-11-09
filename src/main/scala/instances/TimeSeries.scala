@@ -100,9 +100,11 @@ class TimeSeries[V, D](
           "inputArr should be either Array[Long] or Array[Duration]")
     }
   }
+
   def getTemporalIndexRTree(timeArr: Array[_]): Array[Array[Int]] = {
     timeArr match {
-      case durArr: Array[Duration] => Utils.getBinIndicesRTree(rTree.get, durArr)
+      case durArr: Array[Duration] =>
+        Utils.getBinIndicesRTree(rTree.get, durArr)
       case timestampArr: Array[Long] =>
         if (isTemporalDisjoint)
           Utils.getBinIndex(temporals, timestampArr)
@@ -113,6 +115,7 @@ class TimeSeries[V, D](
           "inputArr should be either Array[Long] or Array[Duration]")
     }
   }
+
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -129,6 +132,7 @@ class TimeSeries[V, D](
         .mapValues(x => x.map(_._1))
     }
   }
+
   def getTemporalIndexToObjRTree[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -145,6 +149,7 @@ class TimeSeries[V, D](
         .mapValues(x => x.map(_._1))
     }
   }
+
   def createTimeSeries[T: ClassTag](
                                      temporalIndexToObj: Map[Int, Array[T]],
                                      computePolygonFunc: Array[T] => Polygon
