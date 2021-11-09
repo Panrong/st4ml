@@ -101,20 +101,8 @@ class TimeSeries[V, D](
     }
   }
 
-  def getTemporalIndexRTree(timeArr: Array[_]): Array[Array[Int]] = {
-    timeArr match {
-      case durArr: Array[Duration] =>
-        Utils.getBinIndicesRTree(rTree.get, durArr)
-      case timestampArr: Array[Long] =>
-        if (isTemporalDisjoint)
-          Utils.getBinIndex(temporals, timestampArr)
-        else
-          Utils.getBinIndices(temporals, timestampArr)
-      case _ => throw new IllegalArgumentException(
-        "Unsupported type of input argument in method getTemporalIndex; " +
-          "inputArr should be either Array[Long] or Array[Duration]")
-    }
-  }
+  def getTemporalIndexRTree(timeArr: Array[Duration]): Array[Array[Int]] =
+    Utils.getBinIndicesRTree(rTree.get, timeArr)
 
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
@@ -133,7 +121,7 @@ class TimeSeries[V, D](
     }
   }
 
-  def getTemporalIndexToObjRTree[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
+  def getTemporalIndexToObjRTree[T: ClassTag](objArr: Array[T], timeArr: Array[Duration]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {

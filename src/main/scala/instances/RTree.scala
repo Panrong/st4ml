@@ -125,6 +125,33 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     ans.toArray
   }
 
+  def intersects1d[I <: Geometry](a: I, b: (Long, Long)): Boolean = {
+    val xMin = a.getEnvelopeInternal.getMinX
+    val xMax = a.getEnvelopeInternal.getMaxX
+    !(xMax < b._1 || b._2 < xMin)
+  }
+
+  def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, String)] = {
+    val ans = mutable.ArrayBuffer[(T, String)]()
+    val st = new mutable.Stack[RTreeNode]()
+    if (intersects1d(root.mMbr, query) && root.mChild.nonEmpty) st.push(root)
+    while (st.nonEmpty) {
+      val now = st.pop()
+      if (!now.isLeaf) {
+        now.mChild.foreach {
+          case RTreeInternalEntry(mbr, node) =>
+            if (intersects1d(mbr, query)) st.push(node)
+        }
+      } else {
+        now.mChild.foreach {
+          case RTreeLeafEntry(shape: T, mData, _) =>
+            if (intersects1d(shape, query)) ans += ((shape, mData))
+        }
+      }
+    }
+    ans.toArray
+  }
+
   def range(query: Polygon, levelLimit: Int, sThreshold: Double): Option[Array[(T, String)]] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
     val q = new mutable.Queue[(RTreeNode, Int)]()

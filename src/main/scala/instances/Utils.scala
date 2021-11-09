@@ -8,7 +8,7 @@ object Utils {
 
   // methods for calculating an overall Polygon
   def getPolygonFromGeometryArray[T <: Geometry](geomArr: Array[T]): Polygon = {
-    val nonEmptyGeomArr = geomArr.filter(! _.isEmpty)
+    val nonEmptyGeomArr = geomArr.filter(!_.isEmpty)
     val envelopes = nonEmptyGeomArr.map(_.getEnvelopeInternal)
 
     if (envelopes.nonEmpty) {
@@ -21,7 +21,7 @@ object Utils {
     else Polygon.empty
   }
 
-  def getPolygonFromInstanceArray[T <: Instance[_,_,_]](instanceArr: Array[T]): Polygon = {
+  def getPolygonFromInstanceArray[T <: Instance[_, _, _]](instanceArr: Array[T]): Polygon = {
     if (instanceArr.nonEmpty) {
       Extent(instanceArr.map(_.extent)).toPolygon
     }
@@ -48,11 +48,11 @@ object Utils {
       bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
     )
   }
-  def getBinIndicesRTree(rTree:RTree[Polygon], queryArr: Array[Duration]): Array[Array[Int]] = {
-    queryArr.map{query =>
-      val fakePolygon = Extent(query.start, 0, query.end ,1).toPolygon
-      rTree.range(fakePolygon).map(_._2.toInt)}
-  }
+
+  def getBinIndicesRTree(rTree: RTree[Polygon], queryArr: Array[Duration]): Array[Array[Int]] =
+    queryArr.map(query =>
+      rTree.range1d((query.start, query.end)).map(_._2.toInt))
+
 
   def getBinIndices(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] = {
     queryArr.map(q =>
@@ -78,7 +78,8 @@ object Utils {
     })
     qArray.map(query => rTree.range(query).map(_._2.toInt))
   }
-  def getBinIndicesRTree[T <: Geometry: ClassTag](RTree: RTree[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
+
+  def getBinIndicesRTree[T <: Geometry : ClassTag](RTree: RTree[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
 }
