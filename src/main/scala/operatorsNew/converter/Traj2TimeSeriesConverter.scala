@@ -14,9 +14,13 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
 
   def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
     val r = math.sqrt(temporals.length).toInt
-    val entries = temporals.map(t => Extent(t.start, 0, t.end, 1).toPolygon)
-      .zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-    RTree[Polygon](entries, r)
+    var entries = new Array[(Polygon, String, Int)](0)
+    for (i <- temporals.zipWithIndex) {
+      val p = Extent(0,0,1,1).toPolygon
+      p.setUserData(Array(i._1.start.toDouble, i._1.end.toDouble))
+      entries = entries :+ (p.copy.asInstanceOf[Polygon], i._2.toString, i._2)
+    }
+    RTree[Polygon](entries, r, dimension = 3)
   }
 
   override def convert(input: RDD[I]): RDD[O] = {

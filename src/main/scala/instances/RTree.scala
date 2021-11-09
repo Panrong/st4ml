@@ -126,9 +126,8 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
   }
 
   def intersects1d[I <: Geometry](a: I, b: (Long, Long)): Boolean = {
-    val xMin = a.getEnvelopeInternal.getMinX
-    val xMax = a.getEnvelopeInternal.getMaxX
-    !(xMax < b._1 || b._2 < xMin)
+    val dur = a.getUserData.asInstanceOf[Array[Double]]
+    !(dur(1) < b._1 || b._2 < dur(0))
   }
 
   def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, String)] = {

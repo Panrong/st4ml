@@ -171,12 +171,12 @@ object ConversionExp {
       else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-            /** print converted result */
-            val sms = convertedRDD.collect
-            println(sms.head.entries.length)
-            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-            println(sm.entries.map(_.value.length).deep)
-            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //            /** print converted result */
+      //            val sms = convertedRDD.collect
+      //            println(sms.head.entries.length)
+      //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //            println(sm.entries.map(_.value.length).deep)
+      //            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
       //          val entries = Array(
