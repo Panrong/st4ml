@@ -102,7 +102,8 @@ class TimeSeries[V, D](
   }
 
   def getTemporalIndexRTree(timeArr: Array[Duration]): Array[Array[Int]] =
-    Utils.getBinIndicesRTree(rTree.get, timeArr)
+    // Utils.getBinIndicesRTree(rTree.get, timeArr)
+  timeArr.map(query => rTree.get.range1d((query.start, query.end)).map(_._2.toInt))
 
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {

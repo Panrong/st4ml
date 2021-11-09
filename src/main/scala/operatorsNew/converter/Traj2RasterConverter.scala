@@ -36,9 +36,7 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
   }
 
   def convertWithRTree(input: RDD[I]): RDD[O] = {
-    val t1 = nanoTime()
     rTree = Some(buildRTree(polygonArr, durArr))
-    println(s"RTree building time: ${(nanoTime - t1) * 1e-9} s")
     val spark = SparkSession.builder().getOrCreate()
     val rTreeBc = spark.sparkContext.broadcast(rTree)
     input.mapPartitions(partition => {
