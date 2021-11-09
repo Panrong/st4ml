@@ -13,7 +13,7 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
 
   val sMap: Array[(Int, Polygon)] = sArray.zipWithIndex.map(_.swap)
 
-  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
+//  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[Polygon]] = None
 
 

@@ -4,11 +4,12 @@ import scala.reflect.ClassTag
 
 
 class TimeSeries[V, D](
-  override val entries: Array[Entry[Polygon, V]],
-  override val data: D)
+                        override val entries: Array[Entry[Polygon, V]],
+                        override val data: D)
   extends Instance[Polygon, V, D] {
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
+  var rTree: Option[RTree[Polygon]] = None
 
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
@@ -51,9 +52,9 @@ class TimeSeries[V, D](
       data)
 
   override def mapEntries[V1](
-    f1: Polygon => Polygon,
-    f2: Duration => Duration,
-    f3: V => V1): TimeSeries[V1, D] =
+                               f1: Polygon => Polygon,
+                               f2: Duration => Duration,
+                               f3: V => V1): TimeSeries[V1, D] =
     TimeSeries(
       entries.map(entry =>
         Entry(
@@ -99,7 +100,19 @@ class TimeSeries[V, D](
           "inputArr should be either Array[Long] or Array[Duration]")
     }
   }
-
+  def getTemporalIndexRTree(timeArr: Array[_]): Array[Array[Int]] = {
+    timeArr match {
+      case durArr: Array[Duration] => Utils.getBinIndicesRTree(rTree.get, durArr)
+      case timestampArr: Array[Long] =>
+        if (isTemporalDisjoint)
+          Utils.getBinIndex(temporals, timestampArr)
+        else
+          Utils.getBinIndices(temporals, timestampArr)
+      case _ => throw new IllegalArgumentException(
+        "Unsupported type of input argument in method getTemporalIndex; " +
+          "inputArr should be either Array[Long] or Array[Duration]")
+    }
+  }
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -116,11 +129,26 @@ class TimeSeries[V, D](
         .mapValues(x => x.map(_._1))
     }
   }
-
+  def getTemporalIndexToObjRTree[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
+    if (timeArr.isEmpty) {
+      Map.empty[Int, Array[T]]
+    } else {
+      val indices = getTemporalIndexRTree(timeArr)
+      objArr.zip(indices)
+        .filter(_._2.length > 0)
+        .flatMap { case (geom, indexArr) =>
+          for {
+            idx <- indexArr
+          } yield (geom, idx)
+        }
+        .groupBy(_._2)
+        .mapValues(x => x.map(_._1))
+    }
+  }
   def createTimeSeries[T: ClassTag](
-    temporalIndexToObj: Map[Int, Array[T]],
-    computePolygonFunc: Array[T] => Polygon
-  ): TimeSeries[Array[T], D] = {
+                                     temporalIndexToObj: Map[Int, Array[T]],
+                                     computePolygonFunc: Array[T] => Polygon
+                                   ): TimeSeries[Array[T], D] = {
     if (temporalIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
         if (temporalIndexToObj.contains(entryWithIdx._2)) {
@@ -130,7 +158,7 @@ class TimeSeries[V, D](
           entryWithIdx._1.value.asInstanceOf[Array[T]]
         }
       )
-      val newSpatials = newValues.map {newGeomArr => computePolygonFunc(newGeomArr)}
+      val newSpatials = newValues.map { newGeomArr => computePolygonFunc(newGeomArr) }
       val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
       TimeSeries(newEntries, data)
     }
@@ -139,8 +167,8 @@ class TimeSeries[V, D](
     }
   }
 
-  def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T], timestampArr: Array[Long])
-    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def attachGeometry[T <: Geometry : ClassTag](geomArr: Array[T], timestampArr: Array[Long])
+                                              (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     require(geomArr.length == timestampArr.length,
       "the length of two arguments must match")
 
@@ -148,8 +176,8 @@ class TimeSeries[V, D](
     createTimeSeries(entryIndexToGeom, Utils.getPolygonFromGeometryArray)
   }
 
-  def attachGeometry[T <: Geometry: ClassTag](geomArr: Array[T], durationArr: Array[Duration])
-    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def attachGeometry[T <: Geometry : ClassTag](geomArr: Array[T], durationArr: Array[Duration])
+                                              (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     require(geomArr.length == durationArr.length,
       "the length of two arguments must match")
 
@@ -157,8 +185,8 @@ class TimeSeries[V, D](
     createTimeSeries(entryIndexToGeom, Utils.getPolygonFromGeometryArray)
   }
 
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], timestampArr: Array[Long])
-    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T], timestampArr: Array[Long])
+                                                       (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     require(instanceArr.length == timestampArr.length,
       "the length of two arguments must match")
 
@@ -166,8 +194,8 @@ class TimeSeries[V, D](
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T], durationArr: Array[Duration])
-    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T], durationArr: Array[Duration])
+                                                       (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     require(instanceArr.length == durationArr.length,
       "the length of two arguments must match")
 
@@ -175,21 +203,27 @@ class TimeSeries[V, D](
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
-  def attachInstance[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T])
-    (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def attachInstance[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
+                                                       (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     val durationArr = instanceArr.map(_.duration)
     attachInstance(instanceArr, durationArr)
+  }
 
+  def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
+                                                            (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    val durationArr = instanceArr.map(_.duration)
+    val entryIndexToInstance = getTemporalIndexToObjRTree(instanceArr, durationArr)
+    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
   // todo: handle different order of the same temporals
-  def merge[T : ClassTag](
-    other: TimeSeries[Array[T], _]
-  )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], None.type] = {
+  def merge[T: ClassTag](
+                          other: TimeSeries[Array[T], _]
+                        )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], None.type] = {
     require(temporals sameElements other.temporals,
       "cannot merge TimeSeries with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
@@ -200,14 +234,14 @@ class TimeSeries[V, D](
   }
 
   def merge[T](
-    other: TimeSeries[T, D],
-    valueCombiner: (V, T) => V,
-    dataCombiner: (D, D) => D
-  ): TimeSeries[V, D] = {
+                other: TimeSeries[T, D],
+                valueCombiner: (V, T) => V,
+                dataCombiner: (D, D) => D
+              ): TimeSeries[V, D] = {
     require(temporals sameElements other.temporals,
       "cannot merge TimeSeries with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       valueCombiner(x._1, x._2)
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
@@ -218,14 +252,14 @@ class TimeSeries[V, D](
     TimeSeries(newEntries, newData)
   }
 
-  def merge[T : ClassTag](
-    other: TimeSeries[Array[T], D],
-    dataCombiner: (D, D) => D
-  )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  def merge[T: ClassTag](
+                          other: TimeSeries[Array[T], D],
+                          dataCombiner: (D, D) => D
+                        )(implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     require(temporals sameElements other.temporals,
       "cannot merge TimeSeries with different temporal structure")
 
-    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map( x =>
+    val newValues = entries.map(_.value).zip(other.entries.map(_.value)).map(x =>
       x._1.asInstanceOf[Array[T]] ++ x._2.asInstanceOf[Array[T]]
     )
     val newSpatials = entries.map(_.spatial).zip(other.entries.map(_.spatial)).map(x =>
@@ -237,7 +271,7 @@ class TimeSeries[V, D](
   }
 
   def split(at: Long): (TimeSeries[V, D], TimeSeries[V, D]) = {
-    require(temporals(0).end <= at && at <= temporals(dimension-1).start,
+    require(temporals(0).end <= at && at <= temporals(dimension - 1).start,
       s"the split timestamp should range from " +
         s"${temporals(0).end} to ${temporals(temporals.length - 1).start}, but got $at")
 

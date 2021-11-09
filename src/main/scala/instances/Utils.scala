@@ -48,6 +48,11 @@ object Utils {
       bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
     )
   }
+  def getBinIndicesRTree(rTree:RTree[Polygon], queryArr: Array[Duration]): Array[Array[Int]] = {
+    queryArr.map{query =>
+      val fakePolygon = Extent(query.start, 0, query.end ,1).toPolygon
+      rTree.range(fakePolygon).map(_._2.toInt)}
+  }
 
   def getBinIndices(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] = {
     queryArr.map(q =>
@@ -66,12 +71,12 @@ object Utils {
     )
   }
 
-  def getBinIndicesRTreeDeprecated[T <: Geometry](RTree: RTreeDeprecated[geometry.Rectangle], queryArr: Array[T]): Array[Array[Int]] = {
+  def getBinIndicesRTreeDeprecated[T <: Geometry](rTree: RTreeDeprecated[geometry.Rectangle], queryArr: Array[T]): Array[Array[Int]] = {
     val qArray = queryArr.map(x => {
       val extent = Extent(x.getEnvelopeInternal)
       geometry.Rectangle(Array(extent.xMin, extent.yMin, extent.xMax, extent.yMax))
     })
-    qArray.map(query => RTree.range(query).map(_._2.toInt))
+    qArray.map(query => rTree.range(query).map(_._2.toInt))
   }
   def getBinIndicesRTree[T <: Geometry: ClassTag](RTree: RTree[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
