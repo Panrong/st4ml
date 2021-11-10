@@ -52,7 +52,7 @@ class NNOrdering() extends Ordering[(_, Double)] {
 
 case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable {
   var numEntries: Int = 0
-  var count: Int = 0
+  //  var count: Int = 0
 
   def setNumEntries(n: Int): RTree[T] = {
     numEntries = n
@@ -130,7 +130,7 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
 
   def intersects1d[I <: Geometry](a: I, b: (Long, Long)): Boolean = {
     val dur = a.getUserData.asInstanceOf[Array[Double]]
-    count += 1
+    //    count += 1
     !(dur(1) < b._1 || b._2 < dur(0))
   }
 
@@ -152,9 +152,8 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
         }
       }
     }
-    val sc = SparkSession.builder().getOrCreate().sparkContext
-    println(s"..$count")
-    this.count = 0
+    //    println(s"..$count")
+    //    this.count = 0
     ans.toArray
   }
 
