@@ -16,7 +16,7 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon] = {
-    val r = math.pow(polygonArr.length, 1.0 / 3).toInt
+    val r = (math.pow(polygonArr.length, 1.0 / 3) / 2).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- polygonArr.indices) {
       polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
@@ -37,12 +37,12 @@ class Traj2RasterConverter[V, D, VR, DR](f: Array[Trajectory[V, D]] => VR,
 
   def convertWithRTree(input: RDD[I]): RDD[O] = {
     rTree = Some(buildRTree(polygonArr, durArr))
-//    val spark = SparkSession.builder().getOrCreate()
-//    val rTreeBc = spark.sparkContext.broadcast(rTree)
+    //    val spark = SparkSession.builder().getOrCreate()
+    //    val rTreeBc = spark.sparkContext.broadcast(rTree)
     input.mapPartitions(partition => {
       val trajs = partition.toArray
       val emptyRaster = Raster.empty[I](polygonArr, durArr)
-//      emptyRaster.rTree = rTreeBc.value
+      //      emptyRaster.rTree = rTreeBc.value
       emptyRaster.rTree = Some(buildRTree(polygonArr, durArr))
       Iterator(emptyRaster.attachInstanceRTree(trajs)
         .mapValue(f)

@@ -11,6 +11,22 @@ class TimeSeries[V, D](
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   var rTree: Option[RTree[Polygon]] = None
 
+  lazy val starts: Array[(Long, Array[Int])] = entries.map(_.temporal.start).zipWithIndex.groupBy(_._1).mapValues(x => x.map(_._2)).toArray.sortBy(_._1)
+  lazy val ends: Array[(Long, Array[Int])] = entries.map(_.temporal.end).zipWithIndex.groupBy(_._1).mapValues(x => x.map(_._2)).toArray.sortBy(_._1)
+
+  def findOverlappings(duration: Duration): Array[Int] = {
+    import scala.collection.Searching._
+    val start = duration.start
+    val end = duration.end
+    val startArr = starts.map(_._1)
+    val endArr = ends.map(_._1)
+    val s1 = startArr.search(start).insertionPoint
+    val e1 = endArr.search(end).insertionPoint
+    val s2 = startArr.search(start).insertionPoint
+    val e2 = endArr.search(end).insertionPoint
+    (starts.slice(s1,e1 + 1) ++ ends.slice(s2, e2+1)).flatMap(_._2).distinct
+
+  }
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 
@@ -101,9 +117,14 @@ class TimeSeries[V, D](
     }
   }
 
-  def getTemporalIndexRTree(timeArr: Array[Duration]): Array[Array[Int]] =
-  // Utils.getBinIndicesRTree(rTree.get, timeArr)
-    timeArr.map(query => rTree.get.range1d((query.start, query.end)).map(_._2.toInt))
+  def getTemporalIndexRTree(timeArr: Array[Duration]): Array[Array[Int]] = {
+    //timeArr.map(query => rTree.get.range1d((query.start, query.end)).map(_._2.toInt))
+    timeArr.map{ query =>
+      val slots1 = findOverlappings(query)
+      val slots2 = rTree.get.range1d((query.start, query.start)).map(_._2.toInt)
+      (slots1 ++ slots2).distinct
+    }
+  }
 
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
