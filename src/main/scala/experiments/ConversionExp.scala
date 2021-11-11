@@ -167,7 +167,7 @@ object ConversionExp {
       val converter = new Traj2TimeSeriesConverter[None.type,
         String, Array[Trajectory[None.type, String]], None.type](
         x => x, tRanges)
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
+      val convertedRDD = if (useRTree) converter.convertWithIntervalTree(selectedRDD)
       else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
