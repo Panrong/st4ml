@@ -136,14 +136,15 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
 
   def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, String)] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
-    val st = new mutable.Stack[RTreeNode]()
-    if (intersects1d(root.mMbr, query) && root.mChild.nonEmpty) st.push(root)
+    var st =  List[RTreeNode]()
+    if (intersects1d(root.mMbr, query) && root.mChild.nonEmpty) st = st :+ root
     while (st.nonEmpty) {
-      val now = st.pop()
+      val now = st.last
+      st = st.dropRight(1)
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (intersects1d(mbr, query)) st.push(node)
+            if (intersects1d(mbr, query)) st = st :+ node
         }
       } else {
         now.mChild.foreach {

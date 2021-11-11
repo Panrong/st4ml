@@ -95,8 +95,9 @@ class TimeSeries[V, D](
       case timestampArr: Array[Long] =>
         if (isTemporalDisjoint)
           Utils.getBinIndex(temporals, timestampArr)
-        else
+        else {
           Utils.getBinIndices(temporals, timestampArr)
+        }
       case _ => throw new IllegalArgumentException(
         "Unsupported type of input argument in method getTemporalIndex; " +
           "inputArr should be either Array[Long] or Array[Duration]")
@@ -142,6 +143,7 @@ class TimeSeries[V, D](
         .mapValues(x => x.map(_._1))
     }
   }
+
   def getTemporalIndexToObjIntervalTree[T: ClassTag](objArr: Array[T], timeArr: Array[Duration]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -158,6 +160,7 @@ class TimeSeries[V, D](
         .mapValues(x => x.map(_._1))
     }
   }
+
   def createTimeSeries[T: ClassTag](
                                      temporalIndexToObj: Map[Int, Array[T]],
                                      computePolygonFunc: Array[T] => Polygon
@@ -230,7 +233,7 @@ class TimeSeries[V, D](
   }
 
   def attachInstanceIntervalTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
-                                                            (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+                                                                   (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     val durationArr = instanceArr.map(_.duration)
     val entryIndexToInstance = getTemporalIndexToObjIntervalTree(instanceArr, durationArr)
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
