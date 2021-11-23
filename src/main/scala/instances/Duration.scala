@@ -37,10 +37,11 @@ case class Duration(start: Long, end: Long) {
   def contains(dur: Duration): Boolean =
     start < dur.start && dur.end < end
 
-  def intersection(other: Duration): Duration = {
+  def intersection(other: Duration): Option[Duration] = {
     val newStart = if (start > other.start) start else other.start
     val newEnd = if (end < other.end) end else other.end
-    Duration(newStart, newEnd)
+    if(newEnd <= newStart) None
+    else Some(Duration(newStart, newEnd))
   }
 
   def plusSeconds(deltaStart: Long, deltaEnd: Long): Duration = Duration(

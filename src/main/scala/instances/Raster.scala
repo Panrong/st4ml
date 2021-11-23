@@ -1,6 +1,6 @@
 package instances
 
-import scala.reflect.ClassTag
+import scala.reflect.{ClassTag, classTag}
 
 class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
                                   override val data: D)
@@ -9,6 +9,49 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
   var rTree: Option[RTree[Polygon]] = None
+
+
+  def isRegular: Boolean = {
+    val cubes = entries.map(x => (x.spatial.getEnvelopeInternal.getMinX,
+      x.spatial.getEnvelopeInternal.getMinY,
+      x.spatial.getEnvelopeInternal.getMaxX,
+      x.spatial.getEnvelopeInternal.getMaxY,
+      x.temporal.start, x.temporal.end))
+    val totalArea = this.extent.area * this.duration.seconds
+    val sumArea = cubes.map(x => (x._3 - x._1) * (x._4 - x._2) * (x._6 - x._5)).sum
+    val lengths = cubes.map(x => (x._3 - x._1, x._4 - x._2, x._6 - x._5))
+
+    //    def isDisjoint: Boolean = {
+    //      if (cubes.length > 1) {
+    //        val pairs = cubes.combinations(2)
+    //        pairs.foreach(p =>
+    //          if (Extent(p(0)._1, p(0)._2, p(0)._3, p(0)._4)
+    //          .intersection(Extent(p(1)._1, p(1)._2, p(1)._3, p(1)._4)).isDefined &&
+    //          Duration(p(0)._5, p(0)._6).intersection(Duration(p(1)._5, p(1)._6)).isDefined)
+    //          return false)
+    //      }
+    //      true
+    //    }
+
+    def overlaps: Boolean = {
+      if (cubes.length > 1) {
+        val pairs = cubes.combinations(2)
+        pairs.foreach(p => {
+          if (p(0)._3 < p(1)._1) return false
+          if (p(0)._1 > p(1)._3) return false
+          if (p(0)._4 < p(1)._2) return false
+          if (p(0)._2 > p(1)._4) return false
+          if (p(0)._6 < p(1)._5) return false
+          if (p(0)._5 > p(1)._6) return false
+        }
+        )
+      }
+      true
+
+    }
+
+    lengths.forall(x => x == lengths.head) && totalArea == sumArea && !overlaps
+  }
 
   override def mapSpatial(f: S => S): Raster[S, V, D] =
     Raster(
@@ -85,7 +128,7 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
         .map(_._2)
     )
 
-  def getEntryIndexRTree[I <: Instance[_,_,_]:ClassTag](queryArr: Array[I]): Array[Array[Int]] =
+  def getEntryIndexRTree[I <: Instance[_, _, _] : ClassTag](queryArr: Array[I]): Array[Array[Int]] =
     queryArr.map(query => rTree.get.range3d(query).map(_._2.toInt))
 
   def getEntryIndex[G <: Geometry](
@@ -149,10 +192,10 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     }
   }
 
-  def getEntryIndexToObjRTree[T<:Instance[_,_,_]: ClassTag, G <: Geometry](
-                                                      objArr: Array[T],
-                                                      how: String
-                                                    ): Map[Int, Array[T]] = {
+  def getEntryIndexToObjRTree[T <: Instance[_, _, _] : ClassTag, G <: Geometry](
+                                                                                 objArr: Array[T],
+                                                                                 how: String
+                                                                               ): Map[Int, Array[T]] = {
     if (objArr.isEmpty) {
       Map.empty[Int, Array[T]]
     } else {
@@ -232,8 +275,8 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
   }
 
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](
-                                                         instanceArr: Array[T]
-                                                       )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+                                                              instanceArr: Array[T]
+                                                            )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     val entryIndexToInstance = getEntryIndexToObjRTree(instanceArr, "both")
     createRaster(entryIndexToInstance)
   }

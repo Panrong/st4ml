@@ -1,6 +1,6 @@
 package instances
 
-import intervalTree.mutable.IntervalTree
+//import intervalTree.mutable.IntervalTree
 
 import scala.reflect.ClassTag
 
@@ -12,7 +12,7 @@ class TimeSeries[V, D](
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   var rTree: Option[RTree[Polygon]] = None
-  var intervalTree: Option[IntervalTree[Int]] = None
+//  var intervalTree: Option[IntervalTree[Int]] = None
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 
@@ -24,6 +24,9 @@ class TimeSeries[V, D](
     }
     true
   }
+
+  def isRegular: Boolean = temporals.forall(x => x.seconds==temporals.head.seconds) &&
+    isTemporalDisjoint && this.duration.seconds == temporals.map(_.seconds).sum
 
   override def mapSpatial(f: Polygon => Polygon): TimeSeries[V, D] =
     TimeSeries(
@@ -107,8 +110,8 @@ class TimeSeries[V, D](
   def getTemporalIndexRTree(timeArr: Array[Duration]): Array[Array[Int]] =
     timeArr.map(query => rTree.get.range1d((query.start, query.end)).map(_._2.toInt))
 
-  def getTemporalIndexIntervalTree(timeArr: Array[Duration]): Array[Array[Int]] =
-    timeArr.map(query => intervalTree.get.getIntervals(query.start, query.end).map(_.data).toArray)
+//  def getTemporalIndexIntervalTree(timeArr: Array[Duration]): Array[Array[Int]] =
+//    timeArr.map(query => intervalTree.get.getIntervals(query.start, query.end).map(_.data).toArray)
 
   def getTemporalIndexToObj[T: ClassTag](objArr: Array[T], timeArr: Array[_]): Map[Int, Array[T]] = {
     if (timeArr.isEmpty) {
@@ -144,22 +147,22 @@ class TimeSeries[V, D](
     }
   }
 
-  def getTemporalIndexToObjIntervalTree[T: ClassTag](objArr: Array[T], timeArr: Array[Duration]): Map[Int, Array[T]] = {
-    if (timeArr.isEmpty) {
-      Map.empty[Int, Array[T]]
-    } else {
-      val indices = getTemporalIndexIntervalTree(timeArr)
-      objArr.zip(indices)
-        .filter(_._2.length > 0)
-        .flatMap { case (geom, indexArr) =>
-          for {
-            idx <- indexArr
-          } yield (geom, idx)
-        }
-        .groupBy(_._2)
-        .mapValues(x => x.map(_._1))
-    }
-  }
+//  def getTemporalIndexToObjIntervalTree[T: ClassTag](objArr: Array[T], timeArr: Array[Duration]): Map[Int, Array[T]] = {
+//    if (timeArr.isEmpty) {
+//      Map.empty[Int, Array[T]]
+//    } else {
+//      val indices = getTemporalIndexIntervalTree(timeArr)
+//      objArr.zip(indices)
+//        .filter(_._2.length > 0)
+//        .flatMap { case (geom, indexArr) =>
+//          for {
+//            idx <- indexArr
+//          } yield (geom, idx)
+//        }
+//        .groupBy(_._2)
+//        .mapValues(x => x.map(_._1))
+//    }
+//  }
 
   def createTimeSeries[T: ClassTag](
                                      temporalIndexToObj: Map[Int, Array[T]],
@@ -232,12 +235,12 @@ class TimeSeries[V, D](
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   }
 
-  def attachInstanceIntervalTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
-                                                                   (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
-    val durationArr = instanceArr.map(_.duration)
-    val entryIndexToInstance = getTemporalIndexToObjIntervalTree(instanceArr, durationArr)
-    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
-  }
+//  def attachInstanceIntervalTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
+//                                                                   (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+//    val durationArr = instanceArr.map(_.duration)
+//    val entryIndexToInstance = getTemporalIndexToObjIntervalTree(instanceArr, durationArr)
+//    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
+//  }
 
   // todo: handle different order of the same temporals
   def merge[T: ClassTag](

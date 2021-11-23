@@ -108,7 +108,7 @@ case class Extent(
     val xMaxNew = if (xMax < other.xMax) xMax else other.xMax
     val yMaxNew = if (yMax < other.yMax) yMax else other.yMax
 
-    if (xMinNew <= xMaxNew && yMinNew <= yMaxNew) Some(Extent(xMinNew, yMinNew, xMaxNew, yMaxNew))
+    if (xMinNew < xMaxNew && yMinNew < yMaxNew) Some(Extent(xMinNew, yMinNew, xMaxNew, yMaxNew))
     else None
   }
 

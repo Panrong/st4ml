@@ -10,23 +10,34 @@ class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM
                                                d: DSM = None) extends Converter {
   type I = Trajectory[V, D]
   type O = SpatialMap[VSM, DSM]
-  val sMap: Array[(Int, Polygon)] = sArray.zipWithIndex.map(_.swap)
+  val sMap: Array[(Int, Polygon)] = sArray.sortBy(x =>
+    (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[Polygon]] = None
 
-//  def buildRTreeDeprecated(spatials: Array[Polygon]): RTreeDeprecated[geometry.Rectangle] = {
-//    val r = math.sqrt(spatials.length).toInt
-//    val entries = spatials.map(s => {
-//      val e = Extent(s.getEnvelopeInternal)
-//      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
-//    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-//    RTreeDeprecated[geometry.Rectangle](entries, r)
-//  }
+  lazy val smXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
+  lazy val smYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
+  lazy val smXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
+  lazy val smYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
+  lazy val smXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - smXMin
+  lazy val smYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - smYMin
+  lazy val smXSlots: Long = ((smXMax - smXMin) / smXLength).round
+  lazy val smYSlots: Long = ((smYMax - smYMin) / smYLength).round
+
+  //  def buildRTreeDeprecated(spatials: Array[Polygon]): RTreeDeprecated[geometry.Rectangle] = {
+  //    val r = math.sqrt(spatials.length).toInt
+  //    val entries = spatials.map(s => {
+  //      val e = Extent(s.getEnvelopeInternal)
+  //      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
+  //    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
+  //    RTreeDeprecated[geometry.Rectangle](entries, r)
+  //  }
   def buildRTree(spatials: Array[Polygon]): RTree[Polygon] = {
     val r = math.sqrt(spatials.length).toInt
     val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
     RTree[Polygon](entries, r)
   }
+
   override def convert(input: RDD[I]): RDD[O] = {
     input.mapPartitions(partition => {
       val trajs = partition.toArray
@@ -48,20 +59,46 @@ class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM
     })
   }
 
-//  // using MBR, not precise
-//  def convertWithRTreeDeprecated(input: RDD[I]): RDD[O] = {
-//    rTreeDeprecated = Some(buildRTreeDeprecated(sMap.map(_._2)))
-//    val spark = SparkSession.builder().getOrCreate()
-//    val rTreeBc = spark.sparkContext.broadcast(rTreeDeprecated)
-//    input.mapPartitions(partition => {
-//      val trajs = partition.toArray
-//      val emptySm = SpatialMap.empty[I](sArray)
-//      emptySm.rTreeDeprecated = rTreeBc.value
-//      Iterator(emptySm.attachInstanceRTreeDeprecated(trajs, trajs.map(_.extent.toPolygon))
-//        .mapValue(f)
-//        .mapData(_ => d))
-//    })
-//  }
+  def convertRegular(input: RDD[I]): RDD[O] = {
+    val emptySm = SpatialMap.empty[I](sArray)
+    //assert(emptySm.isRegular, "The structure is not regular.")
+    input.flatMap(e => {
+      val xMin = e.extent.xMin
+      val xMax = e.extent.xMax
+      val yMin = e.extent.yMin
+      val yMax = e.extent.yMax
+      val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
+      val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
+      val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+      idRanges.map(x => (e, x))
+    })
+      .mapPartitions(partition => {
+        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)) .map {
+                  case (id, instanceArr) =>
+                    (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+                }
+        val emptySm = SpatialMap.empty[I](sArray)
+        Iterator(emptySm.createSpatialMap(events)
+          .mapValue(f)
+          .mapData(_ => d))
+      })
+  }
+
+
+  //  // using MBR, not precise
+  //  def convertWithRTreeDeprecated(input: RDD[I]): RDD[O] = {
+  //    rTreeDeprecated = Some(buildRTreeDeprecated(sMap.map(_._2)))
+  //    val spark = SparkSession.builder().getOrCreate()
+  //    val rTreeBc = spark.sparkContext.broadcast(rTreeDeprecated)
+  //    input.mapPartitions(partition => {
+  //      val trajs = partition.toArray
+  //      val emptySm = SpatialMap.empty[I](sArray)
+  //      emptySm.rTreeDeprecated = rTreeBc.value
+  //      Iterator(emptySm.attachInstanceRTreeDeprecated(trajs, trajs.map(_.extent.toPolygon))
+  //        .mapValue(f)
+  //        .mapData(_ => d))
+  //    })
+  //  }
   // using MBR, not precise
   def convertWithRTree(input: RDD[I]): RDD[O] = {
     rTree = Some(buildRTree(sMap.map(_._2)))
@@ -71,7 +108,7 @@ class Traj2SpatialMapConverter[V, D, VSM, DSM](f: Array[Trajectory[V, D]] => VSM
       val trajs = partition.toArray
       val emptySm = SpatialMap.empty[I](sArray)
       emptySm.rTree = rTreeBc.value
-      Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.extent.toPolygon))
+      Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.toGeometry))
         .mapValue(f)
         .mapData(_ => d))
     })

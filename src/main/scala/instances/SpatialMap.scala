@@ -20,9 +20,20 @@ class SpatialMap[V, D](
   def isSpatialDisjoint: Boolean = {
     if (spatials.length > 1) {
       val pairs = spatials.combinations(2)
-      pairs.foreach(polyPair => if (polyPair(0).intersects(polyPair(1))) return false)
+      pairs.foreach(polyPair => if (polyPair(0).intersection(polyPair(1)).getArea > 0) return false)
     }
     true
+  }
+
+  def isRegular: Boolean = {
+    val areaEqual = spatials.map(_.getArea).sum == this.toGeometry.getArea
+    val allRectangle = spatials.map(_.isRectangle).forall(_ == true)
+    val lengths = spatials.map(r => {
+      val e = r.getEnvelopeInternal
+      (e.getMaxX - e.getMinX, e.getMaxY - e.getMinY)
+    })
+    val lengthEqual = lengths.forall(_ == lengths.head)
+    areaEqual && isSpatialDisjoint && lengthEqual && allRectangle
   }
 
   override def mapSpatial(f: Polygon => Polygon): SpatialMap[V, D] =

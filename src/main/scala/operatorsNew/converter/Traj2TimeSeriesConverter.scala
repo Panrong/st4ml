@@ -1,10 +1,10 @@
 package operatorsNew.converter
 
 import instances.{Duration, Entry, Extent, Point, Polygon, RTree, TimeSeries, Trajectory}
-import intervalTree.mutable.IntervalTree
+//import intervalTree.mutable.IntervalTree
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-import intervalTree.Interval
+//import intervalTree.Interval
 
 class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS,
                                                tArray: Array[Duration],
@@ -13,12 +13,12 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
   type O = TimeSeries[VTS, DTS]
   val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
   var rTree: Option[RTree[Polygon]] = None
-  var intervalTree: Option[IntervalTree[Int]] = None
-
-  def buildIntervalTree(temporals: Array[Duration]): IntervalTree[Int] = {
-    val intervals = temporals.zipWithIndex.map(x => new Interval[Int](x._1.start, x._1.end, x._2))
-    IntervalTree(intervals)
-  }
+//  var intervalTree: Option[IntervalTree[Int]] = None
+//
+//  def buildIntervalTree(temporals: Array[Duration]): IntervalTree[Int] = {
+//    val intervals = temporals.zipWithIndex.map(x => new Interval[Int](x._1.start, x._1.end, x._2))
+//    IntervalTree(intervals)
+//  }
 
   def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
     val r = math.sqrt(temporals.length).toInt
@@ -54,19 +54,19 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
         .mapData(_ => d))
     })
   }
-  def convertWithIntervalTree(input: RDD[I]): RDD[O] = {
-//    val spark = SparkSession.builder().getOrCreate()
-//    val rTreeBc = spark.sparkContext.broadcast(intervalTree)
-    input.mapPartitions(partition => {
-      val intervalTree = Some(buildIntervalTree(tMap.map(_._2)))
-      val trajs = partition.toArray
-      val emptyTs = TimeSeries.empty[I](tArray)
-      emptyTs.intervalTree = intervalTree
-      Iterator(emptyTs.attachInstanceIntervalTree(trajs)
-        .mapValue(f)
-        .mapData(_ => d))
-    })
-  }
+//  def convertWithIntervalTree(input: RDD[I]): RDD[O] = {
+////    val spark = SparkSession.builder().getOrCreate()
+////    val rTreeBc = spark.sparkContext.broadcast(intervalTree)
+//    input.mapPartitions(partition => {
+//      val intervalTree = Some(buildIntervalTree(tMap.map(_._2)))
+//      val trajs = partition.toArray
+//      val emptyTs = TimeSeries.empty[I](tArray)
+//      emptyTs.intervalTree = intervalTree
+//      Iterator(emptyTs.attachInstanceIntervalTree(trajs)
+//        .mapValue(f)
+//        .mapData(_ => d))
+//    })
+//  }
 }
 
 object Traj2TimeSeriesConverterTest {

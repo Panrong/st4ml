@@ -11,11 +11,20 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
   type I = Event[S, V, D]
   type O = SpatialMap[VSM, DSM]
 
-  val sMap: Array[(Int, Polygon)] = sArray.zipWithIndex.map(_.swap)
+  val sMap: Array[(Int, Polygon)] = sArray.sortBy(x =>
+    (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
 
-//  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
+  //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[Polygon]] = None
 
+  lazy val smXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
+  lazy val smYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
+  lazy val smXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
+  lazy val smYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
+  lazy val smXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - smXMin
+  lazy val smYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - smYMin
+  lazy val smXSlots: Long = ((smXMax - smXMin) / smXLength).round
+  lazy val smYSlots: Long = ((smYMax - smYMin) / smYLength).round
 
   //  def buildRTreeDeprecated(spatials: Array[Polygon]): RTreeDeprecated[geometry.Rectangle] = {
   //
@@ -88,6 +97,28 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
   //      Iterator(sm)
   //    })
   //  }
+
+  def convertRegular(input: RDD[I]): RDD[O] = {
+    val emptySm = SpatialMap.empty[I](sArray)
+    //assert(emptySm.isRegular, "The structure is not regular.")
+    input.flatMap(e => {
+      val xMin = e.extent.xMin
+      val xMax = e.extent.xMax
+      val yMin = e.extent.yMin
+      val yMax = e.extent.yMax
+      val xRanges = (((xMin - smXMin) / smXLength).toInt, ((xMax - smXMin) / smXLength).toInt)
+      val yRanges = (((yMin - smYMin) / smYLength).toInt, ((yMax - smYMin) / smYLength).toInt)
+      val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+      idRanges.map(x => (e, x))
+    })
+      .mapPartitions(partition => {
+        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+        val emptySm = SpatialMap.empty[I](sArray)
+        Iterator(emptySm.createSpatialMap(events)
+          .mapValue(f)
+          .mapData(_ => d))
+      })
+  }
 }
 
 object Event2SpatialMapConverter {

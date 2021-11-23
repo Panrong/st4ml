@@ -1,7 +1,6 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
-import instances.RTree
+import instances.{Duration, Event, Extent, Point, Polygon, RTree, Raster, SpatialMap, TimeSeries, Trajectory}
 import operatorsNew.converter.{Event2RasterConverter, Event2SpatialMapConverter, Event2TimeSeriesConverter, Traj2RasterConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
 import operatorsNew.selector.SelectionUtils.{E, T}
 import operatorsNew.selector.partitioner.HashPartitioner
@@ -58,11 +57,11 @@ object ConversionExp {
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
-      //      /** print converted result */
-      //      val sms = convertedRDD.collect
-      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      //      println(sm.entries.map(_.value.length).deep)
-      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      //            /** print converted result */
+      //            val sms = convertedRDD.collect
+      //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //            println(sm.entries.map(_.value.length).deep)
+      //            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
 
     else if (m == "2") {
@@ -76,14 +75,14 @@ object ConversionExp {
       val ranges = splitSpatial(sRange, xSplit, ySplit)
       val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convertFast(selectedRDD)
-      println(convertedRDD.count)
-      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-      //      /** print converted result */
-      //      val sms = convertedRDD.collect
-      //      val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
-      //      println(sm.entries.map(_.value.length).deep)
-      //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
+      else converter.convert(selectedRDD)
+      //      println(convertedRDD.count)
+      //      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+      //            /** print converted result */
+      //            val sms = convertedRDD.collect
+      //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
+      //            println(sm.entries.map(_.value.length).deep)
+      //            println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "3") {
       val inputRDD = spark.read.parquet(fileName).drop("pId").as[E]
@@ -167,7 +166,7 @@ object ConversionExp {
       val converter = new Traj2TimeSeriesConverter[None.type,
         String, Array[Trajectory[None.type, String]], None.type](
         x => x, tRanges)
-      val convertedRDD = if (useRTree) converter.convertWithIntervalTree(selectedRDD)
+      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
       else converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
@@ -207,6 +206,20 @@ object ConversionExp {
       val selected2 = rtree.range3d(cube)
       println(selected.deep)
       println(selected2.deep)
+      val sm = SpatialMap.empty(splitSpatial(Array(0, 0, 100, 100), 10, 10))
+      println(sm.isRegular)
+      val ts = TimeSeries.empty(splitTemporal(Array(0, 100), 100))
+      println(ts.isRegular)
+
+      val sRanges = splitSpatial(Array(0, 0, 100, 100), 10, 10)
+      val tRanges = splitTemporal(Array(0, 100), 100)
+      val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
+
+      val raster = Raster.empty(stRanges.map(_._1), stRanges.map(_._2))
+      println(raster.isRegular)
+
+      //      println(sRanges.sortBy(x =>
+      //        (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap).deep)
     }
     sc.stop
   }
