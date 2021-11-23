@@ -106,19 +106,23 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
       val xMax = e.extent.xMax
       val yMin = e.extent.yMin
       val yMax = e.extent.yMax
-      val xRanges = (((xMin - smXMin) / smXLength).toInt, ((xMax - smXMin) / smXLength).toInt)
-      val yRanges = (((yMin - smYMin) / smYLength).toInt, ((yMax - smYMin) / smYLength).toInt)
+      val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
+      val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
       val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
       idRanges.map(x => (e, x))
     })
       .mapPartitions(partition => {
-        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)) .map {
+          case (id, instanceArr) =>
+            (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+        }
         val emptySm = SpatialMap.empty[I](sArray)
         Iterator(emptySm.createSpatialMap(events)
           .mapValue(f)
           .mapData(_ => d))
       })
   }
+
 }
 
 object Event2SpatialMapConverter {

@@ -46,13 +46,13 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
       SpatialMap.empty[Point](extendArrOverlapping)
     }
 
-    it("can check if spatials are disjoint") {
-      val emptySmOverlapping = SpatialMap.empty[Point](extendArrOverlapping)
-      emptySmOverlapping.isSpatialDisjoint shouldBe false
-
-      val emptySmDisjoint = SpatialMap.empty[Point](extendArrDisjoint)
-      emptySmDisjoint.isSpatialDisjoint shouldBe true
-    }
+//    it("can check if spatials are disjoint") {
+//      val emptySmOverlapping = SpatialMap.empty[Point](extendArrOverlapping)
+//      emptySmOverlapping.isSpatialDisjoint shouldBe false
+//
+//      val emptySmDisjoint = SpatialMap.empty[Point](extendArrDisjoint)
+//      emptySmDisjoint.isSpatialDisjoint shouldBe true
+//    }
 
     it("can allocate Geometry objects") {
       val pointSm = SpatialMap.empty[Point](extendArrDisjoint).attachGeometry(pointArr)
