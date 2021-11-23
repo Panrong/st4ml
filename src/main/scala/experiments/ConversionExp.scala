@@ -76,8 +76,8 @@ object ConversionExp {
       val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
       val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
       else converter.convert(selectedRDD)
-      //      println(convertedRDD.count)
-      //      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+      println(convertedRDD.count)
+      println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
       //            val sms = convertedRDD.collect
       //            val sm = sms.drop(1).foldRight(sms.head)(_.merge(_))
