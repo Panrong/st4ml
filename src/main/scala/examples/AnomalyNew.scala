@@ -54,13 +54,13 @@ object AnomalyNew {
     val selector = MultiRangeSelector[I](sQueries, tQuery, numPartitions)
 
     class AnomalyExtractor {
-      def extract(rdd: RDD[(I, Array[Int])], threshold: Array[Int]): RDD[(Int, Array[I])] = {
+      def extract(rdd: RDD[(I, Array[Int])], threshold: Array[Int]): RDD[(Int, Int)] = {
         val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
         else (x: Double) => x >= threshold(0) && x < threshold(1)
         rdd.filter(x => {
           val h = x._1.duration.hours
           condition(h)
-        }).flatMap(x => x._2.map(i => (i, x._1))).groupBy(_._1).mapValues(x => x.toArray.map(_._2))
+        }).flatMap(x => x._2.map(i => (i, x._1.data))).groupByKey.mapValues(_.size)
       }
     }
 
@@ -68,19 +68,15 @@ object AnomalyNew {
 
     /** read input data */
     val t = nanoTime()
-    import spark.implicits._
-//    val pointRDD = spark.read.parquet(dataPath).drop("pId").as[E]
-//      .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
-//
-//    println(pointRDD.count)
 
     /** step 1: Selection */
     val rdd1 = selector.selectEventWithInfo(dataPath, metadataPath, true).map(_.asInstanceOf[(I, Array[Int])])
+    rdd1.collect.foreach(println)
 
     /** step 3: Extraction */
     val rdd3 = extractor.extract(rdd1, tThreshold)
-    rdd3.map(x => (x._1, x._2.length))
-    rdd3.collect.foreach(println)
+    rdd3.map(x => (x._1, x._2))
+    .collect.foreach(println)
 
     println(s"Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     sc.stop()

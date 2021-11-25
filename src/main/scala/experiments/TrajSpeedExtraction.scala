@@ -1,7 +1,7 @@
 package experiments
 
-import experiments.TrajConversionTest.T
 import instances.{Duration, Point, Trajectory}
+import operatorsNew.selector.SelectionUtils.T
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
@@ -20,12 +20,9 @@ object TrajSpeedExtraction {
     sc.setLogLevel("ERROR")
 
     // read trajectories
-    val readDs = spark.read.parquet(fileName)
     import spark.implicits._
-    val trajRDD = readDs.as[T].rdd.map(x => {
-      val entries = x.entries.map(p => (Point(p.lon, p.lat), Duration(p.t), None))
-      Trajectory(entries, x.id)
-    }).repartition(numPartitions)
+    val trajRDD = spark.read.parquet(fileName).drop("pId").as[T]
+      .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
     println(trajRDD.count)
     trajRDD.cache()
 
