@@ -11,7 +11,7 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
                                                d: DTS = None) extends Converter {
   type I = Trajectory[V, D]
   type O = TimeSeries[VTS, DTS]
-  val tMap: Array[(Int, Duration)] = tArray.zipWithIndex.map(_.swap)
+  val tMap: Array[(Int, Duration)] = tArray.sortBy(_.start).zipWithIndex.map(_.swap)
   var rTree: Option[RTree[Polygon]] = None
 //  var intervalTree: Option[IntervalTree[Int]] = None
 //
@@ -67,6 +67,34 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
 //        .mapData(_ => d))
 //    })
 //  }
+
+  def convertRegular(input: RDD[I]): RDD[O] = {
+    val emptyTs = TimeSeries.empty[I](tArray)
+    val tsMin = tMap.head._2.start
+    val tsLength = tMap.head._2.seconds
+    // val tsMax = tMap.last._2.end
+    val tsSlots = tMap.length
+    //assert(emptySm.isRegular, "The structure is not regular.")
+    input.flatMap(e => {
+      val tMin = e.duration.start
+      val tMax = e.duration.end
+      val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+      idRanges.map(x => (e, x))
+    })
+      .mapPartitions(partition => {
+        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+        val emptySm = TimeSeries.empty[I](tArray)
+        Iterator(emptySm.createTimeSeries(events, getPolygonFromInstanceArray)
+          .mapValue(f)
+          .mapData(_ => d))
+      })
+  }
+  def getPolygonFromInstanceArray[Trajectory[V, D]](instanceArr: Array[I]): Polygon = {
+    if (instanceArr.nonEmpty) {
+      Extent(instanceArr.map(_.extent)).toPolygon
+    }
+    else Polygon.empty
+  }
 }
 
 object Traj2TimeSeriesConverterTest {

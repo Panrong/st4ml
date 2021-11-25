@@ -4,11 +4,13 @@ import instances.Extent.toPolygon
 import instances.{Duration, Event, Extent, Point}
 import operatorsNew.OperatorSet
 import operatorsNew.converter.DoNothingConverter
-import operatorsNew.extractor.AnomalyExtractor
-import operatorsNew.selector.MultiSpatialRangeLegacySelector
+import operatorsNew.selector.MultiRangeSelector
+import operatorsNew.selector.SelectionUtils.E
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
 import preprocessing.ParquetReader
+import utils.Config
 import utils.TimeParsing.parseTemporalRange
 
 import java.lang.System.nanoTime
@@ -18,17 +20,18 @@ object AnomalyNew {
   def main(args: Array[String]): Unit = {
 
     /** parse input arguments */
-    val master = args(0)
-    val dataPath = args(1)
+    val master = Config.get("master")
+    val dataPath = args(0)
+    val metadataPath = args(1)
     val numPartitions = args(2).toInt
-    val duration = parseTemporalRange(args(3))
-    val tQuery = Duration(duration._1, duration._2)
+    val duration = args(3).split(",").map(_.toLong)
+    val tQuery = Duration(duration(0), duration(1))
     val queryFile = args(4)
     val tThreshold = args(5).split(",").map(_.toInt)
 
     /**
      * example input arguments:
-     * "local" datasets/face_example.parquet "16" "2020-07-31 23:30:00,2020-08-02 00:30:00" "datasets/sample_queries.txt" "23,4"
+     * datasets/event_example_parquet_tstr "16" 1372636858,1372637188 "datasets/sample_queries.txt" "23,4"
      */
 
     /** parse queries */
@@ -44,36 +47,41 @@ object AnomalyNew {
     sc.setLogLevel("ERROR")
 
     /** initialize operators */
-    val operator = new OperatorSet {
+
       type I = Event[Point, None.type, String]
       type O = Event[Point, None.type, String]
-      val selector = new MultiSpatialRangeLegacySelector(sQueries, tQuery, numPartitions)
-      val converter = new DoNothingConverter[I]
-      val extractor = new AnomalyExtractor[O]
-    }
+      val selector =  MultiRangeSelector[I](sQueries, tQuery, numPartitions)
+      class AnomalyExtractor {
+        def extract(rdd: RDD[(I, Array[Int])], threshold:Array[Int]): RDD[(Int, Array[I])] = {
+          val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
+          else (x: Double) => x >= threshold(0) && x < threshold(1)
+          rdd.filter(x => {
+            val h = x._1.duration.hours
+            condition(h)
+          }).flatMap(x => x._2.map(i => (i, x._1))).groupBy(_._1).mapValues(x => x.toArray.map(_._2))
+        }
+      } 
 
     /** read input data */
     val t = nanoTime()
-    val pointRDD = ParquetReader.readFaceParquet(dataPath)
+    import spark.implicits._
+    val pointRDD = spark.read.parquet(dataPath).drop("pId").as[E]
+      .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
 
     println(pointRDD.count)
-    println(s"Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
 
-    //    /** step 1: Selection */
-    //    val rdd1 = operator.selector.query(pointRDD)
-    //
-    //    /** step 2: Conversion */
-    //    val rdd2 = operator.converter.convert(rdd1)
-    //    rdd2.persist(StorageLevel.MEMORY_AND_DISK_SER)
-    //    println(s"--- Total points: ${rdd2.count}")
-    //
-    //    /** step 3: Extraction */
-    //    val anomalies = operator.extractor.extract(rdd2, tThreshold, sQueries)
-    //    println("done")
+
+        /** step 1: Selection */
+        val rdd1 = selector.selectEventWithInfo(dataPath,metadataPath, true).map(_.asInstanceOf[I])
+
+        /** step 3: Extraction */
+        val anomalies = extractor.extract(rdd1, tThreshold, sQueries)
+        println("done")
 
 
     val rddInfo = operator.selector.queryWithInfo(pointRDD)
     val resInfo = operator.extractor.extractWithInfo(rddInfo, tThreshold, sQueries)
+    println(s"Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     sc.stop()
   }
 
