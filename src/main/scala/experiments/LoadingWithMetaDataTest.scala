@@ -43,7 +43,6 @@ object LoadingWithMetaDataTest {
 
     var t = nanoTime()
 
-
     println(ratio)
     val start1 = random.nextDouble * (1 - sqrt(ratio))
     val start2 = random.nextDouble * (1 - sqrt(ratio))

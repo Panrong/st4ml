@@ -48,19 +48,23 @@ object AnomalyNew {
 
     /** initialize operators */
 
-      type I = Event[Point, None.type, String]
-      type O = Event[Point, None.type, String]
-      val selector =  MultiRangeSelector[I](sQueries, tQuery, numPartitions)
-      class AnomalyExtractor {
-        def extract(rdd: RDD[(I, Array[Int])], threshold:Array[Int]): RDD[(Int, Array[I])] = {
-          val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
-          else (x: Double) => x >= threshold(0) && x < threshold(1)
-          rdd.filter(x => {
-            val h = x._1.duration.hours
-            condition(h)
-          }).flatMap(x => x._2.map(i => (i, x._1))).groupBy(_._1).mapValues(x => x.toArray.map(_._2))
-        }
-      } 
+    type I = Event[Point, None.type, String]
+    type O = Event[Point, None.type, String]
+
+    val selector = MultiRangeSelector[I](sQueries, tQuery, numPartitions)
+
+    class AnomalyExtractor {
+      def extract(rdd: RDD[(I, Array[Int])], threshold: Array[Int]): RDD[(Int, Array[I])] = {
+        val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
+        else (x: Double) => x >= threshold(0) && x < threshold(1)
+        rdd.filter(x => {
+          val h = x._1.duration.hours
+          condition(h)
+        }).flatMap(x => x._2.map(i => (i, x._1))).groupBy(_._1).mapValues(x => x.toArray.map(_._2))
+      }
+    }
+
+    val extractor = new AnomalyExtractor
 
     /** read input data */
     val t = nanoTime()
@@ -71,16 +75,14 @@ object AnomalyNew {
     println(pointRDD.count)
 
 
-        /** step 1: Selection */
-        val rdd1 = selector.selectEventWithInfo(dataPath,metadataPath, true).map(_.asInstanceOf[I])
+    /** step 1: Selection */
+    val rdd1 = selector.selectEventWithInfo(dataPath, metadataPath, true).map(_.asInstanceOf[(I, Array[Int])])
 
-        /** step 3: Extraction */
-        val anomalies = extractor.extract(rdd1, tThreshold, sQueries)
-        println("done")
+    /** step 3: Extraction */
+    val rdd3 = extractor.extract(rdd1, tThreshold)
+    rdd3.map(x => (x._1, x._2.length))
+    rdd3.collect.foreach(println)
 
-
-    val rddInfo = operator.selector.queryWithInfo(pointRDD)
-    val resInfo = operator.extractor.extractWithInfo(rddInfo, tThreshold, sQueries)
     println(s"Takes ${((nanoTime() - t) * 1e-9).formatted("%.3f")} s.")
     sc.stop()
   }
