@@ -6,3 +6,4 @@ sttool-doc/
 venv/
 null/
 .bsp/
+datasets/
