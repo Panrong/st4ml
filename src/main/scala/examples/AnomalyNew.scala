@@ -69,11 +69,10 @@ object AnomalyNew {
     /** read input data */
     val t = nanoTime()
     import spark.implicits._
-    val pointRDD = spark.read.parquet(dataPath).drop("pId").as[E]
-      .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
-
-    println(pointRDD.count)
-
+//    val pointRDD = spark.read.parquet(dataPath).drop("pId").as[E]
+//      .toRdd.map(_.asInstanceOf[Event[Point, None.type, String]])
+//
+//    println(pointRDD.count)
 
     /** step 1: Selection */
     val rdd1 = selector.selectEventWithInfo(dataPath, metadataPath, true).map(_.asInstanceOf[(I, Array[Int])])

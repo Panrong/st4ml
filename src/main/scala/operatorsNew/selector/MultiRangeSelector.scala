@@ -22,12 +22,12 @@ class MultiRangeSelector[I <: Instance[_, _, _] : ClassTag](sQuery: Array[Polygo
   def loadDf(dataDir: String, metaDataDir: String): DataFrame = {
     val totalSRange = sQuery.foldRight(Polygon.empty)(_.union(_).getEnvelope.asInstanceOf[Polygon])
     val totalTRange = Duration(tQuery.map(_.start).min, tQuery.map(_.end).max)
-    val metaData = LoadPartitionInfo(metaDataDir)
+    val metaData = LoadPartitionInfoLocal(metaDataDir)
     val relatedPartitions = metaData.filter(x =>
       x._2.intersects(totalSRange)
         && x._3.intersects(totalTRange)
         && x._4 > 0)
-      .map(_._1).collect
+      .map(_._1)
 //    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
 //    spark.read.parquet(dirs: _*)
     spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions:_*))
