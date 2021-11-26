@@ -1,16 +1,20 @@
 package experiments
 
-import instances.{Duration, Point, Trajectory}
+import instances.{Duration, Extent, Point, Trajectory}
 import operatorsNew.selector.SelectionUtils.T
+import operatorsNew.selector.Selector
 import org.apache.spark.sql.SparkSession
 import utils.Config
 
 import java.lang.System.nanoTime
+import scala.io.Source
 
 object TrajSpeedExtraction {
   def main(args: Array[String]): Unit = {
     val fileName = args(0)
-    val numPartitions = args(1).toInt
+    val metadata = args(1)
+    val queryFile = args(2)
+    val numPartitions = args(3).toInt
     val spark = SparkSession.builder()
       .appName("trajRangeQuery")
       .master(Config.get("master"))
@@ -18,22 +22,24 @@ object TrajSpeedExtraction {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+    // read queries
+    val f = Source.fromFile(queryFile)
+    val ranges = f.getLines().toArray.map(line => {
+      val r = line.split(" ")
+      (Extent(r(0).toDouble, r(1).toDouble, r(2).toDouble, r(3).toDouble).toPolygon, Duration(r(4).toLong, r(5).toLong))
+    })
+    val t = nanoTime()
+    type TRAJ = Trajectory[Option[String], String]
 
-    // read trajectories
-    import spark.implicits._
-    val trajRDD = spark.read.parquet(fileName).drop("pId").as[T]
-      .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
-    println(trajRDD.count)
-    trajRDD.cache()
-
-    val t = nanoTime
-
-    val speedRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
-    val res = speedRDD.collect
-    println(s"Avg speed extraction ${(nanoTime - t) * 1e-9} s")
-    println(res.take(5).deep)
-
+    for ((spatial, temporal) <- ranges) {
+      val selector = Selector[TRAJ](spatial, temporal, numPartitions)
+      val trajRDD = selector.selectTraj(fileName, metadata, false)
+      val stayPointRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
+      val res = stayPointRDD.collect
+      trajRDD.unpersist()
+      println(res.take(5).deep)
+    }
+    println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
-
   }
 }

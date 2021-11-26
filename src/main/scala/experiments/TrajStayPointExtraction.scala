@@ -39,6 +39,7 @@ object TrajStayPointExtraction {
       val trajRDD = selector.selectTraj(fileName, metadata, false)
       val stayPointRDD = trajRDD.map(x => (x.data, findStayPoint(x, maxDist, minTime)))
       val res = stayPointRDD.collect
+      trajRDD.unpersist()
       println(res.take(5).deep)
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
