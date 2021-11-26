@@ -25,7 +25,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
         && x._3.intersects(tQuery)
         && x._4 > 0)
       .map(_._1)
-    println(s"related partitions: ${relatedPartitions.length}")
+    //    println(s"related partitions: ${relatedPartitions.length}")
     val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")
     if (dirs.length == 0) throw new AssertionError("No data fulfill the ST requirement.")
     //    val dirs = relatedPartitions.map(x => dataDir + s"/pId=$x")

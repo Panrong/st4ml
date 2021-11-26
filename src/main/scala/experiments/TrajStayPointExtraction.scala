@@ -37,13 +37,11 @@ object TrajStayPointExtraction {
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
-
-
       val stayPointRDD = trajRDD.map(x => (x.data, findStayPoint(x, maxDist, minTime)))
       val res = stayPointRDD.collect
-      println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
       println(res.take(5).deep)
     }
+    println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
 
     def findStayPoint[T <: Trajectory[_, _] : ClassTag](traj: T, maxDist: Double, minTime: Int): Array[Point] = {
