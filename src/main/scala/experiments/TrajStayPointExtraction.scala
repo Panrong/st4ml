@@ -55,9 +55,9 @@ object TrajStayPointExtraction {
         val candidate = entries.next
         if (anchor.spatial.greatCircle(candidate.spatial) < maxDist) tmp = tmp :+ candidate
         else {
+          if (tmp.length > 0 && tmp.last.duration.end - anchor.duration.start > minTime)
+            res = res :+ anchor.spatial
           anchor = candidate
-          if (tmp.length > 0 && tmp.last.duration.end - tmp.head.duration.start > minTime)
-            res = res :+ tmp.head.spatial
           tmp = new Array[Entry[Point, _]](0)
         }
       }
