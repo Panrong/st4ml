@@ -51,11 +51,12 @@ object TsFlowExtraction {
     println(s"Anomaly extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
-  def splitTemporal(temporalRange: Array[Long], tSplit: Int): Array[Duration] = {
+  def splitTemporal(temporalRange: Array[Long], tStep: Int): Array[Duration] = {
     val tMin = temporalRange(0)
     val tMax = temporalRange(1)
-    val tStep = (tMax - tMin) / tSplit
+    val tSplit = ((tMax - tMin) / tStep).toInt
     val ts = (0 to tSplit).map(x => x * tStep + tMin).sliding(2).toArray
     for (t <- ts) yield Duration(t(0), t(1))
   }
+
 }
