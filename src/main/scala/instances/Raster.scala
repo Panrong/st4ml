@@ -73,11 +73,14 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
 
   override def mapValue[V1](f: V => V1): Raster[S, V1, D] =
     Raster(
-      entries.map(entry =>
+      entries.map(entry =>{
+        implicit val s: Polygon = entry.spatial.asInstanceOf[Polygon]
+        implicit val t: Duration = entry.temporal
         Entry(
           entry.spatial,
           entry.temporal,
-          f(entry.value))),
+          f(entry.value))}
+      ),
       data)
 
   override def mapEntries[V1](

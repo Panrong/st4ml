@@ -216,8 +216,6 @@ case class Extent(
     )
     Polygon(LineString(exterior))
   }
-
-
 }
 
 object Extent {
