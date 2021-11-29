@@ -36,7 +36,7 @@ object RasterTransitionExtraction {
 
     def findInOut[T <: Trajectory[_, _]](arr: Array[T])(implicit sRange: Polygon, tRange: Duration): (Int, Int) = {
       val inOuts = arr.map { traj =>
-        val inside = traj.entries.map(p => p.intersects(sRange, tRange)).sliding(2)
+        val inside = traj.entries.map(p => p.intersects(sRange, tRange)).sliding(2).toArray
         val in = inside.count(_ sameElements Array(false, true))
         val out = inside.count(_ sameElements Array(true, false))
         (in, out)
