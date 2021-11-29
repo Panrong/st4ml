@@ -41,8 +41,6 @@ object TsFlowExtraction {
         String, Int, None.type](x => x.length, tRanges)
         val tsRDD = converter.convertWithRTree(eventRDD)
       val res = tsRDD.collect()
-      val ts1 = res.head
-      val ts2 = res(1)
       def valueMerge(x:Int, y:Int):Int = x+y
       val mergedTs = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge,  (_,_)=> None))
       eventRDD.unpersist()

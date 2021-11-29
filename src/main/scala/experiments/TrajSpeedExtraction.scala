@@ -34,8 +34,8 @@ object TrajSpeedExtraction {
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
-      val stayPointRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
-      val res = stayPointRDD.collect
+      val speedRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
+      val res = speedRDD.collect
       trajRDD.unpersist()
       println(res.take(5).deep)
     }
