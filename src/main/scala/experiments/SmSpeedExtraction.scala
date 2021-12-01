@@ -36,7 +36,6 @@ object SmSpeedExtraction {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
       val sRanges = splitSpatial(spatial, gridSize)
-
       def calSpeed[T <: Trajectory[_, _]](trajs: Array[T]): (Double, Int) = { // return sum and count
         val trajArr = trajs.map(x => x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6)
         (trajArr.sum, trajArr.length)

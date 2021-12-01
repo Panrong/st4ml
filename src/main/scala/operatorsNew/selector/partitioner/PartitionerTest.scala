@@ -44,7 +44,7 @@ object PartitionerTest {
     println("| test trajectory instance |")
     println("----------------------------")
 
-    val trajRDD = ParquetReader.readVhcParquet("datasets/traj_example.parquet")
+    val trajRDD = ParquetReader.readVhcParquet("datasets/vhc_example.parquet")
     println(s"Total number of events ${trajRDD.count}")
     //    println(s"Example: ${trajRDD.take(1).deep}")
 

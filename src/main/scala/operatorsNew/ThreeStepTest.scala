@@ -37,7 +37,7 @@ object ThreeStepTest {
 
 
     /** test trajectory to point */
-    //    val trajRDD = ParquetReader.readVhcParquet("datasets/traj_example.parquet")
+    //    val trajRDD = ParquetReader.readVhcParquet("datasets/vhc_example.parquet")
     //    val converter = new Traj2EventConverter[None.type, String]
     //    val convertedRDD = converter.convert(trajRDD)
     //    println(s"${trajRDD.count} trajectories converted to ${convertedRDD.count} events")

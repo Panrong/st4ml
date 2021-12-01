@@ -64,11 +64,13 @@ object RasterTransitionExtraction {
         }),
         raster.data))
       val res = rasterRDD.collect
+
       def valueMerge(x: (Int, Int), y: (Int, Int)): (Int, Int) = (x._1 + y._1, x._2 + y._2)
 
       val mergedRaster = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
       rasterRDD.unpersist()
       mergedRaster.entries.take(5).foreach(println)
+
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
