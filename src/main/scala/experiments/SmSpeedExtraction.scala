@@ -34,22 +34,24 @@ object SmSpeedExtraction {
 
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-      val trajRDD = selector.selectTraj(fileName, metadata, false)
+      val trajRDD = selector.selectTraj(fileName, metadata, false).map(x => {
+        val speed = x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6
+        Trajectory(x.entries, speed)
+      })
       val sRanges = splitSpatial(spatial, gridSize)
-      def calSpeed[T <: Trajectory[_, _]](trajs: Array[T]): (Double, Int) = { // return sum and count
-        val trajArr = trajs.map(x => x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6)
-        (trajArr.sum, trajArr.length)
-      }
-
-      val converter = new Traj2SpatialMapConverter[Option[String], String, (Double, Int), None.type](x => calSpeed(x), sRanges)
+      val converter = new Traj2SpatialMapConverter[Option[String], Double, (Double, Int), None.type](x => {
+        val res = x.map(t => (t.data, 1))
+        (res.map(_._1).sum, res.map(_._2).sum)
+      }, sRanges)
       val smRDD = converter.convertWithRTree(trajRDD)
       val res = smRDD.collect
 
-      def valueMerge(x: (Double, Int), y: (Double, Int)): (Double, Int) = (x._1 + y._1, x._2 + y._2)
+      def valueMerge(x: (Double, Int), y: (Double, Int)): (Double,Int) = (x._1 + y._1 , x._2 + y._2)
 
-      val mergedSm = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
+      val mergedSm = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, valueMerge, (_, _) => None))
       smRDD.unpersist()
       println(mergedSm.entries.map(x => (x.value._1 / x.value._2)).deep)
+
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()

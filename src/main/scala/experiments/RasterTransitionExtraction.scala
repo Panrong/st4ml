@@ -72,7 +72,7 @@ object RasterTransitionExtraction {
       mergedRaster.entries.take(5).foreach(println)
 
     }
-    println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
+    println(s"Raster transition extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
 
