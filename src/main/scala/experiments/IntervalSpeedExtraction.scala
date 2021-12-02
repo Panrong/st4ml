@@ -31,17 +31,17 @@ object IntervalSpeedExtraction {
     for ((spatial, temporal) <- ranges) {
       val t = nanoTime()
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-      val trajRDD = selector.selectTraj(fileName, metadata, false)
+      val trajRDD = selector.selectTraj(fileName, metadata)
       val speedRDD = trajRDD.map(x => (x.data, (x.entries.dropRight(1) zip
         (x.consecutiveSpatialDistance("greatCircle") zip
           x.entries.map(_.temporal).sliding(2).map(x => x(1).end - x(0).start).toSeq)
           .map(x => x._1 / x._2 * 3.6))
-        .filter(_._2 > 120)
+       // .filter(_._2 > 120)
       ))
       val res = speedRDD.collect
       trajRDD.unpersist()
       res.take(5).foreach(x => println(x._1, x._2.deep))
-      println(s"${temporal.start} Stay point extraction ${(nanoTime - t) * 1e-9} s")
+      println(s"${temporal.start} Interval extraction ${(nanoTime - t) * 1e-9} s")
     }
 
     sc.stop()

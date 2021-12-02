@@ -1,8 +1,8 @@
 package instances
 
 class Event[S <: Geometry, V, D](
-  override val entries: Array[Entry[S, V]],
-  override val data: D)
+   val entries: Array[Entry[S, V]],
+   val data: D)
   extends Instance[S, V, D] {
 
   require(validation,
