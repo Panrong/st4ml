@@ -47,15 +47,9 @@ object SmSpeedExtraction {
 
       def valueMerge(x: (Double, Int), y: (Double, Int)): (Double, Int) = (x._1 + y._1, x._2 + y._2)
 
-//      val mergedSm = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
-//      println(mergedSm.entries.map(x => x.value._1 / x.value._2).deep)
-
-      val values = res.map(_.entries.map(_.value)).drop(1)
-      val merged = values.foldRight(values.head) {
-       case(x ,y) => (x zip y).map { case (x, y) => (x._1 + y._1, x._2 + y._2)}
-      } .map(x => x._1 / x._2)
-      println(merged.deep)
+      val mergedSm = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
       smRDD.unpersist()
+      println(mergedSm.entries.map(x => (x.value._1 / x.value._2)).deep)
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
