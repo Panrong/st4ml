@@ -8,6 +8,7 @@ import utils.Config
 import java.lang.System.nanoTime
 
 object IntervalSpeedExtraction {
+  // datasets/vhc_tstr datasets/vhc_metadata.json 4 118.35,29.183,120.5,30.55 1596211200 31
   def main(args: Array[String]): Unit = {
     val fileName = args(0)
     val metadata = args(1)
@@ -23,12 +24,12 @@ object IntervalSpeedExtraction {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    val t = nanoTime()
     type TRAJ = Trajectory[Option[String], String]
 
     val ranges = (0 to NumDays).map(x =>
       (sQuery, Duration(x * 86400 + tStart, (x + 1) * 86400 + tStart))).toArray
     for ((spatial, temporal) <- ranges) {
+      val t = nanoTime()
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
       val speedRDD = trajRDD.map(x => (x.data, (x.entries.dropRight(1) zip
@@ -40,8 +41,9 @@ object IntervalSpeedExtraction {
       val res = speedRDD.collect
       trajRDD.unpersist()
       res.take(5).foreach(x => println(x._1, x._2.deep))
+      println(s"${temporal.start} Stay point extraction ${(nanoTime - t) * 1e-9} s")
     }
-    println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
+
     sc.stop()
   }
 }
