@@ -36,7 +36,7 @@ object IntervalSpeedExtraction {
         (x.consecutiveSpatialDistance("greatCircle") zip
           x.entries.map(_.temporal).sliding(2).map(x => x(1).end - x(0).start).toSeq)
           .map(x => x._1 / x._2 * 3.6))
-       // .filter(_._2 > 120)
+        .filter(_._2 > 120)
       ))
       val res = speedRDD.collect
       trajRDD.unpersist()
