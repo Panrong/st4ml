@@ -55,7 +55,7 @@ object RegionalSpeedTest {
     val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
 
     //    val sArray = Array(Extent(0,0,10,10), Extent(10,0,20,10),Extent(10,10,20,20), Extent(0,10,10,20)).map(_.toPolygon)
-    val converter = new Traj2SpatialMapConverter(f, sArray)
+    val converter = new Traj2SpatialMapConverter(sArray)
     val smRDD = converter.convert(res)
     smRDD.count()
     val t = nanoTime

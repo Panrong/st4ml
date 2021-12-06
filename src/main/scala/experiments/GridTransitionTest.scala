@@ -65,7 +65,7 @@ object GridTransitionTest {
       t <- tArray
     } yield (s, t)
 
-    val converter = new Traj2RasterConverter(f, stArray.map(_._1), stArray.map(_._2))
+    val converter = new Traj2RasterConverter(stArray.map(_._1), stArray.map(_._2))
     val rasterRDD = converter.convert(res)
     //    rasterRDD.collect.foreach(x => println(x.mapValue(x => x.length)))
     rasterRDD.cache()

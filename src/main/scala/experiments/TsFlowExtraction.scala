@@ -37,18 +37,21 @@ object TsFlowExtraction {
       val eventRDD = selector.selectEvent(fileName, metadata, false)
         .map(_.asInstanceOf[Event[Point, None.type, String]])
       val tRanges = splitTemporal(Array(temporal.start, temporal.end), tSplit)
-      val converter = new Event2TimeSeriesConverter[Point, None.type,
-        String, Int, None.type](x => x.length, tRanges)
-        val tsRDD = converter.convertWithRTree(eventRDD)
+      val converter = new Event2TimeSeriesConverter(tRanges)
+      val f: Array[Event[Point, None.type, String]] => Int = _.length
+      val tsRDD = converter.convert(eventRDD, f)
       val res = tsRDD.collect()
-      def valueMerge(x:Int, y:Int):Int = x+y
-      val mergedTs = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge,  (_,_)=> None))
+
+      def valueMerge(x: Int, y: Int): Int = x + y
+
+      val mergedTs = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
       eventRDD.unpersist()
       println(mergedTs.entries.map(_.value).deep)
     }
     println(s"Anomaly extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
+
   def splitTemporal(temporalRange: Array[Long], tStep: Int): Array[Duration] = {
     val tMin = temporalRange(0)
     val tMax = temporalRange(1)

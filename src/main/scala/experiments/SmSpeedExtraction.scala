@@ -34,19 +34,21 @@ object SmSpeedExtraction {
 
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-      val trajRDD = selector.selectTraj(fileName, metadata, false).map(x => {
+      val trajRDD = selector.selectTraj(fileName, metadata, false)
+      val sRanges = splitSpatial(spatial, gridSize)
+      val preMap: TRAJ => Trajectory[Option[String], Double] = x => {
         val speed = x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6
         Trajectory(x.entries, speed)
-      })
-      val sRanges = splitSpatial(spatial, gridSize)
-      val converter = new Traj2SpatialMapConverter[Option[String], Double, (Double, Int), None.type](x => {
+      }
+      val agg: Array[Trajectory[Option[String], Double]] => (Double, Int) = x => {
         val res = x.map(t => (t.data, 1))
         (res.map(_._1).sum, res.map(_._2).sum)
-      }, sRanges)
-      val smRDD = converter.convertWithRTree(trajRDD)
+      }
+      val converter = new Traj2SpatialMapConverter(sRanges)
+      val smRDD = converter.convert(trajRDD, preMap, agg)
       val res = smRDD.collect
 
-      def valueMerge(x: (Double, Int), y: (Double, Int)): (Double,Int) = (x._1 + y._1 , x._2 + y._2)
+      def valueMerge(x: (Double, Int), y: (Double, Int)): (Double, Int) = (x._1 + y._1, x._2 + y._2)
 
       val mergedSm = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, valueMerge, (_, _) => None))
       smRDD.unpersist()

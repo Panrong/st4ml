@@ -1,24 +1,16 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Extent, Point, Polygon, RTree, TimeSeries, Trajectory}
-//import intervalTree.mutable.IntervalTree
+import instances._
+
+import scala.reflect.ClassTag
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
-//import intervalTree.Interval
 
-class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS,
-                                               tArray: Array[Duration],
-                                               d: DTS = None) extends Converter {
-  type I = Trajectory[V, D]
-  type O = TimeSeries[VTS, DTS]
+class Traj2TimeSeriesConverter(tArray: Array[Duration],
+                               override val optimization: String = "rtree") extends Converter {
+
   val tMap: Array[(Int, Duration)] = tArray.sortBy(_.start).zipWithIndex.map(_.swap)
   var rTree: Option[RTree[Polygon]] = None
-//  var intervalTree: Option[IntervalTree[Int]] = None
-//
-//  def buildIntervalTree(temporals: Array[Duration]): IntervalTree[Int] = {
-//    val intervals = temporals.zipWithIndex.map(x => new Interval[Int](x._1.start, x._1.end, x._2))
-//    IntervalTree(intervals)
-//  }
 
   def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
     val r = math.sqrt(temporals.length).toInt
@@ -31,70 +23,148 @@ class Traj2TimeSeriesConverter[V, D, VTS, DTS](f: Array[Trajectory[V, D]] => VTS
     RTree[Polygon](entries, r, dimension = 3)
   }
 
-  override def convert(input: RDD[I]): RDD[O] = {
-    input.mapPartitions(partition => {
-      val trajs = partition.toArray
-      val emptyTs = TimeSeries.empty[I](tArray)
-      Iterator(emptyTs.attachInstance(trajs)
-        .mapValue(f)
-        .mapData(_ => d))
-    })
-  }
-
-  def convertWithRTree(input: RDD[I]): RDD[O] = {
-    rTree = Some(buildRTree(tMap.map(_._2)))
-    val spark = SparkSession.builder().getOrCreate()
-    val rTreeBc = spark.sparkContext.broadcast(rTree)
-    input.mapPartitions(partition => {
-      val trajs = partition.toArray
-      val emptyTs = TimeSeries.empty[I](tArray)
-      emptyTs.rTree = rTreeBc.value
-      Iterator(emptyTs.attachInstanceRTree(trajs)
-        .mapValue(f)
-        .mapData(_ => d))
-    })
-  }
-//  def convertWithIntervalTree(input: RDD[I]): RDD[O] = {
-////    val spark = SparkSession.builder().getOrCreate()
-////    val rTreeBc = spark.sparkContext.broadcast(intervalTree)
-//    input.mapPartitions(partition => {
-//      val intervalTree = Some(buildIntervalTree(tMap.map(_._2)))
-//      val trajs = partition.toArray
-//      val emptyTs = TimeSeries.empty[I](tArray)
-//      emptyTs.intervalTree = intervalTree
-//      Iterator(emptyTs.attachInstanceIntervalTree(trajs)
-//        .mapValue(f)
-//        .mapData(_ => d))
-//    })
-//  }
-
-  def convertRegular(input: RDD[I]): RDD[O] = {
-    val emptyTs = TimeSeries.empty[I](tArray)
-    val tsMin = tMap.head._2.start
-    val tsLength = tMap.head._2.seconds
-    // val tsMax = tMap.last._2.end
-    val tsSlots = tMap.length
-    //assert(emptySm.isRegular, "The structure is not regular.")
-    input.flatMap(e => {
-      val tMin = e.duration.start
-      val tMax = e.duration.end
-      val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
-      idRanges.map(x => (e, x))
-    })
-      .mapPartitions(partition => {
-        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
-        val emptySm = TimeSeries.empty[I](tArray)
-        Iterator(emptySm.createTimeSeries(events, getPolygonFromInstanceArray)
-          .mapValue(f)
-          .mapData(_ => d))
+  def convert[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]]): RDD[TimeSeries[Array[Trajectory[V, D]], None.type]] = {
+    type I = Trajectory[V, D]
+    type O = TimeSeries[Array[Trajectory[V, D]], None.type]
+    if (optimization == "none") {
+      input.mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        Iterator(emptyTs.attachInstance(trajs))
       })
+    }
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(tMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        emptyTs.rTree = rTreeBc.value
+        Iterator(emptyTs.attachInstanceRTree(trajs))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptyTs = TimeSeries.empty[I](tArray)
+      val tsMin = tMap.head._2.start
+      val tsLength = tMap.head._2.seconds
+      // val tsMax = tMap.last._2.end
+      val tsSlots = tMap.length
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+          val emptySm = TimeSeries.empty[I](tArray)
+          Iterator(emptySm.createTimeSeries(events, getPolygonFromInstanceArray))
+        })
+    }
+    else throw new NoSuchElementException
   }
-  def getPolygonFromInstanceArray[Trajectory[V, D]](instanceArr: Array[I]): Polygon = {
+
+  def convert[V: ClassTag, D: ClassTag,
+    V2: ClassTag, D2: ClassTag](input: RDD[Trajectory[V, D]], agg: Array[Trajectory[V, D]] => V2): RDD[TimeSeries[V2, None.type]] = {
+    type I = Trajectory[V, D]
+    type O = TimeSeries[Array[Trajectory[V, D]], None.type]
+    if (optimization == "none") {
+      input.mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        Iterator(emptyTs.attachInstance(trajs).mapValue(agg))
+      })
+    }
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(tMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        emptyTs.rTree = rTreeBc.value
+        Iterator(emptyTs.attachInstanceRTree(trajs).mapValue(agg))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptyTs = TimeSeries.empty[I](tArray)
+      val tsMin = tMap.head._2.start
+      val tsLength = tMap.head._2.seconds
+      // val tsMax = tMap.last._2.end
+      val tsSlots = tMap.length
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+          val emptySm = TimeSeries.empty[I](tArray)
+          val f: Array[Trajectory[V, D]] => Polygon = _ => Polygon.empty
+          Iterator(emptySm.createTimeSeries(events, f).mapValue(agg))
+        })
+    }
+    else throw new NoSuchElementException
+  }
+
+  def convert[V: ClassTag, D: ClassTag,
+    V2: ClassTag, D2: ClassTag,
+    V3: ClassTag](input: RDD[Trajectory[V, D]], preMap: Trajectory[V, D] => Trajectory[V2, D2],
+                  agg: Array[Trajectory[V2, D2]] => V3): RDD[TimeSeries[V3, None.type]] = {
+    type I = Trajectory[V2, D2]
+    type O = TimeSeries[V3, None.type]
+    if (optimization == "none") {
+      input.map(preMap).mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        Iterator(emptyTs.attachInstance(trajs).mapValue(agg))
+      })
+    }
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(tMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.map(preMap).mapPartitions(partition => {
+        val trajs = partition.toArray
+        val emptyTs = TimeSeries.empty[I](tArray)
+        emptyTs.rTree = rTreeBc.value
+        Iterator(emptyTs.attachInstanceRTree(trajs).mapValue(agg))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptyTs = TimeSeries.empty[I](tArray)
+      val tsMin = tMap.head._2.start
+      val tsLength = tMap.head._2.seconds
+      // val tsMax = tMap.last._2.end
+      val tsSlots = tMap.length
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.map(preMap).flatMap(e => {
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
+          val emptySm = TimeSeries.empty[I](tArray)
+          val f: Array[Trajectory[V2, D2]] => Polygon = _ => Polygon.empty
+          Iterator(emptySm.createTimeSeries(events, f).mapValue(agg))
+        })
+    }
+    else throw new NoSuchElementException
+  }
+
+  def getPolygonFromInstanceArray[I <: Trajectory[_, _]](instanceArr: Array[I]): Polygon = {
     if (instanceArr.nonEmpty) {
       Extent(instanceArr.map(_.extent)).toPolygon
     }
     else Polygon.empty
   }
+
 }
 
 object Traj2TimeSeriesConverterTest {
@@ -121,7 +191,7 @@ object Traj2TimeSeriesConverterTest {
     val f: Array[Trajectory[None.type, String]] => Int = _.length
 
     //    val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
-    val countConverter = new Traj2TimeSeriesConverter(f, tArray)
+    val countConverter = new Traj2TimeSeriesConverter(tArray)
 
     val tsRDD = countConverter.convert(eventRDD)
     tsRDD.collect.foreach(println(_))

@@ -50,10 +50,8 @@ object RasterTransitionExtraction {
       val sRanges = splitSpatial(spatial, gridSize)
       val tRanges = splitTemporal(Array(temporal.start, temporal.end), tStep)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
-      val converter = new Traj2RasterConverter[Option[String],
-        String, Array[TRAJ], None.type](
-        x => x, stRanges.map(_._1), stRanges.map(_._2))
-      val rasterRDD = converter.convertWithRTree(trajRDD).map(raster => Raster(
+      val converter = new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      val rasterRDD = converter.convert(trajRDD).map(raster => Raster(
         raster.entries.map(entry => {
           implicit val s: Polygon = entry.spatial
           implicit val t: Duration = entry.temporal

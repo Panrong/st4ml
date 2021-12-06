@@ -1,20 +1,18 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, RTree, SpatialMap}
-import operators.selection.indexer.RTreeDeprecated
+import instances._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
-class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S, V, D]] => VSM,
-                                                               sArray: Array[Polygon],
-                                                               d: DSM = None) extends Converter {
-  type I = Event[S, V, D]
-  type O = SpatialMap[VSM, DSM]
+import scala.reflect.ClassTag
+
+class Event2SpatialMapConverter(sArray: Array[Polygon],
+                                override val optimization: String = "rtree"
+                               ) extends Converter {
 
   val sMap: Array[(Int, Polygon)] = sArray.sortBy(x =>
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
 
-  //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[Polygon]] = None
 
   lazy val smXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
@@ -26,109 +24,159 @@ class Event2SpatialMapConverter[S <: Geometry, V, D, VSM, DSM](f: Array[Event[S,
   lazy val smXSlots: Long = ((smXMax - smXMin) / smXLength).round
   lazy val smYSlots: Long = ((smYMax - smYMin) / smYLength).round
 
-  //  def buildRTreeDeprecated(spatials: Array[Polygon]): RTreeDeprecated[geometry.Rectangle] = {
-  //
-  //    val r = math.sqrt(spatials.length).toInt
-  //    val entries = spatials.map(s => {
-  //      val e = Extent(s.getEnvelopeInternal)
-  //      geometry.Rectangle(Array(e.xMin, e.yMin, e.xMax, e.yMax))
-  //    }).zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-  //    RTreeDeprecated[geometry.Rectangle](entries, r)
-  //  }
-
   def buildRTree(spatials: Array[Polygon]): RTree[Polygon] = {
     val r = math.sqrt(spatials.length).toInt
     val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
     RTree[Polygon](entries, r)
   }
 
-  override def convert(input: RDD[I]): RDD[O] = {
-    input.mapPartitions(partition => {
-      val events = partition.toArray
-      val emptySm = SpatialMap.empty[I](sArray)
-      Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon))
-        .mapValue(f)
-        .mapData(_ => d))
-    })
-  }
-
-  //  def convertWithRTreeDeprecated(input: RDD[I]): RDD[O] = {
-  //    rTreeDeprecated = Some(buildRTreeDeprecated(sMap.map(_._2)))
-  //    val spark = SparkSession.builder().getOrCreate()
-  //    val rTreeBc = spark.sparkContext.broadcast(rTreeDeprecated)
-  //    input.mapPartitions(partition => {
-  //      val events = partition.toArray
-  //      val emptySm = SpatialMap.empty[I](sArray)
-  //      emptySm.rTreeDeprecated = rTreeBc.value
-  //      Iterator(emptySm.attachInstanceRTreeDeprecated(events, events.map(_.extent.toPolygon))
-  //        .mapValue(f)
-  //        .mapData(_ => d))
-  //    })
-  //  }
-
-  def convertWithRTree(input: RDD[I]): RDD[O] = {
-    rTree = Some(buildRTree(sMap.map(_._2)))
-    val spark = SparkSession.builder().getOrCreate()
-    val rTreeBc = spark.sparkContext.broadcast(rTree)
-    input.mapPartitions(partition => {
-      val events = partition.toArray
-      val emptySm = SpatialMap.empty[I](sArray)
-      emptySm.rTree = rTreeBc.value
-      Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon))
-        .mapValue(f)
-        .mapData(_ => d))
-    })
-  }
-  //  override def convert(input: RDD[I]): RDD[O] = {
-  //    input.mapPartitions(partition => {
-  //      val eventRegions = partition.map(event => {
-  //        val regions = sMap.filter(_._2.intersects(event.extent))
-  //        (event, regions.map(_._1))
-  //      }).flatMap {
-  //        case (event, slots) => slots.map(slot => (slot, event)).toIterator
-  //      }.toArray.groupBy(_._1).mapValues(x => x.map(_._2)).toArray
-  //      val entries = eventRegions.map(region => {
-  //        val spatial = sMap(region._1)._2
-  //        val temporal = durationAll(region._2)
-  //        val v = f(region._2)
-  //        new Entry(spatial, temporal, v)
-  //      })
-  //      val sm = new SpatialMap[VSM, DSM](entries, data = d)
-  //      Iterator(sm)
-  //    })
-  //  }
-
-  def convertRegular(input: RDD[I]): RDD[O] = {
-    val emptySm = SpatialMap.empty[I](sArray)
-    //assert(emptySm.isRegular, "The structure is not regular.")
-    input.flatMap(e => {
-      val xMin = e.extent.xMin
-      val xMax = e.extent.xMax
-      val yMin = e.extent.yMin
-      val yMax = e.extent.yMax
-      val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
-      val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
-      val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
-      idRanges.map(x => (e, x))
-    })
-      .mapPartitions(partition => {
-        val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)) .map {
-          case (id, instanceArr) =>
-            (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
-        }
+  def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](input: RDD[Event[S, V, D]]): RDD[SpatialMap[Array[Event[S, V, D]], None.type]] = {
+    type I = Event[S, V, D]
+    type O = SpatialMap[Array[I], None.type]
+    if (optimization == "none") {
+      input.mapPartitions(partition => {
+        val events = partition.toArray
         val emptySm = SpatialMap.empty[I](sArray)
-        Iterator(emptySm.createSpatialMap(events)
-          .mapValue(f)
-          .mapData(_ => d))
+        Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)))
       })
+    }
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(sMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.mapPartitions(partition => {
+        val events = partition.toArray
+        val emptySm = SpatialMap.empty[I](sArray)
+        emptySm.rTree = rTreeBc.value
+        Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptySm = SpatialMap.empty[I](sArray)
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
+        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
+        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = SpatialMap.empty[I](sArray)
+          Iterator(emptySm.createSpatialMap(events))
+        })
+    }
+    else throw new NoSuchElementException
   }
 
-}
+  // agg
+  def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag,
+    V2: ClassTag, D2: ClassTag](input: RDD[Event[S, V, D]], agg: Array[Event[S, V, D]] => V2): RDD[SpatialMap[V2, None.type]] = {
+    type I = Event[S, V, D]
+    type O = SpatialMap[V2, None.type]
+    if (optimization == "none") {
+      input.mapPartitions(partition => {
+        val events = partition.toArray
+        val emptySm = SpatialMap.empty[I](sArray)
+        Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)).mapValue(agg))
+      })
+    }
 
-object Event2SpatialMapConverter {
-  def apply(sArray: Array[Polygon]): Event2SpatialMapConverter[Point,
-    None.type, String, Array[Event[Point, None.type, String]], None.type] =
-    new Event2SpatialMapConverter[Point, None.type, String, Array[Event[Point, None.type, String]], None.type](x => x, sArray)
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(sMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.mapPartitions(partition => {
+        val events = partition.toArray
+        val emptySm = SpatialMap.empty[I](sArray)
+        emptySm.rTree = rTreeBc.value
+        Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)).mapValue(agg))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptySm = SpatialMap.empty[I](sArray)
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
+        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
+        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = SpatialMap.empty[I](sArray)
+          Iterator(emptySm.createSpatialMap(events).mapValue(agg))
+        })
+    }
+    else throw new NoSuchElementException
+  }
+
+
+  // preMap + agg
+  def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag,
+    S2 <: Geometry : ClassTag, V2: ClassTag, D2: ClassTag,
+    V3: ClassTag](input: RDD[Event[S, V, D]], preMap: Event[S, V, D] => Event[S2, V2, D2],
+                  agg: Array[Event[S2, V2, D2]] => V3):
+  RDD[SpatialMap[V3, None.type]] = {
+    type I = Event[S2, V2, D2]
+    type O = SpatialMap[V3, None.type]
+    if (optimization == "none") {
+      input.map(preMap).mapPartitions(partition => {
+        val events = partition.toArray
+        val emptySm = SpatialMap.empty[I](sArray)
+        Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)).mapValue(agg))
+      })
+    }
+
+    else if (optimization == "rtree") {
+      rTree = Some(buildRTree(sMap.map(_._2)))
+      val spark = SparkSession.builder().getOrCreate()
+      val rTreeBc = spark.sparkContext.broadcast(rTree)
+      input.map(preMap).mapPartitions(partition => {
+        val events = partition.toArray
+        val emptySm = SpatialMap.empty[I](sArray)
+        emptySm.rTree = rTreeBc.value
+        Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)).mapValue(agg))
+      })
+    }
+    else if (optimization == "regular") {
+      val emptySm = SpatialMap.empty[I](sArray)
+      //assert(emptySm.isRegular, "The structure is not regular.")
+      input.map(preMap).flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
+        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
+        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = SpatialMap.empty[I](sArray)
+          Iterator(emptySm.createSpatialMap(events).mapValue(agg))
+        })
+    }
+    else throw new NoSuchElementException
+  }
 }
 
 object Event2SpatialMapConverterTest {
@@ -159,9 +207,9 @@ object Event2SpatialMapConverterTest {
     val f: Array[Event[Point, None.type, String]] => Int = _.length
 
     //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
-    val countConverter = new Event2SpatialMapConverter(f, sArray)
+    val countConverter = new Event2SpatialMapConverter(sArray)
 
-    val tsRDD = countConverter.convert(eventRDD)
+    val tsRDD = countConverter.convert(eventRDD, f)
     tsRDD.collect.foreach(println(_))
 
     sc.stop()

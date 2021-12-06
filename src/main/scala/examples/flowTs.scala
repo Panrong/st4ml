@@ -54,8 +54,8 @@ object flowTs {
 
     val f: Array[Event[Point, None.type, String]] => Int = _.length
     val tArray = ((tQuery(0) until tQuery(1) by tSplit.toLong).toArray :+ tQuery(1)).sliding(2).toArray.map(x => Duration(x(0), x(1)))
-    val converter = new Event2TimeSeriesConverter(f, tArray)
-    val rdd2 = converter.convert(pRdd1)
+    val converter = new Event2TimeSeriesConverter(tArray)
+    val rdd2 = converter.convert(pRdd1,f)
     val resRdd = rdd2.map(x => x.entries.map(_.value).zipWithIndex.map(_.swap)).zipWithIndex().flatMap(x => x._1.map(y => (y, x._2)))
     resRdd.collect.foreach(x => println(grids(x._2.toInt).mkString("Array(", ", ", ")"), tArray(x._1._1), x._1._2))
     println(resRdd.map(_._1._2).sum)

@@ -51,10 +51,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val ranges = splitSpatial(sRange, xSplit, ySplit)
-      val converter = new Event2SpatialMapConverter[Point,
-        None.type, String, Array[Event[Point, None.type, String]], None.type](x => x, ranges)
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Event2SpatialMapConverter(ranges) else new Event2SpatialMapConverter(ranges, "none")
+      val convertedRDD =  converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
@@ -74,9 +72,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val ranges = splitSpatial(sRange, xSplit, ySplit)
-      val converter = new Traj2SpatialMapConverter[None.type, String, Array[TRAJ], None.type](x => x, ranges)
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Traj2SpatialMapConverter(ranges) else new Traj2SpatialMapConverter(ranges, "none")
+      val convertedRDD =  converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
@@ -95,11 +92,9 @@ object ConversionExp {
       val sRanges = splitSpatial(sRange, xSplit, ySplit)
       val tRanges = splitTemporal(tRange, tSplit)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
-      val converter = new Event2RasterConverter[Point, None.type,
-        String, Array[Event[Point, None.type, String]], None.type](
-        x => x, stRanges.map(_._1), stRanges.map(_._2))
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      else new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
@@ -119,11 +114,9 @@ object ConversionExp {
       val sRanges = splitSpatial(sRange, xSplit, ySplit)
       val tRanges = splitTemporal(tRange, tSplit)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
-      val converter = new Traj2RasterConverter[None.type,
-        String, Array[Trajectory[None.type, String]], None.type](
-        x => x, stRanges.map(_._1), stRanges.map(_._2))
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      else new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
@@ -142,11 +135,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val tRanges = splitTemporal(tRange, tSplit)
-      val converter = new Event2TimeSeriesConverter[Point, None.type,
-        String, Array[Event[Point, None.type, String]], None.type](
-        x => x, tRanges)
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Event2TimeSeriesConverter(tRanges) else new Event2TimeSeriesConverter(tRanges, "none")
+      val convertedRDD =  converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
@@ -164,11 +154,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val tRanges = splitTemporal(tRange, tSplit)
-      val converter = new Traj2TimeSeriesConverter[None.type,
-        String, Array[Trajectory[None.type, String]], None.type](
-        x => x, tRanges)
-      val convertedRDD = if (useRTree) converter.convertWithRTree(selectedRDD)
-      else converter.convert(selectedRDD)
+      val converter = if(useRTree) new Traj2TimeSeriesConverter(tRanges) else new Traj2TimeSeriesConverter(tRanges, "none")
+      val convertedRDD =  converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */

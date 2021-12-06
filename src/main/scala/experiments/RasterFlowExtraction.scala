@@ -36,10 +36,9 @@ object RasterFlowExtraction {
       val stRanges = genRaster(temporal.start, temporal.end, sQuery, tSplit, sSize)
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata)
-      val converter = new Traj2RasterConverter[Option[String],
-        String, Int, None.type](
-        x => x.length, stRanges.map(_._1), stRanges.map(_._2))
-      val rasterRDD = converter.convertWithRTree(trajRDD)
+      val f: Array[TRAJ] => Int = _.length
+      val converter = new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      val rasterRDD = converter.convert(trajRDD, f)
       val res = rasterRDD.collect
       val matrix = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, _+_, (_, _) => None)).entries.map(_.value)
       rasterRDD.unpersist()

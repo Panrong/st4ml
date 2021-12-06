@@ -2,11 +2,11 @@ package operatorsNew.converter
 import instances.{Event, Point, Trajectory}
 import org.apache.spark.rdd.RDD
 
-class Traj2EventConverter[TV, TD] extends Converter {
+class Traj2EventConverter[TV, TD] {
   type I = Trajectory[TV, TD]
   type O = Event[Point, TV, TD]
 
-  override def convert(input: RDD[I]): RDD[O] = {
+   def convert(input: RDD[I]): RDD[O] = {
     val entries = input.flatMap(traj => {
       val points = traj.entries
       val attribute = traj.data

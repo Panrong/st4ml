@@ -53,8 +53,8 @@ object TrajConversionTest {
       val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
       val t = nanoTime
 
-      val converter = new Traj2SpatialMapConverter(f, sArray)
-      val convertedRDD = converter.convert(res)
+      val converter = new Traj2SpatialMapConverter( sArray)
+      val convertedRDD = converter.convert(res, f)
       println(convertedRDD.count)
       println("traj to spatial map")
       println((nanoTime - t) * 1e-9)
@@ -85,7 +85,7 @@ object TrajConversionTest {
         t <- tArray
       } yield (s, t)
 
-      val converter = new Traj2RasterConverter(f, stArray.map(_._1), stArray.map(_._2))
+      val converter = new Traj2RasterConverter(stArray.map(_._1), stArray.map(_._2))
       val rasterRDD = converter.convert(res)
       println(rasterRDD.count)
       println("traj to raster")
@@ -115,8 +115,8 @@ object TrajConversionTest {
       val f: Array[Trajectory[None.type, String]] => Array[Trajectory[None.type, String]] = x => x
       val tArray = (tQuery.start until tQuery.end by tInterval).sliding(2).map(x => Duration(x(0), x(1))).toArray
       val t = nanoTime
-      val converter = new Traj2TimeSeriesConverter(f, tArray)
-      val convertedRDD = converter.convert(res)
+      val converter = new Traj2TimeSeriesConverter(tArray)
+      val convertedRDD = converter.convert(res, f)
       println(convertedRDD.count)
       println("traj to time series")
       println((nanoTime - t) * 1e-9)
@@ -135,7 +135,7 @@ object TrajConversionTest {
       val yArray = (sQuery.yMin until sQuery.yMax by (sQuery.yMax - sQuery.yMin) / 11).sliding(2).toArray
       val sArray = xArray.flatMap(x => yArray.map(y => (x, y))).map(x => Extent(x._1(0), x._2(0), x._1(1), x._2(1)).toPolygon)
 
-      val converter = new Traj2SpatialMapConverter(f, sArray)
+      val converter = new Traj2SpatialMapConverter( sArray)
       val convertedRDD = converter.convert(res)
       println(convertedRDD.count)
       println("traj to spatial map")
@@ -143,8 +143,9 @@ object TrajConversionTest {
 
       t = nanoTime
       val tArray = (tQuery.start until tQuery.end by (tQuery.end - tQuery.start) / 10).sliding(2).map(x => Duration(x(0), x(1))).toArray
-      val converter2 = new Traj2TimeSeriesConverter(f, tArray)
-      val convertedRDD2 = converter2.convert(res)
+      val converter2 = new Traj2TimeSeriesConverter(tArray)
+      val convertedRDD2 = converter2.convert(res, f)
+
       println(convertedRDD2.count)
       println("traj to time series")
       println((nanoTime - t) * 1e-9)

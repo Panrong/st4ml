@@ -44,8 +44,8 @@ object PeriodicalFlowTest {
       .sliding(2)
       .map(x => Duration(x(0), x(1))).toArray
 
-    val converter = new Event2TimeSeriesConverter(f, tArray)
-    val tsRDD = converter.convert(res)
+    val converter = new Event2TimeSeriesConverter(tArray)
+    val tsRDD = converter.convert(res, f)
     tsRDD.count
     val t = nanoTime
     val binRDD = tsRDD.flatMap(ts => ts.entries.zipWithIndex.map {

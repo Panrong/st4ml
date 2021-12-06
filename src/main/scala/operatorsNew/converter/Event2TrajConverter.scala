@@ -5,11 +5,12 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class Event2TrajConverter[EV: ClassTag, ED] extends Converter {
-  type I = Event[Point, EV, ED]
-  type O = Trajectory[EV, ED]
+class Event2TrajConverter extends Converter {
+  override val optimization = "none"
 
-  override def convert(input: RDD[I]): RDD[O] = {
+  def convert[EV: ClassTag, ED: ClassTag](input: RDD[Event[Point, EV, ED]]): RDD[Trajectory[EV, ED]] = {
+    type I = Event[Point, EV, ED]
+    type O = Trajectory[EV, ED]
     val event = input.take(1).head
     assert(event.data != None, "The data field cannot be None")
     input.map(e => (e.data.toString, e))
