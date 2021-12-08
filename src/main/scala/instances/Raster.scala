@@ -10,6 +10,8 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
   var rTree: Option[RTree[Polygon]] = None
 
+  lazy val temporals: Array[Duration] = entries.map(_.temporal)
+  lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
 
   def isRegular: Boolean = {
     val cubes = entries.map(x => (x.spatial.getEnvelopeInternal.getMinX,
@@ -116,6 +118,9 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
           entry.temporal,
           entry.value)),
       f(data))
+
+  def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): Raster[S, V, D1] =
+    Raster(entries, f(data, extent.toPolygon, temporal))
 
   def getEntryIndex[G <: Geometry](
                                     queryArr: Array[(G, Duration)],

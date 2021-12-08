@@ -65,6 +65,22 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       .map(_.asInstanceOf[I])
     rdd1
   }
+  def select[A:ClassTag](dataDir: String, metaDataDir: String): RDD[A] = {
+    import spark.implicits._
+    val pInstanceDf = loadDf(dataDir, metaDataDir)
+    val pInstanceRDD = pInstanceDf.head(1).head.get(0) match {
+      case _: String => pInstanceDf.as[E].toRdd
+      case _: mutable.WrappedArray[_] => pInstanceDf.as[T].toRdd
+      case _ => throw new ClassCastException("instance type not supported.")
+    }
+    val partitionedRDD = if (pInstanceRDD.getNumPartitions < parallelism)
+      pInstanceRDD.stPartition(partitioner)
+    else pInstanceRDD
+    val rdd1 = partitionedRDD
+      .filter(_.intersects(sQuery, tQuery))
+      .map(_.asInstanceOf[A])
+    rdd1
+  }
 }
 
 object Selector {

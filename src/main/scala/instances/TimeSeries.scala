@@ -2,6 +2,8 @@ package instances
 
 //import intervalTree.mutable.IntervalTree
 
+import instances.TimeSeries.empty
+
 import scala.reflect.ClassTag
 
 
@@ -11,6 +13,7 @@ class TimeSeries[V, D](
   extends Instance[Polygon, V, D] {
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
+  lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   var rTree: Option[RTree[Polygon]] = None
   //  var intervalTree: Option[IntervalTree[Int]] = None
   require(validation,
@@ -81,13 +84,10 @@ class TimeSeries[V, D](
     TimeSeries(entries.map(f(_)), data)
 
   override def mapData[D1](f: D => D1): TimeSeries[V, D1] =
-    TimeSeries(
-      entries.map(entry =>
-        Entry(
-          entry.spatial,
-          entry.temporal,
-          entry.value)),
-      f(data))
+    TimeSeries(entries, f(data))
+
+  def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): TimeSeries[V, D1] =
+    TimeSeries(entries, f(data, extent.toPolygon, temporal))
 
 
   /**

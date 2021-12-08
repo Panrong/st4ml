@@ -10,7 +10,8 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   extends Instance[S, V, D] {
 
   lazy val spatials: Array[S] = entries.map(_.spatial).toArray
-
+  lazy val temporals: Array[Duration] = entries.map(_.temporal)
+  lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[S]] = None
 
@@ -96,6 +97,9 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
           entry.temporal,
           entry.value)),
       f(data))
+
+  def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): SpatialMap[S, V, D1] =
+    SpatialMap(entries, f(data, extent.toPolygon, temporal))
 
   // todo: test the performance difference: getBinIndices v.s. isSpatialDisjoint + getBinIndex
   def getSpatialIndex[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
