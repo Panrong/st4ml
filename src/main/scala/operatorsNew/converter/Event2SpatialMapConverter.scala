@@ -30,13 +30,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
     RTree[Polygon](entries, r)
   }
 
-  def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](input: RDD[Event[S, V, D]]): RDD[SpatialMap[Array[Event[S, V, D]], None.type]] = {
+  def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](input: RDD[Event[S, V, D]]): RDD[SpatialMap[Polygon,Array[Event[S, V, D]], None.type]] = {
     type I = Event[S, V, D]
-    type O = SpatialMap[Array[I], None.type]
+    type O = SpatialMap[Polygon,Array[I], None.type]
     if (optimization == "none") {
       input.mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)))
       })
     }
@@ -46,13 +46,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon,I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
@@ -69,7 +69,7 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon,I](sArray)
           Iterator(emptySm.createSpatialMap(events))
         })
     }
@@ -78,13 +78,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
 
   // agg
   def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag,
-    V2: ClassTag, D2: ClassTag](input: RDD[Event[S, V, D]], agg: Array[Event[S, V, D]] => V2): RDD[SpatialMap[V2, None.type]] = {
+    V2: ClassTag, D2: ClassTag](input: RDD[Event[S, V, D]], agg: Array[Event[S, V, D]] => V2): RDD[SpatialMap[Polygon,V2, None.type]] = {
     type I = Event[S, V, D]
-    type O = SpatialMap[V2, None.type]
+    type O = SpatialMap[Polygon,V2, None.type]
     if (optimization == "none") {
       input.mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)).mapValue(agg))
       })
     }
@@ -95,13 +95,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)).mapValue(agg))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon,I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
@@ -118,7 +118,7 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon,I](sArray)
           Iterator(emptySm.createSpatialMap(events).mapValue(agg))
         })
     }
@@ -131,13 +131,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
     S2 <: Geometry : ClassTag, V2: ClassTag, D2: ClassTag,
     V3: ClassTag](input: RDD[Event[S, V, D]], preMap: Event[S, V, D] => Event[S2, V2, D2],
                   agg: Array[Event[S2, V2, D2]] => V3):
-  RDD[SpatialMap[V3, None.type]] = {
+  RDD[SpatialMap[Polygon,V3, None.type]] = {
     type I = Event[S2, V2, D2]
-    type O = SpatialMap[V3, None.type]
+    type O = SpatialMap[Polygon,V3, None.type]
     if (optimization == "none") {
       input.map(preMap).mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         Iterator(emptySm.attachInstance(events, events.map(_.extent.toPolygon)).mapValue(agg))
       })
     }
@@ -148,13 +148,13 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.map(preMap).mapPartitions(partition => {
         val events = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon,I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(events, events.map(_.extent.toPolygon)).mapValue(agg))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon,I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.map(preMap).flatMap(e => {
         val xMin = e.extent.xMin
@@ -171,7 +171,7 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon,I](sArray)
           Iterator(emptySm.createSpatialMap(events).mapValue(agg))
         })
     }

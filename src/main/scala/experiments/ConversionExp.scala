@@ -51,8 +51,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val ranges = splitSpatial(sRange, xSplit, ySplit)
-      val converter = if(useRTree) new Event2SpatialMapConverter(ranges) else new Event2SpatialMapConverter(ranges, "none")
-      val convertedRDD =  converter.convert(selectedRDD)
+      val converter = if (useRTree) new Event2SpatialMapConverter(ranges) else new Event2SpatialMapConverter(ranges, "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
@@ -72,8 +72,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val ranges = splitSpatial(sRange, xSplit, ySplit)
-      val converter = if(useRTree) new Traj2SpatialMapConverter(ranges) else new Traj2SpatialMapConverter(ranges, "none")
-      val convertedRDD =  converter.convert(selectedRDD)
+      val converter = if (useRTree) new Traj2SpatialMapConverter(ranges) else new Traj2SpatialMapConverter(ranges, "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
@@ -92,7 +92,7 @@ object ConversionExp {
       val sRanges = splitSpatial(sRange, xSplit, ySplit)
       val tRanges = splitTemporal(tRange, tSplit)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
-      val converter = if(useRTree) new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      val converter = if (useRTree) new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
       else new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
@@ -114,7 +114,7 @@ object ConversionExp {
       val sRanges = splitSpatial(sRange, xSplit, ySplit)
       val tRanges = splitTemporal(tRange, tSplit)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
-      val converter = if(useRTree) new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+      val converter = if (useRTree) new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
       else new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
@@ -135,8 +135,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val tRanges = splitTemporal(tRange, tSplit)
-      val converter = if(useRTree) new Event2TimeSeriesConverter(tRanges) else new Event2TimeSeriesConverter(tRanges, "none")
-      val convertedRDD =  converter.convert(selectedRDD)
+      val converter = if (useRTree) new Event2TimeSeriesConverter(tRanges) else new Event2TimeSeriesConverter(tRanges, "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
@@ -154,8 +154,8 @@ object ConversionExp {
       println(selectedRDD.count)
       val t = nanoTime()
       val tRanges = splitTemporal(tRange, tSplit)
-      val converter = if(useRTree) new Traj2TimeSeriesConverter(tRanges) else new Traj2TimeSeriesConverter(tRanges, "none")
-      val convertedRDD =  converter.convert(selectedRDD)
+      val converter = if (useRTree) new Traj2TimeSeriesConverter(tRanges) else new Traj2TimeSeriesConverter(tRanges, "none")
+      val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
@@ -166,7 +166,18 @@ object ConversionExp {
       //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
+      val timeSeries = TimeSeries.empty[Int](Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
+      val f: Array[Int] => Int = _=>5
+      val f2: (Array[Int], Polygon, Duration) => Long = (_,_, t) => t.start
+      val ts1 = timeSeries.mapValue(f)
+      val ts2 = timeSeries.mapValuePlus(f2)
+      println(ts1)
+      println(ts2)
 
+      val raster = Raster.empty(Array(Extent(0,0,1,1).toPolygon),Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
+      val f3:(Array[Nothing], Polygon, Duration) => Long = (_,_, t) => t.start
+      val raster2 = raster.mapValuePlus(f3)
+      println(raster2)
     }
     sc.stop
   }

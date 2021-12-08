@@ -49,7 +49,7 @@ object Utils {
     )
   }
 
-  def getBinIndicesRTree(rTree: RTree[Polygon], queryArr: Array[Duration]): Array[Array[Int]] =
+  def getBinIndicesRTree[S <: Geometry](rTree: RTree[S], queryArr: Array[Duration]): Array[Array[Int]] =
     queryArr.map(query =>
       rTree.range1d((query.start, query.end)).map(_._2.toInt))
 
@@ -60,12 +60,12 @@ object Utils {
     )
   }
 
-  def getBinIndex[T <: Geometry](bins: Array[Polygon], queryArr: Array[T]): Array[Array[Int]] =
+  def getBinIndex[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] =
     queryArr.map(q =>
       Array(bins.indexWhere(poly => poly.intersects(q)))
     )
 
-  def getBinIndices[T <: Geometry](bins: Array[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
+  def getBinIndices[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(q =>
       bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
     )
@@ -79,7 +79,7 @@ object Utils {
     qArray.map(query => rTree.range(query).map(_._2.toInt))
   }
 
-  def getBinIndicesRTree[T <: Geometry : ClassTag](RTree: RTree[Polygon], queryArr: Array[T]): Array[Array[Int]] = {
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
 }

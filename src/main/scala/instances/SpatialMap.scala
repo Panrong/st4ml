@@ -4,15 +4,15 @@ import operators.selection.indexer.RTreeDeprecated
 
 import scala.reflect.ClassTag
 
-class SpatialMap[V, D](
-                        override val entries: Array[Entry[Polygon, V]],
-                        override val data: D)
-  extends Instance[Polygon, V, D] {
+class SpatialMap[S <: Geometry : ClassTag, V, D](
+                                                  override val entries: Array[Entry[S, V]],
+                                                  override val data: D)
+  extends Instance[S, V, D] {
 
-  lazy val spatials: Array[Polygon] = entries.map(_.spatial)
+  lazy val spatials: Array[S] = entries.map(_.spatial).toArray
 
   //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
-  var rTree: Option[RTree[Polygon]] = None
+  var rTree: Option[RTree[S]] = None
 
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
@@ -36,7 +36,7 @@ class SpatialMap[V, D](
     areaEqual && isSpatialDisjoint && lengthEqual && allRectangle
   }
 
-  override def mapSpatial(f: Polygon => Polygon): SpatialMap[V, D] =
+  override def mapSpatial(f: S => S): SpatialMap[S, V, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -46,7 +46,7 @@ class SpatialMap[V, D](
       data)
 
 
-  override def mapTemporal(f: Duration => Duration): SpatialMap[V, D] =
+  override def mapTemporal(f: Duration => Duration): SpatialMap[S, V, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -55,7 +55,7 @@ class SpatialMap[V, D](
           entry.value)),
       data)
 
-  override def mapValue[V1](f: V => V1): SpatialMap[V1, D] =
+  override def mapValue[V1](f: V => V1): SpatialMap[S, V1, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -64,10 +64,19 @@ class SpatialMap[V, D](
           f(entry.value))),
       data)
 
+  def mapValuePlus[V1](f: (V, S, Duration) => V1): SpatialMap[S, V1, D] = {
+    val newEntries = entries.map(entry => {
+      val spatial = entry.spatial
+      val temporal = entry.temporal
+      Entry(spatial, temporal, f(entry.value, spatial, temporal))
+    })
+    SpatialMap(newEntries, data)
+  }
+
   override def mapEntries[V1](
-                               f1: Polygon => Polygon,
+                               f1: S => S,
                                f2: Duration => Duration,
-                               f3: V => V1): SpatialMap[V1, D] =
+                               f3: V => V1): SpatialMap[S, V1, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -76,10 +85,10 @@ class SpatialMap[V, D](
           f3(entry.value))),
       data)
 
-  override def mapEntries[V1](f: Entry[Polygon, V] => Entry[Polygon, V1]): SpatialMap[V1, D] =
+  override def mapEntries[V1](f: Entry[S, V] => Entry[S, V1]): SpatialMap[S, V1, D] =
     SpatialMap(entries.map(f(_)), data)
 
-  override def mapData[D1](f: D => D1): SpatialMap[V, D1] =
+  override def mapData[D1](f: D => D1): SpatialMap[S, V, D1] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -157,7 +166,7 @@ class SpatialMap[V, D](
 
   def createSpatialMap[T: ClassTag](
                                      spatialIndexToObj: Map[Int, Array[T]],
-                                   ): SpatialMap[Array[T], D] = {
+                                   ): SpatialMap[S, Array[T], D] = {
     if (spatialIndexToObj.nonEmpty) {
       val newValues = entries.zipWithIndex.map(entryWithIdx =>
         if (spatialIndexToObj.contains(entryWithIdx._2)) {
@@ -172,18 +181,18 @@ class SpatialMap[V, D](
       SpatialMap(newEntries, data)
     }
     else {
-      this.asInstanceOf[SpatialMap[Array[T], D]]
+      this.asInstanceOf[SpatialMap[S, Array[T], D]]
     }
   }
 
   def attachGeometry[T <: Geometry : ClassTag](geomArr: Array[T])
-                                              (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+                                              (implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     val entryIndexToGeom = getSpatialIndexToObj(geomArr, geomArr)
     createSpatialMap(entryIndexToGeom)
   }
 
   def attachInstance[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
-  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
     val entryIndexToInstance = getSpatialIndexToObj(instanceArr, geomArr)
@@ -198,7 +207,7 @@ class SpatialMap[V, D](
   //    createSpatialMap(entryIndexToInstance)
   //  }
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
-  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
     val entryIndexToInstance = getSpatialIndexToObjRTree(instanceArr, geomArr)
@@ -206,7 +215,7 @@ class SpatialMap[V, D](
   }
 
   def attachInstance[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
-                                                       (implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+                                                       (implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     val geomArr = instanceArr.map(_.toGeometry)
     attachInstance(instanceArr, geomArr)
   }
@@ -214,8 +223,8 @@ class SpatialMap[V, D](
 
   // todo: handle different order of the same spatials
   def merge[T: ClassTag](
-                          other: SpatialMap[Array[T], _]
-                        )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], None.type] = {
+                          other: SpatialMap[S, Array[T], _]
+                        )(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], None.type] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
@@ -230,10 +239,10 @@ class SpatialMap[V, D](
   }
 
   def merge[T](
-                other: SpatialMap[T, D],
+                other: SpatialMap[S, T, D],
                 valueCombiner: (V, T) => V,
                 dataCombiner: (D, D) => D
-              ): SpatialMap[V, D] = {
+              ): SpatialMap[S, V, D] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
@@ -249,9 +258,9 @@ class SpatialMap[V, D](
   }
 
   def merge[T: ClassTag](
-                          other: SpatialMap[Array[T], D],
+                          other: SpatialMap[S, Array[T], D],
                           dataCombiner: (D, D) => D
-                        )(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
+                        )(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     require(spatials sameElements other.spatials,
       "cannot merge SpatialMap with different spatial structure")
 
@@ -270,17 +279,17 @@ class SpatialMap[V, D](
 }
 
 object SpatialMap {
-  def empty[T: ClassTag](polygonArr: Array[Polygon]): SpatialMap[Array[T], None.type] =
+  def empty[S <: Geometry : ClassTag, T: ClassTag](polygonArr: Array[S]): SpatialMap[S, Array[T], None.type] =
     SpatialMap(polygonArr.map(x => Entry(x, Duration.empty, Array.empty[T])))
 
-  def empty[T: ClassTag](extentArr: Array[Extent]): SpatialMap[Array[T], None.type] = {
+  def empty[T: ClassTag](extentArr: Array[Extent]): SpatialMap[Polygon, Array[T], None.type] = {
     val polygonArr = extentArr.map(_.toPolygon)
     SpatialMap.empty(polygonArr)
   }
 
-  def apply[V, D](entries: Array[Entry[Polygon, V]], data: D): SpatialMap[V, D] =
+  def apply[S <: Geometry : ClassTag, V, D](entries: Array[Entry[S, V]], data: D): SpatialMap[S, V, D] =
     new SpatialMap(entries, data)
 
-  def apply[V](entries: Array[Entry[Polygon, V]]): SpatialMap[V, None.type] =
+  def apply[S <: Geometry : ClassTag, V](entries: Array[Entry[S, V]]): SpatialMap[S, V, None.type] =
     new SpatialMap(entries, None)
 }

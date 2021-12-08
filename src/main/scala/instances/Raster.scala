@@ -73,15 +73,25 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
 
   override def mapValue[V1](f: V => V1): Raster[S, V1, D] =
     Raster(
-      entries.map(entry =>{
+      entries.map(entry => {
         implicit val s: Polygon = entry.spatial.asInstanceOf[Polygon]
         implicit val t: Duration = entry.temporal
         Entry(
           entry.spatial,
           entry.temporal,
-          f(entry.value))}
+          f(entry.value))
+      }
       ),
       data)
+
+  def mapValuePlus[V1](f: (V, S, Duration) => V1): Raster[S, V1, D] = {
+    val newEntries = entries.map(entry => {
+      val spatial = entry.spatial
+      val temporal = entry.temporal
+      Entry(spatial, temporal, f(entry.value, spatial, temporal))
+    })
+    Raster(newEntries, data)
+  }
 
   override def mapEntries[V1](
                                f1: S => S,
@@ -143,10 +153,9 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     getEntryIndex(queryArr, how)
   }
 
-  def getEntryIndex[G <: Geometry](
-                                    geomArr: Array[G],
-                                    timestampArr: Array[Long],
-                                    how: String
+  def getEntryIndex[G <: Geometry](geomArr: Array[G],
+                                   timestampArr: Array[Long],
+                                   how: String
                                   ): Array[Array[Int]] = {
     val durArr = timestampArr.map(t => Duration(t))
     val queryArr = geomArr.zip(durArr)

@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-class RegionalSpeedExtractor[T <: SpatialMap[Array[Trajectory[_, _]], _] : ClassTag] extends Extractor[T] {
+class RegionalSpeedExtractor[T <: SpatialMap[Polygon, Array[Trajectory[_, _]], _] : ClassTag] extends Extractor[T] {
   def extract(smRDD: RDD[T]): Array[(Polygon, Double)] = {
 
     val calSpeed: Array[Trajectory[_, _]] => Double = trajArray => {

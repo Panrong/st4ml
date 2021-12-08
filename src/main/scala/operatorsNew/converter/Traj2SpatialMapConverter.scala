@@ -30,13 +30,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
     RTree[Polygon](entries, r)
   }
 
-  def convert[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]]): RDD[SpatialMap[Array[Trajectory[V, D]], None.type]] = {
+  def convert[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]]): RDD[SpatialMap[Polygon, Array[Trajectory[V, D]], None.type]] = {
     type I = Trajectory[V, D]
-    type O = SpatialMap[Array[I], None.type]
+    type O = SpatialMap[Polygon, Array[I], None.type]
     if (optimization == "none") {
       input.mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         Iterator(emptySm.attachInstance(trajs, trajs.map(_.toGeometry)))
       })
     }
@@ -46,13 +46,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.toGeometry)))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon, I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
@@ -69,7 +69,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray)
           Iterator(emptySm.createSpatialMap(trajs))
         })
     }
@@ -77,13 +77,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
   }
 
   def convert[V: ClassTag, D: ClassTag,
-    V2: ClassTag, D2: ClassTag](input: RDD[Trajectory[V, D]], agg: Array[Trajectory[V, D]] => V2): RDD[SpatialMap[V2, None.type]] = {
+    V2: ClassTag, D2: ClassTag](input: RDD[Trajectory[V, D]], agg: Array[Trajectory[V, D]] => V2): RDD[SpatialMap[Polygon, V2, None.type]] = {
     type I = Trajectory[V, D]
-    type O = SpatialMap[V2, None.type]
+    type O = SpatialMap[Polygon, V2, None.type]
     if (optimization == "none") {
       input.mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         Iterator(emptySm.attachInstance(trajs, trajs.map(_.toGeometry)).mapValue(agg))
       })
     }
@@ -93,13 +93,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.toGeometry)).mapValue(agg))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon, I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
@@ -116,7 +116,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray)
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
     }
@@ -127,13 +127,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
     V2: ClassTag, D2: ClassTag,
     V3: ClassTag](input: RDD[Trajectory[V, D]], preMap: Trajectory[V, D] => Trajectory[V2, D2],
                   agg: Array[Trajectory[V2, D2]] => V3):
-  RDD[SpatialMap[V3, None.type]] = {
+  RDD[SpatialMap[Polygon, V3, None.type]] = {
     type I = Trajectory[V2, D2]
-    type O = SpatialMap[V3, None.type]
+    type O = SpatialMap[Polygon, V3, None.type]
     if (optimization == "none") {
       input.map(preMap).mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         Iterator(emptySm.attachInstance(trajs, trajs.map(_.toGeometry)).mapValue(agg))
       })
     }
@@ -143,13 +143,13 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.map(preMap).mapPartitions(partition => {
         val trajs = partition.toArray
-        val emptySm = SpatialMap.empty[I](sArray)
+        val emptySm = SpatialMap.empty[Polygon, I](sArray)
         emptySm.rTree = rTreeBc.value
         Iterator(emptySm.attachInstanceRTree(trajs, trajs.map(_.toGeometry)).mapValue(agg))
       })
     }
     else if (optimization == "regular") {
-      val emptySm = SpatialMap.empty[I](sArray)
+      val emptySm = SpatialMap.empty[Polygon, I](sArray)
       //assert(emptySm.isRegular, "The structure is not regular.")
       input.map(preMap).flatMap(e => {
         val xMin = e.extent.xMin
@@ -166,7 +166,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray)
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
     }
