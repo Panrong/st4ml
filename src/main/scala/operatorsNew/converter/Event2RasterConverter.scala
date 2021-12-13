@@ -9,8 +9,22 @@ import scala.reflect.ClassTag
 class Event2RasterConverter(polygonArr: Array[Polygon],
                             durArr: Array[Duration],
                             override val optimization: String = "rtree") extends Converter {
+  lazy val sMap: Array[(Int, Polygon)] = polygonArr.sortBy(x =>
+    (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
+  lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)
 
   var rTree: Option[RTree[Polygon]] = None
+  lazy val rasterXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
+  lazy val rasterYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
+  lazy val rasterXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
+  lazy val rasterYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
+  lazy val rasterXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - rasterXMin
+  lazy val rasterYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - rasterYMin
+  lazy val rasterXSlots: Long = ((rasterXMax - rasterXMin) / rasterXLength).round
+  lazy val rasterYSlots: Long = ((rasterYMax - rasterYMin) / rasterYLength).round
+  lazy val tsMin: Long = tMap.head._2.start
+  lazy val tsLength: Long = tMap.head._2.seconds
+  lazy val tsSlots: Int = tMap.length
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon] = {
@@ -44,10 +58,37 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         Iterator(emptyRaster.attachInstanceRTree(events))
       })
     }
+//        else if (optimization == "regular") {
+//          val emptyRaster = Raster.empty[I](polygonArr, durArr)
+//          assert(emptyRaster.isRegular, "The structure is not regular.")
+//          input.flatMap(e => {
+//            val xMin = e.extent.xMin
+//            val xMax = e.extent.xMax
+//            val yMin = e.extent.yMin
+//            val yMax = e.extent.yMax
+//            val tMin = e.duration.start
+//            val tMax = e.duration.end
+//            val xRanges = (math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
+//            val yRanges = (math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
+//            val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+//            val xyRanges = ((xRanges._1 * rasterYSlots + yRanges._1).toInt, (xRanges._2 * rasterYSlots + yRanges._2).toInt + 1)
+//            val idRanges = xyRanges._1 * tsSlots +
+//            idRanges.map(x => (e, x))
+//          })
+//            .mapPartitions(partition => {
+//              val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+//                case (id, instanceArr) =>
+//                  (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+//              }
+//              val emptySm = Raster.empty[I](polygonArr, durArr).sorted
+//              Iterator(emptySm.createRaster(events))
+//            })
+//        }
     else throw new NoSuchElementException
   }
+
   def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag,
-    V2: ClassTag, D2: ClassTag](input: RDD[Event[S, V, D]], agg: Array[Event[S, V, D]] => V2): RDD[Raster[Polygon, V2, None.type]]  = {
+    V2: ClassTag, D2: ClassTag](input: RDD[Event[S, V, D]], agg: Array[Event[S, V, D]] => V2): RDD[Raster[Polygon, V2, None.type]] = {
     type I = Event[S, V, D]
     type O = Raster[Polygon, Array[I], None.type]
     if (optimization == "none") {
@@ -70,11 +111,12 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
     }
     else throw new NoSuchElementException
   }
+
   def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag,
     S2 <: Geometry : ClassTag, V2: ClassTag, D2: ClassTag,
     V3: ClassTag](input: RDD[Event[S, V, D]],
-                                preMap: Event[S, V, D] => Event[S2, V2, D2],
-                                agg: Array[Event[S2, V2, D2]] => V3): RDD[Raster[Polygon, V3, None.type]]  = {
+                  preMap: Event[S, V, D] => Event[S2, V2, D2],
+                  agg: Array[Event[S2, V2, D2]] => V3): RDD[Raster[Polygon, V3, None.type]] = {
     type I = Event[S2, V2, D2]
     type O = Raster[Polygon, Array[I], None.type]
     if (optimization == "none") {
@@ -117,19 +159,28 @@ object Event2RasterConverterTest {
 
     val eventRDD = sc.parallelize(events)
 
+    //    val stArray = Array(
+    //      (Extent(0, 0, 5, 5).toPolygon, Duration(0, 100)),
+    //      (Extent(2, 2, 8, 8).toPolygon, Duration(100, 200)),
+    //      (Extent(5, 5, 10, 10).toPolygon, Duration(200, 300)),
+    //      (Extent(10, 10, 20, 20).toPolygon, Duration(300, 400))
+    //    )
     val stArray = Array(
-      (Extent(0, 0, 5, 5).toPolygon, Duration(0, 100)), // 2
-      (Extent(2, 2, 8, 8).toPolygon, Duration(100, 200)), // 2
-      (Extent(5, 5, 10, 10).toPolygon, Duration(200, 300)), // 1
-      (Extent(10, 10, 20, 20).toPolygon, Duration(300, 400)) // 2
+      (Extent(0, 0, 5, 5).toPolygon, Duration(0, 100)),
+      (Extent(5, 5, 10, 10).toPolygon, Duration(0, 100)),
+      (Extent(5, 0, 10, 5).toPolygon, Duration(0, 100)),
+      (Extent(0, 5, 5, 10).toPolygon, Duration(0, 100)),
+      (Extent(0, 0, 5, 5).toPolygon, Duration(100, 200)),
+      (Extent(5, 5, 10, 10).toPolygon, Duration(100, 200)),
+      (Extent(5, 0, 10, 5).toPolygon, Duration(100, 200)),
+      (Extent(0, 5, 5, 10).toPolygon, Duration(100, 200))
     )
-
     val f: Array[Event[Point, None.type, String]] => Int = _.length
 
     //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
     val converter = new Event2RasterConverter(stArray.map(_._1), stArray.map(_._2))
 
-    val tsRDD = converter.convert(eventRDD)
+    val tsRDD = converter.convert(eventRDD).map(_.sorted)
     tsRDD.collect.foreach(println(_))
 
 

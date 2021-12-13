@@ -28,9 +28,9 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     //        val pairs = cubes.combinations(2)
     //        pairs.foreach(p =>
     //          if (Extent(p(0)._1, p(0)._2, p(0)._3, p(0)._4)
-    //          .intersection(Extent(p(1)._1, p(1)._2, p(1)._3, p(1)._4)).isDefined &&
-    //          Duration(p(0)._5, p(0)._6).intersection(Duration(p(1)._5, p(1)._6)).isDefined)
-    //          return false)
+    //            .intersection(Extent(p(1)._1, p(1)._2, p(1)._3, p(1)._4)).isDefined &&
+    //            Duration(p(0)._5, p(0)._6).intersection(Duration(p(1)._5, p(1)._6)).isDefined)
+    //            return false)
     //      }
     //      true
     //    }
@@ -49,7 +49,6 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
         )
       }
       true
-
     }
 
     lengths.forall(x => x == lengths.head) && totalArea == sumArea && !overlaps
@@ -386,6 +385,11 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     Raster(newEntries, newData)
   }
 
+  // sort by xMin then yMin then tMin of the spatial of each entry
+  def sorted: Raster[S, V, D] = {
+    val newEntries = entries.sortBy(x => (x.spatial.getCoordinates.map(_.x).min, x.spatial.getCoordinates.map(_.y).min, x.temporal.start))
+    new Raster[S, V, D](newEntries, data)
+  }
 
   override def toGeometry: Polygon = extent.toPolygon
 

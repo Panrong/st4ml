@@ -5,7 +5,6 @@ import operatorsNew.converter.Traj2RasterConverter
 import operatorsNew.selector.Selector
 import org.apache.spark.sql.SparkSession
 import utils.Config
-
 import java.lang.System.nanoTime
 
 object RasterFlowExtraction {
@@ -23,12 +22,9 @@ object RasterFlowExtraction {
       .appName("IntervalSpeedExtraction")
       .master(Config.get("master"))
       .getOrCreate()
-
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-
     type TRAJ = Trajectory[Option[String], String]
-
     val ranges = (0 to NumDays).map(x =>
       (sQuery, Duration(x * 86400 + tStart, (x + 1) * 86400 + tStart))).toArray
     for ((spatial, temporal) <- ranges) {
@@ -40,7 +36,7 @@ object RasterFlowExtraction {
       val converter = new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
       val rasterRDD = converter.convert(trajRDD, f)
       val res = rasterRDD.collect
-      val matrix = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, _+_, (_, _) => None)).entries.map(_.value)
+      val matrix = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, _ + _, (_, _) => None)).entries.map(_.value)
       rasterRDD.unpersist()
       println(matrix.take(10).deep)
       println(s"${temporal.start} raster extraction ${(nanoTime - t) * 1e-9} s")

@@ -69,7 +69,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[Polygon, I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs))
         })
     }
@@ -116,7 +116,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[Polygon, I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
     }
@@ -166,7 +166,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
-          val emptySm = SpatialMap.empty[Polygon, I](sArray)
+          val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
     }

@@ -58,7 +58,7 @@ class Event2TimeSeriesConverter(tArray: Array[Duration],
       input.flatMap(e => {
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1).toArray
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -146,11 +146,10 @@ class Event2TimeSeriesConverter(tArray: Array[Duration],
       val tsLength = tMap.head._2.seconds
       // val tsMax = tMap.last._2.end
       val tsSlots = tMap.length
-      //assert(emptySm.isRegular, "The structure is not regular.")
       input.map(preMap).flatMap(e => {
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val idRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots, ((tMax - tsMin) / tsLength).toInt) + 1)
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -197,11 +196,11 @@ object Event2TimeSeriesConverterTest {
       Duration(300, 400)
     )
 
-    val countConverter = new Event2TimeSeriesConverter(tArray)
-
+    val countConverter = new Event2TimeSeriesConverter(tArray,"regular")
+    println("original:")
     val tsRDD = countConverter.convert(eventRDD)
-    tsRDD.collect.foreach(println(_))
-    println("new")
+    .map(x => x.mapValue(_.length))
+    tsRDD.collect.foreach(x => println(x.entries.map(_.value).deep))
 
 
     sc.stop()

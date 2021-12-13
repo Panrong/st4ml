@@ -251,6 +251,20 @@ class TimeSeries[V, D](
   //    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
   //  }
 
+  //  def attachInstanceRegular[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
+  //                                                            (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+  //    assert(isRegular)
+  //    val tStart = temporals.head.start
+  //    val tSlot = temporals.head.seconds
+  //    val entryIndexToInstance = instanceArr.flatMap(x => {
+  //      val startSlot = ((x.duration.start - tStart) / tSlot).toInt
+  //      val endSlot = ((x.duration.end - tStart) / tSlot).toInt + 1
+  //      val slots = Range(startSlot, endSlot).toArray
+  //      slots.map(slot => (slot, x))
+  //    }).groupBy(_._1).mapValues(x => x.map(_._2))
+  //    createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
+  //  }
+
   // todo: handle different order of the same temporals
   def merge[T: ClassTag](
                           other: TimeSeries[Array[T], _]
@@ -326,6 +340,12 @@ class TimeSeries[V, D](
     TimeSeries(entries ++ other.entries, dataCombiner(data, other.data))
 
   override def toGeometry: Polygon = extent.toPolygon
+
+  // sort by tMin  of the temporal of each entry
+  def sorted: TimeSeries[V, D] = {
+    val newEntries = entries.sortBy(x => x.temporal.start)
+    new TimeSeries[V, D](newEntries, data)
+  }
 }
 
 object TimeSeries {

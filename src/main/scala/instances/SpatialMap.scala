@@ -9,7 +9,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
                                                   override val data: D)
   extends Instance[S, V, D] {
 
-  lazy val spatials: Array[S] = entries.map(_.spatial).toArray
+  lazy val spatials: Array[S] = entries.map(_.spatial)
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
@@ -18,6 +18,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
 
+  // as long as no overlapping area, regard as disjoint
   def isSpatialDisjoint: Boolean = {
     if (spatials.length > 1) {
       val pairs = spatials.combinations(2)
@@ -45,7 +46,6 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
           entry.temporal,
           entry.value)),
       data)
-
 
   override def mapTemporal(f: Duration => Duration): SpatialMap[S, V, D] =
     SpatialMap(
@@ -108,7 +108,6 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     else
       Utils.getBinIndices(spatials, geomArr)
   }
-
 
   //  def getSpatialIndexRTreeDeprecated[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
   //    Utils.getBinIndicesRTreeDeprecated(rTreeDeprecated.get, geomArr)
@@ -210,6 +209,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   //    val entryIndexToInstance = getSpatialIndexToObjRTreeDeprecated(instanceArr, geomArr)
   //    createSpatialMap(entryIndexToInstance)
   //  }
+
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
   (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
     require(instanceArr.length == geomArr.length,
@@ -277,6 +277,12 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     val newEntries = (spatials, newTemporals, newValues).zipped.toArray.map(Entry(_))
     val newData = dataCombiner(data, other.data)
     SpatialMap(newEntries, newData)
+  }
+
+  // sort by xMin then yMin of the spatial of each entry
+  def sorted: SpatialMap[S, V, D] = {
+    val newEntries = entries.sortBy(x => (x.spatial.getCoordinates.map(_.x).min, x.spatial.getCoordinates.map(_.y).min))
+    new SpatialMap[S, V, D](newEntries, data)
   }
 
   override def toGeometry: Polygon = extent.toPolygon
