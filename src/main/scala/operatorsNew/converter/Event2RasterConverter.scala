@@ -20,8 +20,8 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
   lazy val rasterYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
   lazy val rasterXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - rasterXMin
   lazy val rasterYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - rasterYMin
-  lazy val rasterXSlots: Long = ((rasterXMax - rasterXMin) / rasterXLength).round
-  lazy val rasterYSlots: Long = ((rasterYMax - rasterYMin) / rasterYLength).round
+  lazy val rasterXSlots: Int = (((rasterXMax - rasterXMin) / rasterXLength).round).toInt
+  lazy val rasterYSlots: Int = (((rasterYMax - rasterYMin) / rasterYLength).round).toInt
   lazy val tsMin: Long = tMap.head._2.start
   lazy val tsLength: Long = tMap.head._2.seconds
   lazy val tsSlots: Int = tMap.length
@@ -58,32 +58,33 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         Iterator(emptyRaster.attachInstanceRTree(events))
       })
     }
-//        else if (optimization == "regular") {
-//          val emptyRaster = Raster.empty[I](polygonArr, durArr)
-//          assert(emptyRaster.isRegular, "The structure is not regular.")
-//          input.flatMap(e => {
-//            val xMin = e.extent.xMin
-//            val xMax = e.extent.xMax
-//            val yMin = e.extent.yMin
-//            val yMax = e.extent.yMax
-//            val tMin = e.duration.start
-//            val tMax = e.duration.end
-//            val xRanges = (math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-//            val yRanges = (math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-//            val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
-//            val xyRanges = ((xRanges._1 * rasterYSlots + yRanges._1).toInt, (xRanges._2 * rasterYSlots + yRanges._2).toInt + 1)
-//            val idRanges = xyRanges._1 * tsSlots +
-//            idRanges.map(x => (e, x))
-//          })
-//            .mapPartitions(partition => {
-//              val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
-//                case (id, instanceArr) =>
-//                  (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
-//              }
-//              val emptySm = Raster.empty[I](polygonArr, durArr).sorted
-//              Iterator(emptySm.createRaster(events))
-//            })
-//        }
+    else if (optimization == "regular") {
+      val emptyRaster = Raster.empty[I](polygonArr, durArr)
+      assert(emptyRaster.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = Raster.empty[I](polygonArr, durArr).sorted
+          Iterator(emptySm.createRaster(events))
+        })
+    }
     else throw new NoSuchElementException
   }
 
@@ -108,6 +109,33 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         emptyRaster.rTree = rTreeBc.value
         Iterator(emptyRaster.attachInstanceRTree(events).mapValue(agg))
       })
+    }
+    else if (optimization == "regular") {
+      val emptyRaster = Raster.empty[I](polygonArr, durArr)
+      assert(emptyRaster.isRegular, "The structure is not regular.")
+      input.flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = Raster.empty[I](polygonArr, durArr).sorted
+          Iterator(emptySm.createRaster(events).mapValue(agg))
+        })
     }
     else throw new NoSuchElementException
   }
@@ -136,6 +164,33 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         emptyRaster.rTree = rTreeBc.value
         Iterator(emptyRaster.attachInstanceRTree(events).mapValue(agg))
       })
+    }
+    else if (optimization == "regular") {
+      val emptyRaster = Raster.empty[I](polygonArr, durArr)
+      assert(emptyRaster.isRegular, "The structure is not regular.")
+      input.map(preMap).flatMap(e => {
+        val xMin = e.extent.xMin
+        val xMax = e.extent.xMax
+        val yMin = e.extent.yMin
+        val yMax = e.extent.yMax
+        val tMin = e.duration.start
+        val tMax = e.duration.end
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        idRanges.map(x => (e, x))
+      })
+        .mapPartitions(partition => {
+          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+            case (id, instanceArr) =>
+              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+          }
+          val emptySm = Raster.empty[I](polygonArr, durArr).sorted
+          Iterator(emptySm.createRaster(events).mapValue(agg))
+        })
     }
     else throw new NoSuchElementException
   }

@@ -59,9 +59,11 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         val xMax = e.extent.xMax
         val yMin = e.extent.yMin
         val yMax = e.extent.yMax
-        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
-        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
-        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        val xRanges = Range(math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots.toInt - 1, ((xMax - smXMin) / smXLength).toInt)).toArray
+        val yRanges = Range(math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots.toInt - 1, ((yMax - smYMin) / smYLength).toInt)).toArray
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges) idRanges = idRanges :+ i * smYSlots.toInt + j
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -106,9 +108,11 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         val xMax = e.extent.xMax
         val yMin = e.extent.yMin
         val yMax = e.extent.yMax
-        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
-        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
-        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        val xRanges = Range(math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots.toInt - 1, ((xMax - smXMin) / smXLength).toInt)).toArray
+        val yRanges = Range(math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots.toInt - 1, ((yMax - smYMin) / smYLength).toInt)).toArray
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges) idRanges = idRanges :+ i * smYSlots.toInt + j
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -156,9 +160,11 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         val xMax = e.extent.xMax
         val yMin = e.extent.yMin
         val yMax = e.extent.yMax
-        val xRanges = (math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots - 1, ((xMax - smXMin) / smXLength).toInt))
-        val yRanges = (math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots - 1, ((yMax - smYMin) / smYLength).toInt))
-        val idRanges = Range((xRanges._1 * smYSlots + yRanges._1).toInt, (xRanges._2 * smYSlots + yRanges._2).toInt + 1, 1).toArray
+        val xRanges = Range(math.max(0, ((xMin - smXMin) / smXLength).toInt), math.min(smXSlots.toInt - 1, ((xMax - smXMin) / smXLength).toInt)).toArray
+        val yRanges = Range(math.max(0, ((yMin - smYMin) / smYLength).toInt), math.min(smXSlots.toInt - 1, ((yMax - smYMin) / smYLength).toInt)).toArray
+        var idRanges = new Array[Int](0)
+        for (i <- xRanges; j <- yRanges) idRanges = idRanges :+ i * smYSlots.toInt + j
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {

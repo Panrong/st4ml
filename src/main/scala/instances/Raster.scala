@@ -385,9 +385,9 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
     Raster(newEntries, newData)
   }
 
-  // sort by xMin then yMin then tMin of the spatial of each entry
+  // sort by tMin then xMin then yMin of the spatial of each entry
   def sorted: Raster[S, V, D] = {
-    val newEntries = entries.sortBy(x => (x.spatial.getCoordinates.map(_.x).min, x.spatial.getCoordinates.map(_.y).min, x.temporal.start))
+    val newEntries = entries.sortBy(x => (x.temporal.start, x.spatial.getCoordinates.map(_.x).min, x.spatial.getCoordinates.map(_.y).min))
     new Raster[S, V, D](newEntries, data)
   }
 

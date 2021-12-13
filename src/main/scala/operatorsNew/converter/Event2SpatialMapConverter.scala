@@ -170,7 +170,6 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
         for (i <- xRanges; j <- yRanges) idRanges = idRanges :+ i * smYSlots.toInt + j
         idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
         idRanges.map(x => (e, x))
-        idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
           val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
