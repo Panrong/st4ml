@@ -10,22 +10,23 @@ import scala.reflect.ClassTag
 class Traj2RasterConverter(polygonArr: Array[Polygon],
                            durArr: Array[Duration],
                            override val optimization: String = "rtree") extends Converter {
-  var rTree: Option[RTree[Polygon]] = None
   lazy val sMap: Array[(Int, Polygon)] = polygonArr.sortBy(x =>
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)
 
+  var rTree: Option[RTree[Polygon]] = None
   lazy val rasterXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
   lazy val rasterYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
   lazy val rasterXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
   lazy val rasterYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
   lazy val rasterXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - rasterXMin
   lazy val rasterYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - rasterYMin
-  lazy val rasterXSlots: Int = (((rasterXMax - rasterXMin) / rasterXLength).round).toInt
-  lazy val rasterYSlots: Int = (((rasterYMax - rasterYMin) / rasterYLength).round).toInt
+  lazy val rasterXSlots: Int = ((rasterXMax - rasterXMin) / rasterXLength).round.toInt
+  lazy val rasterYSlots: Int = ((rasterYMax - rasterYMin) / rasterYLength).round.toInt
   lazy val tsMin: Long = tMap.head._2.start
+  lazy val tsMax: Long = tMap.last._2.end
   lazy val tsLength: Long = tMap.head._2.seconds
-  lazy val tsSlots: Int = tMap.length
+  lazy val tsSlots: Int = ((tsMax - tsMin) / tsLength).toInt
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon] = {
@@ -69,12 +70,15 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        //        println(xMin, yMin, xMax, yMax, tMin, tMax, xRanges, yRanges, tRanges)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -121,12 +125,15 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        //        println(xMin, yMin, xMax, yMax, tMin, tMax, xRanges, yRanges, tRanges)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -176,21 +183,23 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
-          val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
+          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
             case (id, instanceArr) =>
               (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
           }
           val emptySm = Raster.empty[I](polygonArr, durArr).sorted
-          Iterator(emptySm.createRaster(events).mapValue(agg))
+          Iterator(emptySm.createRaster(trajs).mapValue(agg))
         })
     }
     else throw new NoSuchElementException

@@ -1,6 +1,6 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Event, Extent, Geometry, Point, Polygon, RTree, Raster}
+import instances._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -20,11 +20,12 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
   lazy val rasterYMax: Double = sMap.last._2.getEnvelopeInternal.getMaxY
   lazy val rasterXLength: Double = sMap.head._2.getEnvelopeInternal.getMaxX - rasterXMin
   lazy val rasterYLength: Double = sMap.head._2.getEnvelopeInternal.getMaxY - rasterYMin
-  lazy val rasterXSlots: Int = (((rasterXMax - rasterXMin) / rasterXLength).round).toInt
-  lazy val rasterYSlots: Int = (((rasterYMax - rasterYMin) / rasterYLength).round).toInt
+  lazy val rasterXSlots: Int = ((rasterXMax - rasterXMin) / rasterXLength).round.toInt
+  lazy val rasterYSlots: Int = ((rasterYMax - rasterYMin) / rasterYLength).round.toInt
   lazy val tsMin: Long = tMap.head._2.start
+  lazy val tsMax: Long = tMap.last._2.end
   lazy val tsLength: Long = tMap.head._2.seconds
-  lazy val tsSlots: Int = tMap.length
+  lazy val tsSlots: Int = ((tsMax - tsMin) / tsLength).toInt
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon] = {
@@ -68,12 +69,14 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -120,18 +123,21 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        //        println(xMin, yMin, xMax, yMax, tMin, tMax, xRanges, yRanges, tRanges)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
           val events = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
             case (id, instanceArr) =>
-              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
+              (id, instanceArr.filter(x => x.intersects(sMap(id)._2, tMap(id)._2)))
           }
           val emptySm = Raster.empty[I](polygonArr, durArr).sorted
           Iterator(emptySm.createRaster(events).mapValue(agg))
@@ -175,12 +181,14 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
         val yMax = e.extent.yMax
         val tMin = e.duration.start
         val tMax = e.duration.end
-        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt))
-        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt))
-        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
+        val xRanges = Range(math.max(0, ((xMin - rasterXMin) / rasterXLength).toInt - 1), math.min(rasterXSlots - 1, ((xMax - rasterXMin) / rasterXLength).toInt) + 1)
+        val yRanges = Range(math.max(0, ((yMin - rasterYMin) / rasterYLength).toInt - 1), math.min(rasterXSlots - 1, ((yMax - rasterYMin) / rasterYLength).toInt) + 1)
+        val tRanges = Range(math.max(0, ((tMin - tsMin) / tsLength).toInt - 1), math.min(tsSlots - 1, ((tMax - tsMin) / tsLength).toInt) + 1)
         var idRanges = new Array[Int](0)
-        for (i <- xRanges; j <- yRanges; k <- tRanges) idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
-        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2))
+        for (i <- xRanges; j <- yRanges; k <- tRanges) {
+          idRanges = idRanges :+ i * rasterYSlots + j + k * rasterYSlots * rasterXSlots
+        }
+        idRanges = idRanges.filter(x => e.intersects(sMap(x)._2, tMap(x)._2))
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
@@ -198,7 +206,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
 
 object Event2RasterConverterTest {
   def main(args: Array[String]): Unit = {
-    val spark = SparkSession.builder().master("local[2]").getOrCreate()
+    val spark = SparkSession.builder().master("local[1]").getOrCreate()
     val sc = spark.sparkContext
 
     val events = Array(
@@ -206,7 +214,7 @@ object Event2RasterConverterTest {
       Event(Point(3, 4), Duration(94), d = "1"),
       Event(Point(5, 5), Duration(134), d = "2"),
       Event(Point(7, 8), Duration(174), d = "3"),
-      Event(Point(9, 10), Duration(234), d = "4"),
+      Event(Point(9, 11), Duration(234), d = "4"),
       Event(Point(11, 12), Duration(284), d = "5"),
       Event(Point(13, 14), Duration(334), d = "6"),
       Event(Point(15, 16), Duration(364), d = "7")
@@ -233,10 +241,10 @@ object Event2RasterConverterTest {
     val f: Array[Event[Point, None.type, String]] => Int = _.length
 
     //    val f: Array[Event[Point, None.type, String]] => Array[Event[Point, None.type, String]] = x => x
-    val converter = new Event2RasterConverter(stArray.map(_._1), stArray.map(_._2))
+    val converter = new Event2RasterConverter(stArray.map(_._1), stArray.map(_._2), "regular")
 
-    val tsRDD = converter.convert(eventRDD).map(_.sorted)
-    tsRDD.collect.foreach(println(_))
+    val tsRDD = converter.convert(eventRDD, f).map(_.sorted)
+    tsRDD.collect.foreach(x => println(x.entries.map(_.value).deep))
 
 
     sc.stop()

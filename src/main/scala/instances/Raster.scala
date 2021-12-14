@@ -1,6 +1,7 @@
 package instances
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{ClassTag}
+import scala.util.control.Breaks._
 
 class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
                                   override val data: D)
@@ -39,16 +40,27 @@ class Raster[S <: Geometry, V, D](override val entries: Array[Entry[S, V]],
       if (cubes.length > 1) {
         val pairs = cubes.combinations(2)
         pairs.foreach(p => {
-          if (p(0)._3 < p(1)._1) return false
-          if (p(0)._1 > p(1)._3) return false
-          if (p(0)._4 < p(1)._2) return false
-          if (p(0)._2 > p(1)._4) return false
-          if (p(0)._6 < p(1)._5) return false
-          if (p(0)._5 > p(1)._6) return false
-        }
-        )
+          val minX1 = p(0)._1
+          val minX2 = p(1)._1
+          val maxX1 = p(0)._2
+          val maxX2 = p(1)._2
+          val minY1 = p(0)._3
+          val minY2 = p(1)._3
+          val maxY1 = p(0)._4
+          val maxY2 = p(1)._4
+          val minZ1 = p(0)._5
+          val minZ2 = p(1)._5
+          val maxZ1 = p(0)._6
+          val maxZ2 = p(1)._6
+          if (((minX1 < minX2 && minX2 < maxX1) || (minX2 < minX1 && minX1 < maxX2)) &&
+            ((minY1 < minY2 && minY2 < maxY1) || (minY2 < minY1 && minY1 < maxY2)) &&
+            ((minZ1 < minZ2 && minZ2 < maxZ1) || (minZ2 < minZ1 && minZ1 < maxZ2))) {
+//            println(minX1, maxX1, minY1, maxY1, minZ1, maxZ1, minX2, maxX2, minY2, maxY2, minZ2, maxZ2)
+            return true
+          }
+        })
       }
-      true
+      false
     }
 
     lengths.forall(x => x == lengths.head) && totalArea == sumArea && !overlaps
