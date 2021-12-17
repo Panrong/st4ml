@@ -45,7 +45,6 @@ class Traj2TimeSeriesConverter(tArray: Array[Duration],
       })
     }
     else if (optimization == "regular") {
-      val emptyTs = TimeSeries.empty[I](tArray)
       val tsMin = tMap.head._2.start
       val tsLength = tMap.head._2.seconds
       // val tsMax = tMap.last._2.end

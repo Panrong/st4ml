@@ -62,7 +62,7 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
     }
     else if (optimization == "regular") {
       val emptyRaster = Raster.empty[I](polygonArr, durArr)
-      assert(emptyRaster.isRegular, "The structure is not regular.")
+//      assert(emptyRaster.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
         val xMax = e.extent.xMax

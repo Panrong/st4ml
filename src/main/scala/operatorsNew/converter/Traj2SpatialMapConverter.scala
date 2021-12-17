@@ -67,10 +67,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
-          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
-            case (id, instanceArr) =>
-              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
-          }
+          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
           val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs))
         })
@@ -116,10 +113,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
-          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
-            case (id, instanceArr) =>
-              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
-          }
+          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
           val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
@@ -168,10 +162,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         idRanges.map(x => (e, x))
       })
         .mapPartitions(partition => {
-          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1)).map {
-            case (id, instanceArr) =>
-              (id, instanceArr.filter(x => x.toGeometry.intersects(sMap(id)._2)))
-          }
+          val trajs = partition.toArray.groupBy(_._2).mapValues(x => x.map(_._1))
           val emptySm = SpatialMap.empty[Polygon, I](sArray).sorted
           Iterator(emptySm.createSpatialMap(trajs).mapValue(agg))
         })
