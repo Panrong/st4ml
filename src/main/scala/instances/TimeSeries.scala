@@ -13,6 +13,7 @@ class TimeSeries[V, D](
   extends Instance[Polygon, V, D] {
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
+  lazy val spatials: Array[Polygon] = temporals.map(_ => Polygon.empty)
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   var rTree: Option[RTree[Polygon]] = None
   //  var intervalTree: Option[IntervalTree[Int]] = None
@@ -186,8 +187,8 @@ class TimeSeries[V, D](
           entryWithIdx._1.value.asInstanceOf[Array[T]]
         }
       )
-      val newSpatials = newValues.map { newGeomArr => computePolygonFunc(newGeomArr) }
-      val newEntries = (newSpatials, temporals, newValues).zipped.toArray.map(Entry(_))
+      //     val newSpatials = newValues.map { newGeomArr => computePolygonFunc(newGeomArr) }
+      val newEntries = (spatials, temporals, newValues).zipped.toArray.map(Entry(_))
       TimeSeries(newEntries, data)
     }
     else {
