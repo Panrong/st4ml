@@ -1,6 +1,6 @@
 package instances
 
-class Event[S <: Geometry, V, D](
+case class Event[S <: Geometry, V, D](
    val entries: Array[Entry[S, V]],
    val data: D)
   extends Instance[S, V, D] {

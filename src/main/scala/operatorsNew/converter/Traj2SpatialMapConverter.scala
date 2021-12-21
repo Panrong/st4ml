@@ -203,3 +203,4 @@ object Traj2SpatialMapConverterTest {
     sc.stop()
   }
 }
+
