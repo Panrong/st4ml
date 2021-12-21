@@ -6,6 +6,7 @@ import org.apache.spark.sql.SparkSession
 import utils.Config
 import operatorsNew.selector.SelectionUtils._
 
+import java.lang.System.nanoTime
 import scala.reflect.ClassTag
 
 class Event2TrajConverter extends Converter {
@@ -48,7 +49,7 @@ class Event2TrajConverter extends Converter {
 }
 
 object Event2TrajConverterTest extends App {
-
+  val t = nanoTime
   val dataPath = args(0)
   val partition = args(1).toInt
 
@@ -62,8 +63,10 @@ object Event2TrajConverterTest extends App {
 
   import spark.implicits._
 
-  val eventRDD = spark.read.parquet(dataPath).as[E].toRdd.map(x => x.asInstanceOf[Event[Point, None.type, String]])
+  val eventRDD = spark.read.parquet(dataPath).drop($"pId").as[E].toRdd.map(x => x.asInstanceOf[Event[Point, None.type, String]])
   val converter = new Event2TrajConverter
   val trajRDD = if (partition == 0) converter.convert(eventRDD) else converter.convert(eventRDD, partition)
-  trajRDD.collect.take(5).foreach(println)
+  println(trajRDD.count)
+  println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
+
 }
