@@ -50,7 +50,8 @@ object flowTs {
 
     val partitioner = new STRPartitioner(numPartitions = sSize * sSize)
     val partitionMap = grids.map(x => Extent(x(0), x(1), x(2), x(3))).zipWithIndex.map(_.swap).toMap
-    val pRdd1 = partitioner.partition(rdd1, partitionMap)
+    partitioner.partitionRange = partitionMap
+    val pRdd1 = partitioner.partition(rdd1)
 
     val f: Array[Event[Point, None.type, String]] => Int = _.length
     val tArray = ((tQuery(0) until tQuery(1) by tSplit.toLong).toArray :+ tQuery(1)).sliding(2).toArray.map(x => Duration(x(0), x(1)))

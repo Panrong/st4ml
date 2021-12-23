@@ -22,14 +22,7 @@ class STRPartitioner(numPartitions: Int, override var samplingRate: Option[Doubl
   def getPartitionRange[T <: Shape : ClassTag](dataRDD: RDD[T]): Map[Int, Rectangle] = {
     def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
       val interval = 1.0 / n
-      var t: Double = 0
-      var q = new Array[Double](0)
-      while (t < 1 - interval) {
-        t += interval
-        q = q :+ t
-      }
-      q = 0.0 +: q
-      if (q.length < n + 1) q = q :+ 1.0
+      val q = ((0.0 until 1.0 by interval) :+ 1.0).toArray
       df.stat.approxQuantile(column, q, 0.001)
     }
 

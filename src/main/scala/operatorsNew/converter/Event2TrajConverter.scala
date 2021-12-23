@@ -5,6 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import utils.Config
 import operatorsNew.selector.SelectionUtils._
+import org.apache.spark.HashPartitioner
 
 import java.lang.System.nanoTime
 import scala.reflect.ClassTag
@@ -65,8 +66,19 @@ object Event2TrajConverterTest extends App {
 
   val eventRDD = spark.read.parquet(dataPath).drop($"pId").as[E].toRdd.map(x => x.asInstanceOf[Event[Point, None.type, String]])
   val converter = new Event2TrajConverter
-  val trajRDD = if (partition == 0) converter.convert(eventRDD) else converter.convert(eventRDD, partition)
+  val trajRDD = if (partition == 0) converter.convert(eventRDD) else {
+    println("manual partition")
+    val partitionedRDD = eventRDD.map(x => (x.data, x.entries.head)).partitionBy(new HashPartitioner(partition))
+    partitionedRDD.mapPartitions(p => {
+      p.toArray.groupBy(_._1).map(x => {
+        val entries = x._2.map(_._2).sortBy(x => x.temporal.start)
+        new Trajectory(entries, x._1)
+      }).toIterator
+    })
+  }
   println(trajRDD.count)
   println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
-
+  sc.stop()
 }
+
+

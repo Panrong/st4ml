@@ -16,14 +16,8 @@ class STRPartitioner(override val numPartitions: Int,
   def getPartitionRange[T <: Instance[_, _, _]](dataRDD: RDD[T]): Map[Int, Extent] = {
     def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
       val interval = 1.0 / n
-      var t: Double = 0
-      var q = new Array[Double](0)
-      while (t < 1 - interval) {
-        t += interval
-        q = q :+ t
-      }
-      q = 0.0 +: q
-      if (q.length < n + 1) q = q :+ 1.0
+      val q = ((BigDecimal(0.0) until BigDecimal(1.0) by BigDecimal(interval))
+        :+ BigDecimal(1.0)).toArray.map(_.toDouble)
       df.stat.approxQuantile(column, q, 0.001)
     }
 
@@ -146,40 +140,22 @@ class STRPartitioner(override val numPartitions: Int,
    * @return partitioned RDD of [(partitionNumber, dataRDD)]
    */
   override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
-    val partitionMap = getPartitionRange(dataRDD)
+    val partitionMap = if (partitionRange.isEmpty) getPartitionRange(dataRDD) else partitionRange
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
-    val pRDD = assignPartitionSingle(dataRDD, partitionMap, boundary)
-      .partitionBy(partitioner)
-    pRDD.map(_._2)
-  }
-
-  /**
-   * Partition spatial dataRDD with given Partition ranges
-   *
-   * @param dataRDD      : data RDD
-   * @param partitionMap : Map (id -> range as rectangle)
-   * @tparam T : type of spatial dataRDD, extending geometry.Shapenum
-   * @return partitioned RDD of [(partitionNumber, dataRDD)]
-   */
-  def partition[T <: Instance[_,_,_] : ClassTag](dataRDD: RDD[T], partitionMap: Map[Int, Extent]): RDD[T] = {
-    val partitioner = new KeyPartitioner(numPartitions)
-    val boundary = genBoundary(partitionMap)
-
     val pRDD = assignPartitionSingle(dataRDD, partitionMap, boundary)
       .partitionBy(partitioner)
     pRDD.map(_._2)
   }
 
   override def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
-    val partitionMap = getPartitionRange(dataRDD)
+    val partitionMap = if (partitionRange.isEmpty) getPartitionRange(dataRDD) else partitionRange
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
     val pRDD = assignPartition(dataRDD, partitionMap, boundary)
       .partitionBy(partitioner)
     pRDD.map(_._2)
   }
-
 
   /**
    * Partition spatial dataRDD and queries simultaneously
@@ -189,7 +165,7 @@ class STRPartitioner(override val numPartitions: Int,
    * @tparam T : type of spatial dataRDD, extending geometry.Shape
    * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
    */
-  def copartition[T <: Instance[_,_,_] : ClassTag, R <: Instance[_,_,_] : ClassTag]
+  def copartition[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
   (dataRDD: RDD[T], queryRDD: RDD[R]):
   (RDD[(Int, T)], RDD[(Int, R)]) = {
     val partitionMap = getPartitionRange(dataRDD)
@@ -230,26 +206,6 @@ class STRPartitioner(override val numPartitions: Int,
   def assignPartition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T],
                                                          partitionMap: Map[Int, Extent],
                                                          boundary: List[Double]): RDD[(Int, T)] = {
-        val rddWithIndex = dataRDD
-          .map(x => {
-            val mbr = x.extent
-            val mbrShrink = Extent(
-              min(max(mbr.xMin, boundary.head), boundary(2)),
-              min(max(mbr.yMin, boundary(1)), boundary(3)),
-              max(min(mbr.xMax, boundary(2)), boundary.head),
-              max(min(mbr.yMax, boundary(3)), boundary(1)))
-            (x, partitionMap.filter {
-              case (_, v) => v.intersects(mbrShrink)
-            })
-          })
-        rddWithIndex.map(x => (x._1, x._2.keys))
-          .flatMapValues(x => x)
-          .map(_.swap)
-  }
-
-  def assignPartitionSingle[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T],
-                                                         partitionMap: Map[Int, Extent],
-                                                         boundary: List[Double]): RDD[(Int, T)] = {
     val rddWithIndex = dataRDD
       .map(x => {
         val mbr = x.extent
@@ -262,11 +218,28 @@ class STRPartitioner(override val numPartitions: Int,
           case (_, v) => v.intersects(mbrShrink)
         })
       })
-    rddWithIndex.map(x => (x._1, x._2.keys.head))
+    rddWithIndex.map(x => (x._1, x._2.keys))
+      .flatMapValues(x => x)
       .map(_.swap)
   }
 
-
-
+  def assignPartitionSingle[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T],
+                                                               partitionMap: Map[Int, Extent],
+                                                               boundary: List[Double]): RDD[(Int, T)] = {
+    val rddWithIndex = dataRDD
+      .map(x => {
+        val mbr = x.extent
+        val mbrShrink = Extent(
+          min(max(mbr.xMin, boundary.head), boundary(2)),
+          min(max(mbr.yMin, boundary(1)), boundary(3)),
+          max(min(mbr.xMax, boundary(2)), boundary.head),
+          max(min(mbr.yMax, boundary(3)), boundary(1)))
+        (x, partitionMap.find {
+          case (_, v) => v.intersects(mbrShrink)
+        }.get)
+      })
+    rddWithIndex.map(x => (x._1, x._2._1))
+      .map(_.swap)
+  }
 }
 
