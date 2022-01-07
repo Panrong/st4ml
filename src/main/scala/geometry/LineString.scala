@@ -18,4 +18,6 @@ case class LineString(points: Array[Point]) extends Serializable {
     val lats = points.map(x => x.y).sorted
     Rectangle(Array(lons(0), lats(0), lons.last, lats.last))
   }
+
+  val coordinates: Array[Array[Double]] = points.map(x => x.coordinates)
 }

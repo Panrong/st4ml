@@ -74,6 +74,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     SpatialMap(newEntries, data)
   }
 
+
   override def mapEntries[V1](
                                f1: S => S,
                                f2: Duration => Duration,
@@ -101,6 +102,8 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): SpatialMap[S, V, D1] =
     SpatialMap(entries, f(data, extent.toPolygon, temporal))
 
+
+
   // todo: test the performance difference: getBinIndices v.s. isSpatialDisjoint + getBinIndex
   def getSpatialIndex[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
     if (geomArr.head.isInstanceOf[Point] && isSpatialDisjoint)
@@ -117,6 +120,9 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     Utils.getBinIndicesRTree(rTree.get, geomArr)
   }
 
+  def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G], distance: Double): Array[Array[Int]] = {
+    Utils.getBinIndicesRTree(rTree.get, geomArr, distance)
+  }
   //  def getSpatialIndexToObjRTreeDeprecated[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
   //    if (geomArr.isEmpty) {
   //      Map.empty[Int, Array[T]]
@@ -149,6 +155,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
         .mapValues(x => x.map(_._1))
     }
   }
+
 
   def getSpatialIndexToObj[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
     if (geomArr.isEmpty) {

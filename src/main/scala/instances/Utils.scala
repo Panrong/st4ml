@@ -1,6 +1,7 @@
 package instances
 
 import operators.selection.indexer.RTreeDeprecated
+import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
@@ -82,4 +83,46 @@ object Utils {
   def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
+    queryArr.map(query => RTree.distanceRange(query, distance).map(_._2.toInt))
+  }
+  implicit class smRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, V, D]]) {
+    def mapValuePlus[V1](f: (V, S, Duration) => V1): RDD[SpatialMap[S, V1, D]] =
+      rdd.map(x => x.mapValuePlus(f))
+
+    def mapValue[V1](f: V => V1): RDD[SpatialMap[S, V1, D]] =
+      rdd.map(x => x.mapValue(f))
+
+    def collectAndMerge[V1](init: V1, f: (V1, V) => V1): SpatialMap[S, V1, D] = {
+      val sms = rdd.collect
+
+      def merge(a: SpatialMap[S, V1, D], b: SpatialMap[S, V, D]): SpatialMap[S, V1, D] = {
+        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f(x._1.value, x._2.value)))
+        SpatialMap(newEntries, a.data)
+      }
+
+      val initSm = sms.head.mapValue(_ => init)
+      sms.foldLeft(initSm)(merge)
+    }
+  }
+
+  implicit class smRDDFuncs2[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, Array[V], D]]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): RDD[SpatialMap[S, Array[V1], D]] =
+      rdd.map(x => x.mapValuePlus2(f))
+  }
+
+  implicit class smFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](sm: SpatialMap[S, Array[V], D]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): SpatialMap[S, Array[V1], D] = {
+      val newEntries = sm.entries.map(entry => {
+        val spatial = entry.spatial
+        val temporal = entry.temporal
+        Entry(spatial, temporal, entry.value.map(x => f(x, spatial, temporal)).toArray)
+      })
+      SpatialMap(newEntries, sm.data)
+    }
+  }
+
+  //TODO add func for ts and raster and mapdata
 }
+
+

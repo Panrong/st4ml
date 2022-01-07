@@ -6,6 +6,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 
 import scala.math.{floor, max, min, sqrt}
 import scala.reflect.ClassTag
+import org.apache.spark.util.SizeEstimator
 
 class STRPartitioner(override val numPartitions: Int,
                      override var samplingRate: Option[Double] = None,
@@ -157,25 +158,53 @@ class STRPartitioner(override val numPartitions: Int,
     pRDD.map(_._2)
   }
 
-  /**
-   * Partition spatial dataRDD and queries simultaneously
-   *
-   * @param dataRDD  : data RDD
-   * @param queryRDD : query RDD
-   * @tparam T : type of spatial dataRDD, extending geometry.Shape
-   * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
-   */
-  def copartition[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
-  (dataRDD: RDD[T], queryRDD: RDD[R]):
-  (RDD[(Int, T)], RDD[(Int, R)]) = {
-    val partitionMap = getPartitionRange(dataRDD)
+  //  /**
+  //   * Partition spatial dataRDD and queries simultaneously
+  //   *
+  //   * @param dataRDD  : data RDD
+  //   * @param queryRDD : query RDD
+  //   * @tparam T : type of spatial dataRDD, extending geometry.Shape
+  //   * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
+  //   */
+  //  def copartition[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
+  //  (dataRDD: RDD[T], queryRDD: RDD[R]):
+  //  (RDD[(Int, T)], RDD[(Int, R)]) = {
+  //    val partitionMap = getPartitionRange(dataRDD)
+  //    val partitioner = new KeyPartitioner(numPartitions)
+  //    val boundary = genBoundary(partitionMap)
+  //    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+  //      .partitionBy(partitioner)
+  //    val pQueryRDD = assignPartition(queryRDD, partitionMap, boundary)
+  //      .partitionBy(partitioner)
+  //    (pRDD, pQueryRDD)
+  //  }
+
+  def copartitionWDup[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
+  //performance not good
+  (RDD1: RDD[T], RDD2: RDD[R]):
+  (RDD[T], RDD[R]) = {
+    val sizes = (SizeEstimator.estimate(RDD1.take(1)), SizeEstimator.estimate(RDD2.take(1))) // assume all elements in one RDD having the same size
+    val sizeRatio = sizes._1 / sizes._2.toDouble
+    println(s"sizeRatio: $sizeRatio")
+    val weightedRDD = if (sizeRatio <= 0.5) {
+      RDD1.map(_.asInstanceOf[Instance[_, _, _]])
+        .union(RDD2.flatMap(x => Array.fill((1 / sizeRatio).round.toInt)(x))
+          .map(_.asInstanceOf[Instance[_, _, _]]))
+    }
+    else if (sizeRatio >= 2) {
+      RDD1.flatMap(x => Array.fill(sizeRatio.round.toInt)(x))
+        .map(_.asInstanceOf[Instance[_, _, _]])
+        .union(RDD2.map(_.asInstanceOf[Instance[_, _, _]]))
+    }
+    else RDD1.map(_.asInstanceOf[Instance[_, _, _]]).union(RDD2.map(_.asInstanceOf[Instance[_, _, _]]))
+    val partitionMap = getPartitionRange(weightedRDD)
     val partitioner = new KeyPartitioner(numPartitions)
     val boundary = genBoundary(partitionMap)
-    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+    val pRDD1 = assignPartition(RDD1, partitionMap, boundary)
       .partitionBy(partitioner)
-    val pQueryRDD = assignPartition(queryRDD, partitionMap, boundary)
+    val pRDD2 = assignPartition(RDD2, partitionMap, boundary)
       .partitionBy(partitioner)
-    (pRDD, pQueryRDD)
+    (pRDD1.map(_._2), pRDD2.map(_._2))
   }
 
   /**

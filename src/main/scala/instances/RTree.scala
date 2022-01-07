@@ -80,6 +80,27 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     ans.toArray
   }
 
+  def distanceRange[Q <: Geometry : ClassTag](query: Q, distance: Double): Array[(T, String)] = {
+    val ans = mutable.ArrayBuffer[(T, String)]()
+    val st = new mutable.Stack[RTreeNode]()
+    if (root.mMbr.intersects(query) && root.mChild.nonEmpty) st.push(root)
+    while (st.nonEmpty) {
+      val now = st.pop()
+      if (!now.isLeaf) {
+        now.mChild.foreach {
+          case RTreeInternalEntry(mbr, node) =>
+            if (query.isWithinDistance(mbr, distance)) st.push(node)
+        }
+      } else {
+        now.mChild.foreach {
+          case RTreeLeafEntry(shape: T, mData, _) =>
+            if (query.isWithinDistance(shape, distance)) ans += ((shape, mData))
+        }
+      }
+    }
+    ans.toArray
+  }
+
   def intersect[S <: Geometry : ClassTag](shape: S, extent: Extent, duration: Duration): Boolean = {
     //             println(shape)
     //             println(instance)
@@ -136,7 +157,7 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
 
   def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, String)] = {
     val ans = mutable.ArrayBuffer[(T, String)]()
-    var st =  List[RTreeNode]()
+    var st = List[RTreeNode]()
     if (intersects1d(root.mMbr, query) && root.mChild.nonEmpty) st = st :+ root
     while (st.nonEmpty) {
       val now = st.last
