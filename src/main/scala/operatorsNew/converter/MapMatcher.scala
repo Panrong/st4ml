@@ -114,25 +114,30 @@ class MapMatcher(fileDir: String) extends Serializable {
 
   // viterbi algo to find the best path, return a list of idx of each candidate group
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
-    val states = Array.ofDim[List[Int]](eProbs.length, eProbs.map(_.length).max)
-    val probs = Array.ofDim[Double](eProbs.length, eProbs.map(_.length).max)
-    eProbs(0).indices.foreach(i => states(0)(i) = List(i))
-    probs(0) = eProbs(0)
-    (1 until eProbs.length).foreach { t =>
-      eProbs(t).indices.foreach { c =>
-        var candiProbs = new Array[Double](0)
-        eProbs(t - 1).indices.foreach { last =>
-          val newProb = probs(t - 1)(last) * tProbs(t - 1)(last)(c) * eProbs(t)(c)
-          candiProbs = candiProbs :+ newProb
+    try {
+      val states = Array.ofDim[List[Int]](eProbs.length, eProbs.map(_.length).max)
+      val probs = Array.ofDim[Double](eProbs.length, eProbs.map(_.length).max)
+      eProbs(0).indices.foreach(i => states(0)(i) = List(i))
+      probs(0) = eProbs(0)
+      (1 until eProbs.length).foreach { t =>
+        eProbs(t).indices.foreach { c =>
+          var candiProbs = new Array[Double](0)
+          eProbs(t - 1).indices.foreach { last =>
+            val newProb = probs(t - 1)(last) * tProbs(t - 1)(last)(c) * eProbs(t)(c)
+            candiProbs = candiProbs :+ newProb
+          }
+          val index = max(0, candiProbs.indexOf(candiProbs.max))
+          probs(t)(c) = candiProbs(index)
+          states(t)(c) = c :: states(t - 1)(index)
         }
-        val index = max(0, candiProbs.indexOf(candiProbs.max))
-        probs(t)(c) = candiProbs(index)
-        states(t)(c) = c :: states(t - 1)(index)
       }
+      val finalProb = probs(eProbs.length - 1)
+      val maxLastCandidate = finalProb.indexOf(finalProb.max)
+      states(eProbs.length - 1)(maxLastCandidate).reverse.toArray
     }
-    val finalProb = probs(eProbs.length - 1)
-    val maxLastCandidate = finalProb.indexOf(finalProb.max)
-    states(eProbs.length - 1)(maxLastCandidate).reverse.toArray
+    catch {
+      case _: NoSuchElementException => Array(-1)
+    }
   }
 
 
@@ -272,6 +277,7 @@ class MapMatcher(fileDir: String) extends Serializable {
     val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
     val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
     val opimalPathIdx = viterbi(cleanedEMatrix.map(_._1), tMatrix)
+    if(opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, "")), "")
     val connected = if (inferTime) connectRoadsInfer(opimalPathIdx, cleanedCandidates, cleanedTimeStamps) else
       connectRoads(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
     Trajectory(connected, traj.data.toString)
