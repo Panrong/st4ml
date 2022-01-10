@@ -14,7 +14,6 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   //  var rTreeDeprecated: Option[RTreeDeprecated[geometry.Rectangle]] = None
   var rTree: Option[RTree[S]] = None
-
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
 
@@ -208,6 +207,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     val entryIndexToInstance = getSpatialIndexToObj(instanceArr, geomArr)
     createSpatialMap(entryIndexToInstance)
   }
+
 
   //  def attachInstanceRTreeDeprecated[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
   //  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {

@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks
 import scala.reflect.ClassTag
+import instances.GeometryImplicits._
 
 abstract class RTreeEntry {
   def minDist(x: Geometry): Double
@@ -89,12 +90,12 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (query.isWithinDistance(mbr, distance)) st.push(node)
+            if (mbr.minDistance(query) <= distance/111000) st.push(node)
         }
       } else {
         now.mChild.foreach {
           case RTreeLeafEntry(shape: T, mData, _) =>
-            if (query.isWithinDistance(shape, distance)) ans += ((shape, mData))
+            if (query.getCentroid.minDistance(shape) <= distance/111000) ans += ((shape, mData))
         }
       }
     }

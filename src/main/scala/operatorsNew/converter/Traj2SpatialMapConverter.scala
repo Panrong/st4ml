@@ -4,6 +4,7 @@ import instances._
 import operators.selection.indexer.RTreeDeprecated
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import instances.RoadNetwork._
 
 import scala.reflect.ClassTag
 
@@ -119,6 +120,21 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
         })
     }
     else throw new NoSuchElementException
+  }
+
+  def convert[D: ClassTag, V2: ClassTag](input: RDD[Trajectory[String, D]],
+                                           roadNetwork: RoadNetwork):
+  RDD[SpatialMap[LineString, (String, Array[Trajectory[String, D]]), None.type]] = {
+    val sMap = roadNetwork.entries.map(e => (e.value, e.spatial)).toMap
+    val emptyMap = sMap.map(x => (x._2, (x._1, new Array[Trajectory[String, D]](0))))
+    input.mapPartitions(partition => {
+      val trajs = partition.toArray
+      val values = trajs.flatMap(traj => traj.entries.map(e => (e.value, traj))).groupBy(_._1).mapValues(_.map(_._2)).toArray
+        .map(x => (sMap(x._1), x)).toMap
+      val allocatedMap = (emptyMap ++ values).toArray
+      val entries = allocatedMap.map(x => Entry(x._1, Duration.empty, x._2))
+      Iterator(SpatialMap(entries, None))
+    })
   }
 
   def convert[V: ClassTag, D: ClassTag,
