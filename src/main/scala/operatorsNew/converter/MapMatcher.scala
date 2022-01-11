@@ -9,6 +9,7 @@ import org.apache.spark.sql.SparkSession
 import org.locationtech.jts.geom.Coordinate
 import utils.Config
 
+import scala.language.implicitConversions
 import scala.math._
 import scala.reflect.ClassTag
 
@@ -114,7 +115,8 @@ class MapMatcher(fileDir: String) extends Serializable {
 
   // viterbi algo to find the best path, return a list of idx of each candidate group
   def viterbi(eProbs: Array[Array[Double]], tProbs: Array[Array[Array[Double]]]): Array[Int] = {
-    try {
+    if (!eProbs.map(_.length).forall(_ > 0)) Array(-1)
+    else {
       val states = Array.ofDim[List[Int]](eProbs.length, eProbs.map(_.length).max)
       val probs = Array.ofDim[Double](eProbs.length, eProbs.map(_.length).max)
       eProbs(0).indices.foreach(i => states(0)(i) = List(i))
@@ -134,9 +136,6 @@ class MapMatcher(fileDir: String) extends Serializable {
       val finalProb = probs(eProbs.length - 1)
       val maxLastCandidate = finalProb.indexOf(finalProb.max)
       states(eProbs.length - 1)(maxLastCandidate).reverse.toArray
-    }
-    catch {
-      case _: NoSuchElementException => Array(-1)
     }
   }
 
@@ -271,13 +270,16 @@ class MapMatcher(fileDir: String) extends Serializable {
                                                  sigmaZ: Double = 4.07, beta: Double = 0.2, inferTime: Boolean = false): Trajectory[String, String] = {
     val candidates = findCandidate[T](traj, candidateThresh)
     val eMatrix = genEmissionMatrix(candidates, sigmaZ)
-    val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => !x._1.forall(_ <= 0)) // remove points with all 0 emission probs
+    val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => x._1.length > 0 && (!x._1.forall(_ <= 0))) // remove points with all 0 emission probs or no candidates
     val validPoints = cleanedEMatrix.map(_._2)
     val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
     val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
-    val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
-    val opimalPathIdx = viterbi(cleanedEMatrix.map(_._1), tMatrix)
-    if(opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, "")), "")
+    val opimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
+    else {
+      val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
+      viterbi(cleanedEMatrix.map(_._1), tMatrix)
+    }
+    if (opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""),Entry(Point.empty, Duration.empty, "")), "invalid")
     val connected = if (inferTime) connectRoadsInfer(opimalPathIdx, cleanedCandidates, cleanedTimeStamps) else
       connectRoads(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
     Trajectory(connected, traj.data.toString)

@@ -32,9 +32,9 @@ object RoadNetFlowExtraction {
     import spark.implicits._
     val trajRDD = spark.read.parquet(fileName).drop("pId").as[T]
       .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
-
+      .filter(_.data!="invalid")
     val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
-    val selectedRDD = selector.query(trajRDD)
+    val selectedRDD = selector.query(trajRDD).sample(false, 0.001)
     val mapMatcher = new MapMatcher("datasets/porto.csv")
     val mmTrajRDD = selectedRDD.map(traj => mapMatcher.mapMatch(traj))
 
