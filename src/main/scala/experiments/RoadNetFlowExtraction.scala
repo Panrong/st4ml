@@ -34,7 +34,7 @@ object RoadNetFlowExtraction {
       .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
       .filter(_.data!="invalid")
     val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
-    val selectedRDD = selector.query(trajRDD).sample(false, 0.001)
+    val selectedRDD = selector.query(trajRDD)
     val mapMatcher = new MapMatcher("datasets/porto.csv")
     val mmTrajRDD = selectedRDD.map(traj => mapMatcher.mapMatch(traj))
 
@@ -43,7 +43,7 @@ object RoadNetFlowExtraction {
     smRDD.count()
     val t = nanoTime
 
-    smRDD.take(2).foreach(println)
+//    smRDD.take(2).foreach(println)
 
 
     val t2 = nanoTime
