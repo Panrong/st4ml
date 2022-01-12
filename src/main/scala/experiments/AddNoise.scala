@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 import utils.Config
 import operatorsNew.selector.SelectionUtils._
 
-object addNoise {
+object AddNoise {
   def main(args: Array[String]): Unit = {
     val fileDir = args(0)
     val resDir = args(1)
