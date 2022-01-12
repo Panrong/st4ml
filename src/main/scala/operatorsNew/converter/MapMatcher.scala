@@ -72,17 +72,15 @@ class MapMatcher(fileDir: String) extends Serializable {
 
   // dijkstra shortest path, input road segment Ids and return distance in meter
   // id1 and id2 are different
-  def findShortestPath(p1: Point, p2: Point, id1: String, id2: String): Double = {
-    val startVertex = id1.split("-")(1)
-    val endVertex = id2.split("-")(0)
-    val v1c = roadGrid.id2vertex(startVertex).point
-    val v2c = roadGrid.id2vertex(endVertex).point
-    val v1 = Point(v1c.coordinates(0), v1c.coordinates(1))
-    val v2 = Point(v2c.coordinates(0), v2c.coordinates(1))
-    val edges = roadGrid.getGraphEdgesByPoint(v1c, v2c)
+  def findShortestPath(x: Point, y: Point, id1: String, id2: String): Double = {
+    val startVertex = id1.split("-")(1) // to vertex of the src edge
+    val endVertex = id2.split("-")(0) // from vertex of the dst edge
+    val p0 = roadGrid.id2vertex(startVertex).point
+    val p1 = roadGrid.id2vertex(endVertex).point
+    val edges = roadGrid.getGraphEdgesByPoint(p0, p1)
     val rGraph = RoadGraph(edges)
     rGraph.getShortestPathAndLength(startVertex, endVertex)._2 +
-      p1.greatCircle(v1) + p2.greatCircle(v2)
+      p0.geoDistance(geometry.Point(Array(x.x, x.y))) + p1.geoDistance(geometry.Point(Array(y.x, y.y)))
   }
 
   //find transition probability of consecutive points
@@ -140,7 +138,7 @@ class MapMatcher(fileDir: String) extends Serializable {
   }
 
 
-  // infer timestamps for the interpolated points based on speed information, not accurate and time consuming
+  // infer timestamps for the interpolated points based on speed information, not accurate and time-consuming
   def connectRoadsInfer(idx: Array[Int], candidates: Array[(Point, Array[RoadSeg])], timeStamps: Array[Long]): Array[Entry[Point, String]] = {
     val segNPoint = candidates.zip(idx).map(x => (x._1._2(x._2), x._1._1)).zip(timeStamps).map(x => (x._1._1, x._1._2, x._2))
     var segNPointGrouped = new Array[(RoadSeg, Array[(Point, Long)])](0)
@@ -240,34 +238,21 @@ class MapMatcher(fileDir: String) extends Serializable {
     }
   }
 
-  // make a complete trajectory from the viterbi result,
-  // the integer 0 stands for an inferred road segment and 1 stands for projected
-  def connectRoads(ids: Array[String], g: RoadGraph): Array[(String, Int)] = {
-    if (ids(0) == "-1") Array(("-1", -1))
-    else {
-      // remove consecutive duplicates
-      val vertexIDs = ids(0) +: ids.flatMap(_.split("-")).sliding(2).collect {
-        case Array(a, b) if a != b => b
-      }.toArray
-      try {
-        val filledVertexIDs = vertexIDs.sliding(2).toArray.map {
-          case Array(oVertex, dVertex) =>
-            if (g.hasEdge(oVertex, dVertex)) Array((oVertex, 1), (dVertex, 1))
-            else g.getShortestPath(oVertex, dVertex).toArray.map(x => (x, 0))
-        }
-        val filledVertexIDsFlatten = filledVertexIDs.flatten
-        // remove consecutive duplicates
-        filledVertexIDsFlatten(0) +: filledVertexIDsFlatten.sliding(2).collect {
-          case Array(a, b) if a._1 != b._1 => b
-        }.toArray
-      } catch {
-        case _: NoSuchElementException => Array(("-1", -1))
-      }
+  def mapPoints(idx: Array[Int], candidates: Array[(Point, Array[RoadSeg])], timestamps: Array[Long]): Array[Entry[Point, String]] = {
+    val selectedPoints = (candidates zip idx).map {
+      case (candidate, id) => (candidate._1, candidate._2(id))
     }
+    val entries = (selectedPoints zip timestamps).map {
+      case ((point, roadSeg), t) =>
+        val id = roadSeg.id
+        val (_, projected) = roadGrid.id2edge(id).ls.projectionDistance(geometry.Point(Array(point.x, point.y)))
+        Entry(Point(projected.x, projected.y), Duration(t), id)
+    }
+    entries
   }
 
-  def mapMatch[T <: Trajectory[_, _] : ClassTag](traj: T, candidateThresh: Double = 50,
-                                                 sigmaZ: Double = 4.07, beta: Double = 0.2, inferTime: Boolean = false): Trajectory[String, String] = {
+  def mapMatchWithInterpolation[T <: Trajectory[_, _] : ClassTag](traj: T, candidateThresh: Double = 50,
+                                                                  sigmaZ: Double = 4.07, beta: Double = 0.2, inferTime: Boolean = false): Trajectory[String, String] = {
     val candidates = findCandidate[T](traj, candidateThresh)
     val eMatrix = genEmissionMatrix(candidates, sigmaZ)
     val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => x._1.length > 0 && (!x._1.forall(_ <= 0))) // remove points with all 0 emission probs or no candidates
@@ -279,12 +264,32 @@ class MapMatcher(fileDir: String) extends Serializable {
       val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
       viterbi(cleanedEMatrix.map(_._1), tMatrix)
     }
-    if (opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""),Entry(Point.empty, Duration.empty, "")), "invalid")
+    if (opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""), Entry(Point.empty, Duration.empty, "")), "invalid")
     val connected = if (inferTime) connectRoadsInfer(opimalPathIdx, cleanedCandidates, cleanedTimeStamps) else
       connectRoads(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
     Trajectory(connected, traj.data.toString)
   }
 
+  def mapMatch[T <: Trajectory[_, _] : ClassTag](traj: T, candidateThresh: Double = 50,
+                                                              sigmaZ: Double = 4.07, beta: Double = 0.2): Trajectory[String, String] = {
+    val candidates = findCandidate[T](traj, candidateThresh)
+    val eMatrix = genEmissionMatrix(candidates, sigmaZ)
+    val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => x._1.length > 0 && (!x._1.forall(_ <= 0))) // remove points with all 0 emission probs or no candidates
+    val validPoints = cleanedEMatrix.map(_._2)
+    val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
+    val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
+    val opimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
+    else {
+      val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
+      viterbi(cleanedEMatrix.map(_._1), tMatrix)
+    }
+    if (opimalPathIdx sameElements Array(-1))
+      return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""), Entry(Point.empty, Duration.empty, "")), "invalid")
+    else {
+      val entries = mapPoints(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
+      new Trajectory[String, String](entries, traj.data.toString)
+    }
+  }
 }
 
 object mmTest {
@@ -293,30 +298,35 @@ object mmTest {
       .appName("test")
       .master(Config.get("master"))
       .getOrCreate()
-
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     val mapMatcher = new MapMatcher("datasets/porto.csv")
     //    println(mapMatcher.roadGraph)
     //    println(mapMatcher.roadNetwork)
     import spark.implicits._
-    val trajRDD = spark.read.parquet("datasets/traj_example_parquet_tstr").drop("pId").as[T]
+    val trajRDD = spark.read.parquet("datasets/noise_test").drop("pId").as[T]
       .toRdd.map(_.asInstanceOf[Trajectory[None.type, String]])
-    val traj = trajRDD.take(1).head
-
+    val traj = trajRDD.take(7).last
     //    // test candidate
     //    val c = mapMatcher.findCandidate(traj, 50)
     //    //    println(c.deep)
     //    val eMatrix = mapMatcher.genEmissionMatrix(c)
     //    val tMatrix = mapMatcher.genTransitionMatrix(c)
     //    //    println(eMatrix.deep)
-
-    val mmRDD = trajRDD.map(traj => (traj, mapMatcher.mapMatch(traj)))
-    mmRDD.take(2).foreach(println)
-
-    //    println(traj)
-    //    println(mapMatcher.mapMatch(traj))
-
-
+    //    val mmRDD = trajRDD.map(traj => (traj, mapMatcher.mapMatch(traj)))
+    //    mmRDD.take(2).foreach(println)
+    println(traj)
+    val mm = mapMatcher.mapMatch(traj)
+    println(mm)
+        val res = mm.entries.map(x => (x.spatial.x, x.spatial.y))
+        import spark.implicits._
+        val columns = Seq("longitude", "latitude")
+        val resDf = res.toSeq.toDF(columns: _*)
+        resDf.repartition(1).write.option("header", true)
+          .csv("datasets/tmp.csv")
+        val org = traj.entries.map(x => (x.spatial.x, x.spatial.y))
+        val orgDf = org.toSeq.toDF(columns: _*)
+        orgDf.repartition(1).write.option("header", true)
+          .csv("datasets/org.csv")
   }
 }

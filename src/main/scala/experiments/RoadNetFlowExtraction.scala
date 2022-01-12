@@ -17,6 +17,7 @@ object RoadNetFlowExtraction {
       .appName("RegionalSpeedTest")
       .master(Config.get("master"))
       .getOrCreate()
+    val t = nanoTime
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -36,20 +37,17 @@ object RoadNetFlowExtraction {
     val selector = new DefaultLegacySelector[Trajectory[None.type, String]](sQuery, tQuery, numPartitions)
     val selectedRDD = selector.query(trajRDD)
     val mapMatcher = new MapMatcher("datasets/porto.csv")
-    val mmTrajRDD = selectedRDD.map(traj => mapMatcher.mapMatch(traj))
+    val mmTrajRDD = selectedRDD.map(traj => mapMatcher.mapMatchWithInterpolation(traj))
 
     val converter = new Traj2SpatialMapConverter(Array(Extent(Array(0.0,0,1,1)).toPolygon))
     val smRDD = converter.convert(mmTrajRDD, mapMatcher.roadNetwork).map(_.mapValue(x => (x._1, x._2.length)))
     smRDD.count()
-    val t = nanoTime
-
 //    smRDD.take(2).foreach(println)
-
 
     val t2 = nanoTime
 
     //    println(speeds.deep)
-    println((t2 - t) * 1e-9)
+    println((t2 -t) * 1e-9)
 
     sc.stop()
   }
