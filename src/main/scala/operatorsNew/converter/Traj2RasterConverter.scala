@@ -1,6 +1,7 @@
 package operatorsNew.converter
 
-import instances.{Duration, Entry, Geometry, LineString, Polygon, RTree, Raster, Trajectory}
+import instances.RoadNetwork.RoadNetwork
+import instances.{Duration, Entry, Geometry, LineString, Polygon, RTree, Raster, SpatialMap, Trajectory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -62,7 +63,7 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
     }
     else if (optimization == "regular") {
       val emptyRaster = Raster.empty[I](polygonArr, durArr)
-//      assert(emptyRaster.isRegular, "The structure is not regular.")
+      //      assert(emptyRaster.isRegular, "The structure is not regular.")
       input.flatMap(e => {
         val xMin = e.extent.xMin
         val xMax = e.extent.xMax
@@ -204,4 +205,5 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
     }
     else throw new NoSuchElementException
   }
+
 }
