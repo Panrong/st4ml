@@ -1,5 +1,7 @@
 package instances
 
+import org.apache.parquet.format.ColumnOrder
+import org.locationtech.jts.geom.{Coordinate, LineSegment}
 import org.locationtech.jts.operation.distance.DistanceOp
 
 trait GeometryOps[+T <: Geometry] extends Serializable {
@@ -30,10 +32,11 @@ trait GeometryOps[+T <: Geometry] extends Serializable {
   def minDistance(geom: Geometry): Double = self.distance(geom)
 
   /** Returns the nearest points in the input geometries */
-  def nearestPoints(geom: Geometry): Array[Point] =
+  def nearestPoints(geom: Geometry): Array[Point] = {
     DistanceOp.nearestPoints(self, geom).map(x =>
       Point(x)
     )
+  }
 }
 
 trait PointOps extends GeometryOps[Point] {
@@ -61,7 +64,12 @@ trait PointOps extends GeometryOps[Point] {
     self.getX * p.getX,
     self.getY * p.getY
   )
-
+  def project(l: LineString): (Point, Double) = {
+    val segments = l.getCoordinates.sliding(2).map(x => new LineSegment(x(0), x(1))).toArray
+    val res = segments.map(seg => (seg.closestPoint(new Coordinate(x ,y)), seg.distance(new Coordinate(x ,y))))
+      .minBy(_._2)
+    (Point(res._1), res._2)
+  }
 }
 
 trait LineStringOps extends GeometryOps[LineString] {

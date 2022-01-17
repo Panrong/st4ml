@@ -81,7 +81,8 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     ans.toArray
   }
 
-  def distanceRange[Q <: Geometry : ClassTag](query: Q, distance: Double): Array[(T, String)] = {
+  def distanceRange[Q <: Geometry : ClassTag](query: Q, distance: Double, meter: Boolean = true): Array[(T, String)] = {
+    val d = if (meter) distance / 111000 else distance
     val ans = mutable.ArrayBuffer[(T, String)]()
     val st = new mutable.Stack[RTreeNode]()
     if (root.mMbr.intersects(query) && root.mChild.nonEmpty) st.push(root)
@@ -90,12 +91,12 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       if (!now.isLeaf) {
         now.mChild.foreach {
           case RTreeInternalEntry(mbr, node) =>
-            if (mbr.minDistance(query) <= distance/111000) st.push(node)
+            if (mbr.minDistance(query) <= d) st.push(node)
         }
       } else {
         now.mChild.foreach {
           case RTreeLeafEntry(shape: T, mData, _) =>
-            if (query.getCentroid.minDistance(shape) <= distance/111000) ans += ((shape, mData))
+            if (query.getCentroid.minDistance(shape) <= d) ans += ((shape, mData))
         }
       }
     }

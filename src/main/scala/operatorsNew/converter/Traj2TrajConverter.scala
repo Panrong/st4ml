@@ -1,6 +1,6 @@
 package operatorsNew.converter
 
-import instances.{Event, Point, Trajectory}
+import instances.Trajectory
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
