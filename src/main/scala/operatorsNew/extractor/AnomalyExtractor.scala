@@ -1,15 +1,21 @@
 package operatorsNew.extractor
 
-import instances.Instance
+import instances.{Extent, Instance}
 import org.apache.spark.rdd.RDD
 import org.locationtech.jts.geom.Polygon
-import utils.TimeParsing.timeLong2String
 
+import java.text.SimpleDateFormat
+import java.util.Date
 import scala.reflect.ClassTag
 
 class AnomalyExtractor[T <: Instance[_, _, _] : ClassTag] extends Extractor[T] {
-  def extract(rdd: RDD[T], threshold: Array[Int], ranges: Array[Polygon]): Array[Array[T]] = {
+  def timeLong2String(tm: Long): String = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    val tim = fm.format(new Date(tm * 1000))
+    tim
+  }
 
+  def extractMultiRanges(rdd: RDD[T], threshold: Array[Int], ranges: Array[Polygon] = Array(Extent(-180, -90, 180, 90).toPolygon)): Array[Array[T]] = {
     def getHour(t: Long): Int =
       timeLong2String(t).split(" ")(1).split(":")(0).toInt
 
@@ -24,6 +30,12 @@ class AnomalyExtractor[T <: Instance[_, _, _] : ClassTag] extends Extractor[T] {
       res = res :+ a
     }
     res
+  }
+
+  def extract(rdd: RDD[T], threshold: Array[Int]): RDD[T] = {
+    val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
+    else (x: Double) => x >= threshold(0) && x < threshold(1)
+    rdd.filter(x => condition(x.duration.hours))
   }
 
   def extractWithInfo(rdd: RDD[(T, Array[Int])], threshold: Array[Int], ranges: Array[Polygon]): Array[Array[T]] = {

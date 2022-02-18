@@ -2,6 +2,7 @@ package experiments
 
 import instances.{Duration, Entry, Extent, Polygon, Raster, Trajectory}
 import operatorsNew.converter.{Traj2RasterConverter, Traj2SpatialMapConverter}
+import operatorsNew.extractor.RasterTransitionExtractor
 import operatorsNew.selector.Selector
 import org.apache.spark.sql.SparkSession
 import org.locationtech.jts.geom.Geometry
@@ -51,6 +52,10 @@ object RasterTransitionExtraction {
       val tRanges = splitTemporal(Array(temporal.start, temporal.end), tStep)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
       val converter = new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
+
+      val rRdd = converter.convert(trajRDD)
+      val extractor = new RasterTransitionExtractor[Trajectory[Option[String], String]]
+      val a = extractor.extract(rRdd)
       val rasterRDD = converter.convert(trajRDD).map(raster => Raster(
         raster.entries.map(entry => {
           implicit val s: Polygon = entry.spatial

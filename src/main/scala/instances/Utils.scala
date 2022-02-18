@@ -83,9 +83,11 @@ object Utils {
   def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
+
   def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
     queryArr.map(query => RTree.distanceRange(query, distance).map(_._2.toInt))
   }
+
   implicit class smRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, V, D]]) {
     def mapValuePlus[V1](f: (V, S, Duration) => V1): RDD[SpatialMap[S, V1, D]] =
       rdd.map(x => x.mapValuePlus(f))
@@ -99,6 +101,46 @@ object Utils {
       def merge(a: SpatialMap[S, V1, D], b: SpatialMap[S, V, D]): SpatialMap[S, V1, D] = {
         val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f(x._1.value, x._2.value)))
         SpatialMap(newEntries, a.data)
+      }
+
+      val initSm = sms.head.mapValue(_ => init)
+      sms.foldLeft(initSm)(merge)
+    }
+  }
+
+  implicit class rasterRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[Raster[S, V, D]]) {
+    def mapValuePlus[V1](f: (V, S, Duration) => V1): RDD[Raster[S, V1, D]] =
+      rdd.map(x => x.mapValuePlus(f))
+
+    def mapValue[V1](f: V => V1): RDD[Raster[S, V1, D]] =
+      rdd.map(x => x.mapValue(f))
+
+    def collectAndMerge[V1](init: V1, f: (V1, V) => V1): Raster[S, V1, D] = {
+      val sms = rdd.collect
+
+      def merge(a: Raster[S, V1, D], b: Raster[S, V, D]): Raster[S, V1, D] = {
+        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f(x._1.value, x._2.value)))
+        Raster(newEntries, a.data)
+      }
+
+      val initSm = sms.head.mapValue(_ => init)
+      sms.foldLeft(initSm)(merge)
+    }
+  }
+
+  implicit class tsRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[TimeSeries[V, D]]) {
+    def mapValuePlus[V1](f: (V, Polygon, Duration) => V1): RDD[TimeSeries[V1, D]] =
+      rdd.map(x => x.mapValuePlus(f))
+
+    def mapValue[V1](f: V => V1): RDD[TimeSeries[V1, D]] =
+      rdd.map(x => x.mapValue(f))
+
+    def collectAndMerge[V1](init: V1, f: (V1, V) => V1): TimeSeries[V1, D] = {
+      val sms = rdd.collect
+
+      def merge(a: TimeSeries[V1, D], b: TimeSeries[V, D]): TimeSeries[V1, D] = {
+        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f(x._1.value, x._2.value)))
+        TimeSeries(newEntries, a.data)
       }
 
       val initSm = sms.head.mapValue(_ => init)

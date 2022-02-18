@@ -1,12 +1,13 @@
 package utils
 
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.{Date, TimeZone}
 
 
 object TimeParsing {
   def timeLong2String(tm: Long): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    fm.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
     val tim = fm.format(new Date(tm * 1000))
     tim
   }
@@ -29,12 +30,14 @@ object TimeParsing {
 
   def getDate(tm: Long): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd")
+    fm.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
     val tim = fm.format(new Date(tm * 1000))
     tim
   }
 
   def date2Long(s: String): Long = {
     val format = new SimpleDateFormat("yyyy-MM-dd")
+    format.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
     format.parse(s).getTime / 1000
   }
 }

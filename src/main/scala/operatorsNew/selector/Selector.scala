@@ -32,6 +32,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
     //    spark.read.parquet(dirs: _*)
     spark.read.parquet(dataDir).filter(col("pId").isin(relatedPartitions: _*))
   }
+
   def loadDf(dataDir: String): DataFrame = spark.read.parquet(dataDir)
 
 
@@ -39,6 +40,17 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
     import spark.implicits._
     val pInstanceDf = if (metaDataDir == "None") loadDf(dataDir) else loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.as[T].toRdd
+//    val xMin = pInstanceRDD.map(_.extent.xMin).min
+//    val yMin = pInstanceRDD.map(_.extent.yMin).min
+//    val xMax = pInstanceRDD.map(_.extent.xMax).max
+//    val yMax = pInstanceRDD.map(_.extent.yMax).max
+//    val tMin = pInstanceRDD.map(_.duration.start).min
+//    val tMax = pInstanceRDD.map(_.duration.end).max
+//    val area = (xMax - xMin) * (yMax - yMin)
+//    println(area / pInstanceRDD.map(_.extent.area).sum / pInstanceRDD.count)
+//    println((tMax - tMin) / pInstanceRDD.map(_.duration.seconds).sum / pInstanceRDD.count)
+//    println(xMin, yMin, xMax, yMax, tMin, tMax, xMax - xMin, yMax - yMin, tMax - tMin)
+
     if (partition) pInstanceRDD.filter(_.intersects(sQuery, tQuery)).stPartition(partitioner)
     else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
   }
@@ -67,7 +79,8 @@ class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
       .map(_.asInstanceOf[I])
     rdd1
   }
-  def select[A:ClassTag](dataDir: String, metaDataDir: String): RDD[A] = {
+
+  def select[A: ClassTag](dataDir: String, metaDataDir: String): RDD[A] = {
     import spark.implicits._
     val pInstanceDf = loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.head(1).head.get(0) match {

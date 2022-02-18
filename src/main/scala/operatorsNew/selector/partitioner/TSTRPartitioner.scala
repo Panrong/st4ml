@@ -8,18 +8,20 @@ import scala.collection.mutable
 import scala.math.{floor, sqrt}
 import scala.reflect.ClassTag
 
-class TSTRPartitioner(override val numPartitions: Int,
+class TSTRPartitioner(tNumPartition: Int,
+                      sNumPartition: Int,
                       override var samplingRate: Option[Double] = None,
                       ref: String = "center",
-                      threshold: Double = 0)
+                      sThreshold: Double = 0,
+                      tThreshold: Int = 0)
   extends STPartitioner {
   val spark: SparkSession = SparkSession.builder.getOrCreate()
-  val tNumPartition: Int = sqrt(numPartitions).toInt
-  val sNumPartition: Int = numPartitions / tNumPartition
+  override val numPartitions: Int = tNumPartition * sNumPartition
 
   override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val temporalPartitioner = new TemporalPartitioner(tNumPartition, samplingRate, ref)
-    val tPartitionRdd = temporalPartitioner.partition(dataRDD)
+    val tPartitionRdd = if (tThreshold == 0) temporalPartitioner.partition(dataRDD)
+    else temporalPartitioner.partitionWithOverlap(dataRDD, tThreshold)
     val tRanges = temporalPartitioner.slots.zipWithIndex.map(_.swap).toMap
     val stRanges = mutable.Map.empty[Int, (Duration, Extent)]
     val tSplitRdd = tPartitionRdd.mapPartitionsWithIndex {
@@ -192,7 +194,12 @@ class TSTRPartitioner(override val numPartitions: Int,
       val latMax = boxes(i)(3)
       boxesWIthID += (i -> Extent(lonMin, latMin, lonMax, latMax))
     }
-    if (threshold != 0) boxesWIthID.mapValues(rectangle => rectangle.expandBy(threshold)).map(identity)
+    if (sThreshold != 0) boxesWIthID.mapValues(rectangle => rectangle.expandBy(sThreshold)).map(identity)
     else boxesWIthID
   }
+}
+
+object TSTRPartitioner {
+  def apply(numPartition: Int, samplingRate: Option[Double] = None, ref: String = "center", threshold: Double = 0): TSTRPartitioner =
+    new TSTRPartitioner(sqrt(numPartition).toInt, numPartition / sqrt(numPartition).toInt, samplingRate, ref, threshold)
 }
