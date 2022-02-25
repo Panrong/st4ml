@@ -57,7 +57,7 @@ class GeomSpec extends AnyFunSpec with Matchers {
       t1 intersects t3 shouldBe true
       t1 intersection t2 shouldBe None
       t1 intersection t3 shouldBe Some(Duration(50, 100))
-      utils.TimeParsing.getHour(Duration(1638186168, 1638186168).start) shouldBe 19
+      utils.TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Beijing")) shouldBe 19
       utils.TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Tokyo")) shouldBe 20
 
     }
