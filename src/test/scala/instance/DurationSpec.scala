@@ -1,5 +1,0 @@
-package instance
-
-class DurationSpec {
-
-}
