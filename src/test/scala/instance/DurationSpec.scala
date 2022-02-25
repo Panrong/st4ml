@@ -1,0 +1,5 @@
+package instance
+
+class DurationSpec {
+
+}

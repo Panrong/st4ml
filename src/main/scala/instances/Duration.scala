@@ -2,6 +2,12 @@ package instances
 
 case class DurationRangeError(msg: String) extends Exception(msg)
 
+/**
+ * A temporal range. Both ends are inclusive.
+ *
+ * @param start : the start timestamp
+ * @param end   : the end timestamp
+ */
 case class Duration(start: Long, end: Long) {
   // Validation
   if (start > end) {
@@ -23,6 +29,7 @@ case class Duration(start: Long, end: Long) {
 
   def center: Long = (start + end) / 2
 
+  // both ends are inclusive
   def intersects(timestampInSecond: Long): Boolean =
     timestampInSecond == start ||
       timestampInSecond == end ||
@@ -37,10 +44,13 @@ case class Duration(start: Long, end: Long) {
   def contains(dur: Duration): Boolean =
     start <= dur.start && dur.end <= end
 
+  /**
+   * If the length of intersection > 0, return Some(Duration), else None
+   */
   def intersection(other: Duration): Option[Duration] = {
     val newStart = if (start > other.start) start else other.start
     val newEnd = if (end < other.end) end else other.end
-    if(newEnd <= newStart) None
+    if (newEnd <= newStart) None
     else Some(Duration(newStart, newEnd))
   }
 
@@ -49,10 +59,7 @@ case class Duration(start: Long, end: Long) {
     end + deltaEnd
   )
 
-
-  override def toString: String =
-    s"Duration($start, $end)"
-
+  override def toString: String = s"Duration($start, $end)"
 }
 
 object Duration {
@@ -91,7 +98,7 @@ object Duration {
   }
 
   def apply(arr: Array[Long]): Duration = {
-    assert(arr.length == 2,s"The array length for a duration should be two. Got ${arr.length}")
+    assert(arr.length == 2, s"The array length for a duration should be two. Got ${arr.length}")
     Duration(arr(0), arr(1))
   }
 }

@@ -13,22 +13,21 @@ import java.lang.System.nanoTime
 object EventCompanionExample {
 
   def main(args: Array[String]): Unit = {
-    val masterUrl = args(0)
-    val cameraDir = args(1)
-    val dataDir = args(2)
-    val sThreshold = args(3).toDouble
-    val tThreshold = args(4).toInt
-    val parallelism = args(5).toInt
-    val date = args.lift(6)
-    val saveRes = args.lift(7)
+    val cameraDir = args(0)
+    val dataDir = args(1)
+    val sThreshold = args(2).toDouble
+    val tThreshold = args(3).toInt
+    val parallelism = args(4).toInt
+    val date = args.lift(5)
+    val saveRes = args.lift(6)
     /** local test parameter:
      * local[4] "qingdaoTest/camera.parquet" "qingdaoTest/data.parquet" 200 600 8 2021-11-29 qingdaoTest/res */
     val tRange = if (date.isDefined) {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
+      .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
-      .master(masterUrl)
       .getOrCreate()
     import spark.implicits._
     val sc = spark.sparkContext
@@ -36,7 +35,7 @@ object EventCompanionExample {
     val t = nanoTime
 
     /** TODO load data */
-    val cameraDf = spark.read.parquet(cameraDir) //.sample(false, 0.1)
+    val cameraDf = spark.read.parquet(cameraDir) //.sample(false, 0.01, 2)
       .select(col("deviceId"), col("latitude_w84"), col("longitude_w84"))
     //    cameraDf.printSchema()
     val eventsDf = if (tRange.isEmpty) spark.read.parquet(dataDir)
@@ -58,7 +57,6 @@ object EventCompanionExample {
       val lon = row.get(3).asInstanceOf[Double]
       Event(Point(lon, lat), Duration(t), d = id)
     }
-
     println(s"Number of records: ${eventRDD.count}")
 
     /** extraction */
@@ -66,7 +64,7 @@ object EventCompanionExample {
 
     val extractedRDD = extractor.extract(eventRDD)
     println(s"Found ${extractedRDD.count} pairs of companions")
-    extractedRDD.take(5).foreach(println)
+    extractedRDD.take(10).foreach(println)
     println(s"Companion extraction takes ${(nanoTime - t) * 1e-9} s")
 
     if (saveRes.isDefined) {
@@ -74,13 +72,13 @@ object EventCompanionExample {
       println(s"results saved at '${saveRes.get}'")
     }
 
-    /** correctness test */
-    val gt = eventRDD.cartesian(eventRDD).filter {
-      case (a, b) => extractor.isCompanion(a, b, sThreshold, tThreshold)
-    }.map(x => ((x._1.data, x._2.data), 1))
-      .reduceByKey(_ + _)
-    println(gt.count / 2)
-    println(gt.take(5).deep)
+    //    /** correctness test */
+    //    val gt = eventRDD.cartesian(eventRDD).filter {
+    //      case (a, b) => extractor.isCompanion(a, b, sThreshold, tThreshold)
+    //    }.map(x => ((x._1.data, x._2.data), 1))
+    //      .reduceByKey(_ + _)
+    //    println(gt.count / 2)
+    //    println(gt.take(5).deep)
 
   }
 }

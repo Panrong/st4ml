@@ -59,7 +59,7 @@ object PointAnalysisDemo {
     println(s" ... Spatial range: ${extractor.extractSpatialRange(rdd2).mkString("(", ", ", ")")}")
     val temporalRange = extractor.extractTemporalRange(rdd2)
     println(s" ... Temporal range: ${temporalRange.mkString("(", ", ", ")")}")
-    println(s" ...               : ${temporalRange.map(timeLong2String).mkString("(", ", ", ")")}")
+    println(s" ...               : ${temporalRange.map(x => timeLong2String(x)).mkString("(", ", ", ")")}")
 
     val temporalMedian = extractor.extractTemporalQuantile(0.5)(rdd2).toLong
     println(s" ... Temporal median (approx.): " +
@@ -69,7 +69,7 @@ object PointAnalysisDemo {
     println(s" ... Temporal 25% and 75% (approx.): " +
       s"${temporalQuantiles.mkString(", ")}")
     println(s" ...                               : " +
-      s"${temporalQuantiles.map(timeLong2String).mkString(", ")}")
+      s"${temporalQuantiles.map(x => timeLong2String(x)).mkString(", ")}")
 
     val newMoveIn = extractor.extractNewMoveIn(1598176021, 10)(rdd2)
     println(s" ... Number of new move-ins after time ${timeLong2String(1598176021)} : ${newMoveIn.length}")

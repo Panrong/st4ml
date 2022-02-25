@@ -4,6 +4,7 @@ import instances.{Duration, Event, Extent, Point}
 import operatorsNew.selector.Selector
 import org.apache.spark.sql.SparkSession
 import utils.Config
+import utils.TimeParsing.getHour
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -37,7 +38,7 @@ object AnomalyExtraction {
       val selector = Selector[EVENT](spatial, temporal, numPartitions)
       val eventRDD = selector.selectEvent(fileName, metadata, false)
 
-      val res = eventRDD.filter(x => condition(x.duration.hours)).map(_.data).collect
+      val res = eventRDD.filter(x => condition(getHour(x.duration.start))).map(_.data)
       eventRDD.unpersist()
       println(res.take(5).deep)
     }

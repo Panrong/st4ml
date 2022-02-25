@@ -46,7 +46,9 @@ case class Extent(
 
   def center: Point = Point((xMin + xMax) / 2.0, (yMin + yMax) / 2.0)
 
-  // Predicates
+  /** Predicates */
+
+  // intersects: shared edges or points are regarded true
   def intersects(other: Extent): Boolean =
     !(other.xMax < xMin || other.xMin > xMax) &&
       !(other.yMax < yMin || other.yMin > yMax)
@@ -57,6 +59,8 @@ case class Extent(
   def intersects(g: Geometry): Boolean =
     intersects(Extent(g.getEnvelopeInternal))
 
+  // contains: if a point lies on the edge --> false;
+  // if other geometries are inside and touch the edge --> true;
   def contains(other: Extent): Boolean = {
     if (isEmpty) false // Empty extent contains nothing
     else
@@ -70,35 +74,23 @@ case class Extent(
     x > xMin && x < xMax && y > yMin && y < yMax
 
   def contains(g: Geometry): Boolean =
-    contains(Extent(g.getEnvelopeInternal))
+    this.toPolygon.contains(g)
 
-  // Ops
+  /** Ops */
+  // the minimum distance between two extents
   def distance(other: Extent): Double = {
     if (intersects(other)) 0
     else {
-      val dx =
-        if (xMax < other.xMin)
-          other.xMin - xMax
-        else if (xMin > other.xMax)
-          xMin - other.xMax
-        else
-          0.0
-
-      val dy =
-        if (yMax < other.yMin)
-          other.yMin - yMax
-        else if (yMin > other.yMax)
-          yMin - other.yMax
-        else
-          0.0
-
+      val dx = if (xMax < other.xMin) other.xMin - xMax
+      else if (xMin > other.xMax) xMin - other.xMax
+      else 0.0
+      val dy = if (yMax < other.yMin) other.yMin - yMax
+      else if (yMin > other.yMax) yMin - other.yMax
+      else 0.0
       // if either is zero, the extents overlap either vertically or horizontally
-      if (dx == 0.0)
-        dy
-      else if (dy == 0.0)
-        dx
-      else
-        math.sqrt(dx * dx + dy * dy)
+      if (dx == 0.0) dy
+      else if (dy == 0.0) dx
+      else math.sqrt(dx * dx + dy * dy)
     }
   }
 
@@ -107,7 +99,6 @@ case class Extent(
     val yMinNew = if (yMin > other.yMin) yMax else other.yMin
     val xMaxNew = if (xMax < other.xMax) xMax else other.xMax
     val yMaxNew = if (yMax < other.yMax) yMax else other.yMax
-
     if (xMinNew < xMaxNew && yMinNew < yMaxNew) Some(Extent(xMinNew, yMinNew, xMaxNew, yMaxNew))
     else None
   }
@@ -238,14 +229,6 @@ object Extent {
   def apply(a: Array[Double]): Extent = {
     new Extent(a(0), a(1), a(2), a(3))
   }
-
-  //  def apply(envelopes: Array[Envelope]): Extent = {
-  //    val xMin = envelopes.map(_.getMinX).min
-  //    val xMax = envelopes.map(_.getMaxX).max
-  //    val yMin = envelopes.map(_.getMinY).min
-  //    val yMax = envelopes.map(_.getMaxY).max
-  //    new Extent(xMin, yMin, xMax, yMax)
-  //  }
 
   implicit def toPolygon(extent: Extent): Polygon =
     extent.toPolygon

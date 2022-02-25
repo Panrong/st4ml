@@ -5,9 +5,9 @@ import java.util.{Date, TimeZone}
 
 
 object TimeParsing {
-  def timeLong2String(tm: Long): String = {
+  def timeLong2String(tm: Long, timeZone: TimeZone = TimeZone.getTimeZone("GMT+8.00")): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-    fm.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
+    fm.setTimeZone(timeZone)
     val tim = fm.format(new Date(tm * 1000))
     tim
   }
@@ -28,16 +28,24 @@ object TimeParsing {
     tim
   }
 
-  def getDate(tm: Long): String = {
+  def getDate(tm: Long, timeZone: TimeZone = TimeZone.getTimeZone("GMT+8.00")): String = {
     val fm = new SimpleDateFormat("yyyy-MM-dd")
-    fm.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
+    fm.setTimeZone(timeZone)
     val tim = fm.format(new Date(tm * 1000))
     tim
   }
 
-  def date2Long(s: String): Long = {
+  def getHour(tm: Long, timeZone: TimeZone = TimeZone.getTimeZone("GMT+8.00")): Int = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm")
+    fm.setTimeZone(timeZone)
+    val tim = fm.format(new Date(tm * 1000))
+    println(tim)
+    tim.split(" ").last.split(":").head.toInt
+  }
+
+  def date2Long(s: String, timeZone: TimeZone = TimeZone.getTimeZone("GMT+8.00")): Long = {
     val format = new SimpleDateFormat("yyyy-MM-dd")
-    format.setTimeZone(TimeZone.getTimeZone("GMT+8.00"))
+    format.setTimeZone(timeZone)
     format.parse(s).getTime / 1000
   }
 }
