@@ -1,9 +1,9 @@
 package experiments
 
-import instances.{Duration, Point, Trajectory}
-import operatorsNew.converter.Traj2EventConverter
+import st4ml.instances.{Duration, Point, Trajectory}
+import st4ml.operators.converter.Traj2EventConverter
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 object HzTraj2Point {
   case class E2(timestamp: String, latitude: String, longitude: String)
@@ -41,7 +41,7 @@ object HzTraj2Point {
     val eventRDD = converter.convert(trajRDD)
     println(eventRDD.take(5).deep)
 
-    import operatorsNew.selector.SelectionUtils._
+    import st4ml.operators.selector.SelectionUtils._
     eventRDD.toDs().repartition(numPartitions).write.parquet(resDir)
 
     sc.stop()

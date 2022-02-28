@@ -1,6 +1,6 @@
 package instance
 
-import instances._
+import st4ml.instances._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -23,7 +23,7 @@ class EventSpec extends AnyFunSpec with Matchers {
       Event(poly, t) shouldBe Event(Array(Entry(poly, t, None)), None)
     }
 
-    it("can convert to a geometry") {
+    it("can convert to a st4ml.geometry") {
       Event(p, t).toGeometry shouldBe p
       Event(ls, t).toGeometry shouldBe ls
       Event(poly, t).toGeometry shouldBe poly

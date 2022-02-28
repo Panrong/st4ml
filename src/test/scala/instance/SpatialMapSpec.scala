@@ -1,6 +1,6 @@
 package instance
 
-import instances._
+import st4ml.instances._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -86,7 +86,7 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
     //        .attachGeometry(pointArr)
     //    }
 
-    it("can allocate Instance objects based on the input geometry") {
+    it("can allocate Instance objects based on the input st4ml.geometry") {
       val eventGeom = eventArr.flatMap(_.entries.map(_.spatial))
       val eventSm = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
         .attachInstance(eventArr, eventGeom)

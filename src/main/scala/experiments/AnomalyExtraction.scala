@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point}
-import operatorsNew.selector.Selector
+import st4ml.instances.{Duration, Event, Extent, Point}
+import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
-import utils.Config
-import utils.TimeParsing.getHour
+import st4ml.utils.Config
+import st4ml.utils.TimeParsing.getHour
 
 import java.lang.System.nanoTime
 import scala.io.Source

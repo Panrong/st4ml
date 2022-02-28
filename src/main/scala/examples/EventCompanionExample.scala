@@ -1,12 +1,11 @@
 package examples
 
-import instances.{Duration, Event, Point}
-import operatorsNew.extractor.EventCompanionExtractor
-import operatorsNew.selector.SelectionUtils.E
+import st4ml.instances.{Duration, Event, Point}
+import st4ml.operators.extractor.EventCompanionExtractor
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{broadcast, col}
 import org.apache.spark.sql.types.LongType
-import utils.TimeParsing
+import st4ml.utils.TimeParsing
 
 import java.lang.System.nanoTime
 
@@ -21,12 +20,12 @@ object EventCompanionExample {
     val date = args.lift(5)
     val saveRes = args.lift(6)
     /** local test parameter:
-     * local[4] "qingdaoTest/camera.parquet" "qingdaoTest/data.parquet" 200 600 8 2021-11-29 qingdaoTest/res */
+     * "qingdaoTest/camera.parquet" "qingdaoTest/data.parquet" 200 600 8 2021-11-29 qingdaoTest/res */
     val tRange = if (date.isDefined) {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
-      .master("local[8]") // TODO remove when deploying
+            .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
       .getOrCreate()
     import spark.implicits._

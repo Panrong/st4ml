@@ -3,7 +3,7 @@ package setup
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 import org.scalatest.{BeforeAndAfterAll, Suite}
-import utils.Config
+import st4ml.utils.Config
 
 trait SharedSparkSession extends BeforeAndAfterAll {
   self: Suite =>

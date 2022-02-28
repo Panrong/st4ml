@@ -1,12 +1,13 @@
 package experiments
 
-import instances.LineString
-import instances.{Duration, Entry, Extent, Point, RTree, Trajectory}
-import operatorsNew.converter.{MapMatcher, Traj2SpatialMapConverter, Traj2TrajConverter}
-import operatorsNew.selector.Selector
+import st4ml.instances.LineString
+import st4ml.instances.{Duration, Entry, Extent, Point, RTree, Trajectory}
+import st4ml.operators.converter.{Traj2SpatialMapConverter, Traj2TrajConverter}
+import st4ml.operators.selector.Selector
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
+import st4ml.utils.mapmatching.MapMatcher
 
 import java.text.SimpleDateFormat
 import java.lang.System.nanoTime

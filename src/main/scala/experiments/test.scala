@@ -1,13 +1,13 @@
 package experiments
 
 import com.twitter.chill.Kryo
-import instances.{Duration, Event}
+import st4ml.instances.{Duration, Event}
 import org.apache.spark.sql.{Encoder, SparkSession}
 import org.apache.spark.sql.functions.{col, udf}
-import utils.Config
-import instances._
-import operatorsNew.selector.SelectionUtils.{E, T}
-import operatorsNew.selector.partitioner.STRPartitioner
+import st4ml.utils.Config
+import st4ml.instances._
+import st4ml.operators.selector.SelectionUtils.{E, T}
+import st4ml.operators.selector.partitioner.STRPartitioner
 import org.apache.spark.util.SizeEstimator
 
 object test {
@@ -51,12 +51,12 @@ object test {
     //    pointDs.filter(_.tInside(10L, 12L)).show
 
 
-    //    // test case class instances
+    //    // test case class st4ml.instances
     //
     //    val eventArr = List(
-    //      Event(instances.Point(0, 0), Duration(0)),
-    //      Event(instances.Point(1, 1), Duration(1)),
-    //      Event(instances.Point(2, 2), Duration(2))
+    //      Event(st4ml.instances.Point(0, 0), Duration(0)),
+    //      Event(st4ml.instances.Point(1, 1), Duration(1)),
+    //      Event(st4ml.instances.Point(2, 2), Duration(2))
     //    )
     //    val eventDs = spark.createDataset(eventArr)
     //    eventDs.show
@@ -132,7 +132,7 @@ object test {
       Entry(Point(2, 2), Duration(0), Array(6)),
     ))
     val smRDD = sc.parallelize(Seq(sm1, sm2))
-    import instances.Utils._
+    import st4ml.instances.Utils._
     def f(v: Int, p: Point, t: Duration): Int = v + t.end.toInt
 
     def f2(v: Array[Int], p: Point, t: Duration): Int = v.head + t.end.toInt

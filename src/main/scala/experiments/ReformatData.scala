@@ -1,9 +1,9 @@
 package experiments
 
 import org.apache.spark.sql.SparkSession
-import instances.{Duration, Event, Point, Trajectory}
-import utils.Config
-import operatorsNew.selector.SelectionUtils._
+import st4ml.instances.{Duration, Event, Point, Trajectory}
+import st4ml.utils.Config
+import st4ml.operators.selector.SelectionUtils._
 object ReformatData extends App {
   /** reformat the original porto data to STT format */
   case class E(id: String, lon: Double, lat: Double, t: Long) // event

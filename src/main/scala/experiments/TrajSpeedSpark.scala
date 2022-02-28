@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Event, Point}
+import st4ml.instances.{Duration, Event, Point}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{col, lit, udf}
-import utils.Config
+import st4ml.utils.Config
 
 import scala.math.{abs, acos, cos, sin}
 

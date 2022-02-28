@@ -1,9 +1,10 @@
 package instance
 
-import instances.Distances.greatCircleDistance
-import instances.{Duration, Extent, LineString, Point}
+import st4ml.instances.Distances.greatCircleDistance
+import st4ml.instances.{Duration, Extent, LineString, Point}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import st4ml.utils.TimeParsing
 
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date, TimeZone}
@@ -57,9 +58,11 @@ class GeomSpec extends AnyFunSpec with Matchers {
       t1 intersects t3 shouldBe true
       t1 intersection t2 shouldBe None
       t1 intersection t3 shouldBe Some(Duration(50, 100))
-      utils.TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Shanghai")) shouldBe 19
-      utils.TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Tokyo")) shouldBe 20
-
+      TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Shanghai")) shouldBe 19
+      TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Tokyo")) shouldBe 20
+      val a = TimeParsing.date2Long("2021-11-29")
+      println(a)
+      println(TimeParsing.timeLong2String(a+86400))
     }
   }
 }

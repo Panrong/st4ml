@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Extent, Point, Polygon, RTree}
-import operatorsNew.selector.MultiRangeSelector
-import operatorsNew.selector.SelectionUtils.E
+import st4ml.instances.{Duration, Extent, Point, Polygon, RTree}
+import st4ml.operators.selector.MultiRangeSelector
+import st4ml.operators.selector.SelectionUtils.E
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source

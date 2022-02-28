@@ -1,12 +1,12 @@
 package experiments
 
-import instances.{Duration, Entry, Extent, Polygon, Raster, Trajectory}
-import operatorsNew.converter.{Traj2RasterConverter, Traj2SpatialMapConverter}
-import operatorsNew.extractor.RasterTransitionExtractor
-import operatorsNew.selector.Selector
+import st4ml.instances.{Duration, Entry, Extent, Polygon, Raster, Trajectory}
+import st4ml.operators.converter.{Traj2RasterConverter, Traj2SpatialMapConverter}
+import st4ml.operators.extractor.RasterTransitionExtractor
+import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
 import org.locationtech.jts.geom.Geometry
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source

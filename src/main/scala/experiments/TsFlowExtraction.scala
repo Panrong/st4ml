@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point}
-import operatorsNew.converter.Event2TimeSeriesConverter
-import operatorsNew.selector.Selector
+import st4ml.instances.{Duration, Event, Extent, Point}
+import st4ml.operators.converter.Event2TimeSeriesConverter
+import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source

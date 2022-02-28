@@ -1,9 +1,9 @@
 package experiments
 
-import instances.{Duration, Entry, Extent, Trajectory, Point}
-import operatorsNew.selector.Selector
+import st4ml.instances.{Duration, Entry, Extent, Trajectory, Point}
+import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source
@@ -47,7 +47,7 @@ object TrajStayPointExtraction {
 
     def findStayPoint[T <: Trajectory[_, _] : ClassTag](traj: T, maxDist: Double, minTime: Int): Array[Point] = {
       if (traj.entries.length < 2) return new Array[Point](0)
-      import instances.GeometryImplicits._
+      import st4ml.instances.GeometryImplicits._
       val entries = traj.entries.toIterator
       var anchor = entries.next
       var res = new Array[Point](0)

@@ -1,13 +1,13 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
-import operatorsNew.converter.Event2TrajConverter
-import operatorsNew.selector.SelectionUtils.EwP
-import operatorsNew.selector.partitioner.{HashPartitioner, STPartitioner}
+import st4ml.instances.{Duration, Event, Extent, Point, Polygon, Trajectory}
+import st4ml.operators.converter.Event2TrajConverter
+import st4ml.operators.selector.SelectionUtils.EwP
+import st4ml.operators.selector.partitioner.{HashPartitioner, STPartitioner}
 import org.apache.spark.sql.SparkSession
-import operatorsNew.selector.{MultiRangeSelector, Selector}
-import utils.Config
-import operatorsNew.selector.SelectionUtils._
+import st4ml.operators.selector.{MultiRangeSelector, Selector}
+import st4ml.utils.Config
+import st4ml.operators.selector.SelectionUtils._
 import org.apache.spark.rdd.RDD
 
 import scala.util.Random.nextDouble

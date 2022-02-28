@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Extent, Polygon, Trajectory}
-import operatorsNew.selector.Selector
-import operatorsNew.converter.Traj2SpatialMapConverter
+import st4ml.instances.{Duration, Extent, Polygon, Trajectory}
+import st4ml.operators.selector.Selector
+import st4ml.operators.converter.Traj2SpatialMapConverter
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 import scala.io.Source

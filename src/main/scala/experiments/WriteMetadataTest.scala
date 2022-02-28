@@ -1,10 +1,10 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point, Polygon, LineString}
-import operatorsNew.selector.SelectionUtils._
-import operatorsNew.selector.partitioner._
+import st4ml.instances.{Duration, Event, Extent, Point, Polygon, LineString}
+import st4ml.operators.selector.SelectionUtils._
+import st4ml.operators.selector.partitioner._
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 //
 //case class E(id: String, lon: Double, lat: Double, t: Long) // event

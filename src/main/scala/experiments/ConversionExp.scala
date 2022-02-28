@@ -1,12 +1,12 @@
 package experiments
 
-import instances.{Duration, Event, Extent, Point, Polygon, RTree, Raster, SpatialMap, TimeSeries, Trajectory}
-import operatorsNew.converter.{Event2RasterConverter, Event2SpatialMapConverter, Event2TimeSeriesConverter, Traj2RasterConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
-import operatorsNew.selector.SelectionUtils.{E, T}
-import operatorsNew.selector.partitioner.HashPartitioner
+import st4ml.instances.{Duration, Event, Extent, Point, Polygon, RTree, Raster, SpatialMap, TimeSeries, Trajectory}
+import st4ml.operators.converter.{Event2RasterConverter, Event2SpatialMapConverter, Event2TimeSeriesConverter, Traj2RasterConverter, Traj2SpatialMapConverter, Traj2TimeSeriesConverter}
+import st4ml.operators.selector.SelectionUtils.{E, T}
+import st4ml.operators.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import utils.Config
+import st4ml.utils.Config
 
 import java.lang.System.nanoTime
 

@@ -1,8 +1,8 @@
 package experiments
 
-import instances.{Duration, Point, Trajectory}
+import st4ml.instances.{Duration, Point, Trajectory}
 import org.apache.spark.sql.SparkSession
-import utils.Config
+import st4ml.utils.Config
 
 object ReformatVhcData {
   case class E(longitude: Double, latitude: Double, timestamp: Long)
@@ -36,7 +36,7 @@ object ReformatVhcData {
       })
       .filter(_.isDefined).map(_.get)
     println(trajRDD.take(5).deep)
-    import operatorsNew.selector.SelectionUtils._
+    import st4ml.operators.selector.SelectionUtils._
     trajRDD.toDs().repartition(numPartitions).write.parquet(resDir)
 
     sc.stop()

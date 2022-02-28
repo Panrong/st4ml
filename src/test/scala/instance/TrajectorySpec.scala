@@ -1,6 +1,6 @@
 package instance
 
-import instances._
+import st4ml.instances._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
