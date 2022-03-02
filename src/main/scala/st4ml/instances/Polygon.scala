@@ -1,6 +1,8 @@
 package st4ml.instances
 
+import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.{geom => jts}
+
 import scala.collection.GenTraversable
 
 object Polygon extends PolygonConstructors

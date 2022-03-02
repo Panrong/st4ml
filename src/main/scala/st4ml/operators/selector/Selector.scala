@@ -6,13 +6,12 @@ import st4ml.operators.selector.partitioner.{HashPartitioner, STPartitioner}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.locationtech.jts.geom.Polygon
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon,
-                                                  tQuery: Duration,
+class Selector[I <: Instance[_, _, _] : ClassTag](sQuery: Polygon = Polygon.empty,
+                                                  tQuery: Duration = Duration.empty,
                                                   partitioner: STPartitioner) extends Serializable {
   val spark: SparkSession = SparkSession.builder.getOrCreate()
 
