@@ -26,7 +26,7 @@ object EventCompanionExample {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
-      .master("local[8]") // TODO remove when deploying
+      //      .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
       .getOrCreate()
     import spark.implicits._
@@ -67,10 +67,13 @@ object EventCompanionExample {
     val extractedRDD = extractor.extractDetail(eventRDD)
 
     if (saveRes.isDefined) {
-      extractedRDD.toDF("id1", "lon1", "lat1", "t1", "id2", "lon2", "lat2", "t2").write.csv(saveRes.get)
+      extractedRDD.toDF("id1", "lon1", "lat1", "t1", "id2", "lon2", "lat2", "t2").distinct.write.csv(saveRes.get)
       println(s"results saved at '${saveRes.get}'")
     }
-    else extractedRDD.take(5).foreach(println)
+    else {
+      println(extractedRDD.distinct.count)
+      extractedRDD.take(5).foreach(println)
+    }
 
     println(s"Companion extraction takes ${(nanoTime - t) * 1e-9} s")
 
@@ -81,6 +84,6 @@ object EventCompanionExample {
     //      .reduceByKey(_ + _)
     //    println(gt.count / 2)
     //    println(gt.take(5).deep)
-
+    sc.stop()
   }
 }

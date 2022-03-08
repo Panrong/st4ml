@@ -34,7 +34,7 @@ class EventCompanionExtractor(sThreshold: Double,
   def extractDetail(rdd: RDD[Event[Point, None.type, String]]): RDD[(String, Double, Double, Long, String, Double, Double, Long)] = {
     val partitioner = new TSTRPartitioner(tPartition, sPartition, sThreshold = sThreshold, tThreshold = tThreshold, samplingRate = Some(0.2))
     val partitionedRDD = partitioner.partitionWDup(rdd)
-    //    println(partitionedRDD.count)
+    // println(rdd.count, partitionedRDD.count)
     partitionedRDD.mapPartitions { partition =>
       val events = partition.toArray
       val companion = for {i <- events; j <- events
