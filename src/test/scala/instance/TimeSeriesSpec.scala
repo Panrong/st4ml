@@ -1,10 +1,12 @@
 package instance
 
+import org.apache.spark.sql.SparkSession
 import st4ml.instances._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+import Utils._
 
-class TimeSeriesSpec extends AnyFunSpec with Matchers{
+class TimeSeriesSpec extends AnyFunSpec with Matchers {
   describe("TimeSeries") {
     val durbinsDisjoint: Array[Duration] = Array(
       Duration(0L, 100L),
@@ -185,6 +187,22 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers{
       appendedTs.entries.map(_.value) shouldBe
         eventTs1.entries.map(_.value) ++ eventTs1.entries.map(_.value)
     }
+
+//    it("ts rdd functions work") {
+//      val sc = SparkSession.builder().master("local[2]")
+//        .appName("test").getOrCreate().sparkContext
+//      val ts1 = TimeSeries(Array(Duration(0), Duration(1), Duration(2)), Array(Array(Point(0, 0)), Array(Point(1, 1)), Array(Point(2, 2))))
+//      val ts2 = TimeSeries(Array(Duration(0), Duration(1), Duration(2)), Array(Array(Point(10, 10)), Array(Point(11, 11)), Array(Point(12, 12))))
+//      val tsRDD = sc.parallelize(Array(ts1, ts2))
+//
+//      def f(v: Point, t: Duration): Point = {
+//        Point(v.getX + t.start, v.getY + t.end)
+//      }
+//
+//      val tsRDD2 = tsRDD.mapValuePlus2(f)
+//      val a = tsRDD2.collect()
+//      println(a.flatMap(x => x.entries.map(_.value)).deep)
+//    }
 
   }
 }

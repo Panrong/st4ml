@@ -35,7 +35,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     areaEqual && isSpatialDisjoint && lengthEqual && allRectangle
   }
 
-  override def mapSpatial(f: S => S): SpatialMap[S, V, D] =
+  def mapSpatial[T <: Geometry : ClassTag](f: S => T): SpatialMap[T, V, D] =
     SpatialMap(
       entries.map(entry =>
         Entry(
@@ -99,43 +99,50 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): SpatialMap[S, V, D1] =
     SpatialMap(entries, f(data, extent.toPolygon, temporal))
 
+  def getBinIndicesRTree[S <: Geometry](rTree: RTree[S], queryArr: Array[Duration]): Array[Array[Int]] =
+    queryArr.map(query =>
+      rTree.range1d((query.start, query.end)).map(_._2.toInt))
 
 
-  // todo: test the performance difference: getBinIndices v.s. isSpatialDisjoint + getBinIndex
-  def getSpatialIndex[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
-    if (geomArr.head.isInstanceOf[Point] && isSpatialDisjoint)
-      Utils.getBinIndex(spatials, geomArr)
-    else
-      Utils.getBinIndices(spatials, geomArr)
+  def getBinIndices(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] = {
+    queryArr.map(q =>
+      bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
+    )
   }
 
-  //  def getSpatialIndexRTreeDeprecated[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
-  //    Utils.getBinIndicesRTreeDeprecated(rTreeDeprecated.get, geomArr)
-  //  }
+  def getBinIndex[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] =
+    queryArr.map(q =>
+      Array(bins.indexWhere(poly => poly.intersects(q)))
+    )
 
+  def getBinIndices[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] = {
+    queryArr.map(q =>
+      bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
+    )
+  }
+
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
+    queryArr.map(query => RTree.range(query).map(_._2.toInt))
+  }
+
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
+    queryArr.map(query => RTree.distanceRange(query, distance).map(_._2.toInt))
+  }
+
+  def getSpatialIndex[G <: Geometry](geomArr: Array[G]): Array[Array[Int]] = {
+    if (geomArr.head.isInstanceOf[Point] && isSpatialDisjoint)
+      getBinIndex(spatials, geomArr)
+    else
+      getBinIndices(spatials, geomArr)
+  }
   def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G]): Array[Array[Int]] = {
-    Utils.getBinIndicesRTree(rTree.get, geomArr)
+    getBinIndicesRTree(rTree.get, geomArr)
   }
 
   def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G], distance: Double): Array[Array[Int]] = {
-    Utils.getBinIndicesRTree(rTree.get, geomArr, distance)
+    getBinIndicesRTree(rTree.get, geomArr, distance)
   }
-  //  def getSpatialIndexToObjRTreeDeprecated[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
-  //    if (geomArr.isEmpty) {
-  //      Map.empty[Int, Array[T]]
-  //    } else {
-  //      val indices = getSpatialIndexRTreeDeprecated(geomArr)
-  //      objArr.zip(indices)
-  //        .filter(_._2.length > 0)
-  //        .flatMap { case (geom, indexArr) =>
-  //          for {
-  //            idx <- indexArr
-  //          } yield (geom, idx)
-  //        }
-  //        .groupBy(_._2)
-  //        .mapValues(x => x.map(_._1))
-  //    }
-  //  }
+
   def getSpatialIndexToObjRTree[T: ClassTag, G <: Geometry : ClassTag](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
     if (geomArr.isEmpty) {
       Map.empty[Int, Array[T]]
@@ -152,7 +159,6 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
         .mapValues(x => x.map(_._1))
     }
   }
-
 
   def getSpatialIndexToObj[T: ClassTag, G <: Geometry](objArr: Array[T], geomArr: Array[G]): Map[Int, Array[T]] = {
     if (geomArr.isEmpty) {

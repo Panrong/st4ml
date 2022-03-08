@@ -6,11 +6,10 @@ import org.locationtech.jts.geom.Envelope
 
 case class ExtentRangeError(msg: String) extends Exception(msg)
 
-case class Extent(
-                   xMin: Double,
-                   yMin: Double,
-                   xMax: Double,
-                   yMax: Double
+case class Extent(xMin: Double,
+                  yMin: Double,
+                  xMax: Double,
+                  yMax: Double
                  ) extends Ordered[Extent] {
 
   // Validation

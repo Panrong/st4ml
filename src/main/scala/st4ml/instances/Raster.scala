@@ -68,7 +68,7 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
     lengths.forall(x => x == lengths.head) && totalArea == sumArea && !overlaps
   }
 
-  override def mapSpatial(f: S => S): Raster[S, V, D] =
+  def mapSpatial[T <: Geometry : ClassTag](f: S => T): Raster[T, V, D] =
     Raster(
       entries.map(entry =>
         Entry(

@@ -13,7 +13,7 @@ class Trajectory[V, D](
   override def validation: Boolean =
     entries.length > 1
 
-  override def mapSpatial(f: Point => Point): Trajectory[V, D] =
+  def mapSpatial(f: Point => Point): Trajectory[V, D] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -73,12 +73,12 @@ class Trajectory[V, D](
   def temporalSliding(n: Int): Iterator[Array[Duration]] =
     entries.map(_.temporal).sliding(n)
 
-  def consecutiveSpatialDistance(metric: String): Array[Double] = {
+  def consecutiveSpatialDistance(metric: String = "euclidean"): Array[Double] = {
     metric match {
-      case "euclidean" => entries.map(_.spatial).sliding(2).map {
+      case "euclidean" => spatialSliding(2).map {
         case Array(p1, p2) => p1.euclidean(p2)
       }.toArray
-      case "greatCircle" => entries.map(_.spatial).sliding(2).map {
+      case "greatCircle" => spatialSliding(2).map {
         case Array(p1, p2) => p1.greatCircle(p2)
       }.toArray
       case _ => throw new Exception(

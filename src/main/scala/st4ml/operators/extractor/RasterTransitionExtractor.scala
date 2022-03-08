@@ -2,7 +2,6 @@ package st4ml.operators.extractor
 
 import st4ml.instances.{Duration, Entry, Geometry, Polygon, Raster, Trajectory}
 import org.apache.spark.rdd.RDD
-import st4ml.instances.Utils._
 
 import scala.reflect.ClassTag
 

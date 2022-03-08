@@ -6,7 +6,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{broadcast, col}
 import org.apache.spark.sql.types.LongType
 import st4ml.utils.TimeParsing
-
+import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK
 import java.lang.System.nanoTime
 
 object EventCompanionExample {
@@ -17,15 +17,16 @@ object EventCompanionExample {
     val sThreshold = args(2).toDouble
     val tThreshold = args(3).toInt
     val parallelism = args(4).toInt
-    val date = args.lift(5)
-    val saveRes = args.lift(6)
+    val samplingRate = args(5).toDouble
+    val date = args.lift(6)
+    val saveRes = args.lift(7)
     /** local test parameter:
-     * "qingdaoTest/camera.parquet" "qingdaoTest/data.parquet" 200 600 8 2021-11-29 qingdaoTest/res */
+     * "qingdaoTest/camera.parquet" "qingdaoTest/data.parquet" 200 600 8 0.01 2021-11-29 qingdaoTest/res */
     val tRange = if (date.isDefined) {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
-            .master("local[8]") // TODO remove when deploying
+      .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
       .getOrCreate()
     import spark.implicits._
@@ -33,15 +34,17 @@ object EventCompanionExample {
     sc.setLogLevel("ERROR")
     val t = nanoTime
 
-    /** TODO load data */
-    val cameraDf = spark.read.parquet(cameraDir) //.sample(false, 0.01, 2)
+    /** load data */
+    val cameraDf = spark.read.parquet(cameraDir)
       .select(col("deviceId"), col("latitude_w84"), col("longitude_w84"))
     //    cameraDf.printSchema()
-    val eventsDf = if (tRange.isEmpty) spark.read.parquet(dataDir)
+    val eventsRaw = if (samplingRate < 1) spark.read.parquet(dataDir).sample(false, samplingRate, 1)
+    else spark.read.parquet(dataDir)
+    val eventsDf = if (tRange.isEmpty) eventsRaw
       .select(col("pid"), col("timestamp"), col("cameraId"))
     else {
       val t = tRange.get
-      spark.read.parquet(dataDir).filter(col("timestamp").cast(LongType) >= t && col("timestamp").cast(LongType) <= t + 86400)
+      eventsRaw.filter(col("timestamp").cast(LongType) >= t && col("timestamp").cast(LongType) <= t + 86400)
         .select(col("pid"), col("timestamp"), col("cameraId"))
     }
     //    eventsDf.show(5)
@@ -57,19 +60,19 @@ object EventCompanionExample {
       Event(Point(lon, lat), Duration(t), d = id)
     }
     println(s"Number of records: ${eventRDD.count}")
-
+    eventRDD.cache //.persist(MEMORY_AND_DISK)
     /** extraction */
     val extractor = EventCompanionExtractor(sThreshold, tThreshold, parallelism)
 
-    val extractedRDD = extractor.extract(eventRDD)
-    println(s"Found ${extractedRDD.count} pairs of companions")
-    extractedRDD.take(10).foreach(println)
-    println(s"Companion extraction takes ${(nanoTime - t) * 1e-9} s")
+    val extractedRDD = extractor.extractDetail(eventRDD)
 
     if (saveRes.isDefined) {
-      extractedRDD.toDF("id1", "id2", "count").sort("id1").coalesce(1).write.csv(saveRes.get)
+      extractedRDD.toDF("id1", "lon1", "lat1", "t1", "id2", "lon2", "lat2", "t2").write.csv(saveRes.get)
       println(s"results saved at '${saveRes.get}'")
     }
+    else extractedRDD.take(5).foreach(println)
+
+    println(s"Companion extraction takes ${(nanoTime - t) * 1e-9} s")
 
     //    /** correctness test */
     //    val gt = eventRDD.cartesian(eventRDD).filter {

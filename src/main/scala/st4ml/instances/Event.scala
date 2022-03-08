@@ -1,8 +1,9 @@
 package st4ml.instances
 
-case class Event[S <: Geometry, V, D](
-   val entries: Array[Entry[S, V]],
-   val data: D)
+import scala.reflect.ClassTag
+
+case class Event[S <: Geometry, V, D](entries: Array[Entry[S, V]],
+                                      data: D)
   extends Instance[S, V, D] {
 
   require(validation,
@@ -11,7 +12,7 @@ case class Event[S <: Geometry, V, D](
   override def validation: Boolean =
     entries.length == 1
 
-  override def mapSpatial(f: S => S): Event[S, V, D] =
+  def mapSpatial[T <: Geometry : ClassTag](f: S => T): Event[T, V, D] =
     Event(
       entries.map(entry =>
         Entry(
@@ -39,9 +40,9 @@ case class Event[S <: Geometry, V, D](
       data)
 
   override def mapEntries[V1](
-    f1: S => S,
-    f2: Duration => Duration,
-    f3: V => V1): Event[S, V1, D] =
+                               f1: S => S,
+                               f2: Duration => Duration,
+                               f3: V => V1): Event[S, V1, D] =
     Event(
       entries.map(entry =>
         Entry(

@@ -4,7 +4,7 @@ import org.apache.spark.rdd.RDD
 
 import scala.reflect.ClassTag
 
-private object Utils {
+object Utils {
 
   // methods for calculating an overall Polygon
   def getPolygonFromGeometryArray[T <: Geometry](geomArr: Array[T]): Polygon = {
@@ -35,48 +35,6 @@ private object Utils {
       case _ => Duration.empty
     }
     Duration(durArr)
-  }
-
-  // methods for calculating the corresponding index/indices of bins for given query
-  def getBinIndex(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] =
-    queryArr.map(q =>
-      Array(bins.indexWhere(_.intersects(q)))
-    )
-
-  def getBinIndices(bins: Array[Duration], queryArr: Array[Duration]): Array[Array[Int]] = {
-    queryArr.map(q =>
-      bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
-    )
-  }
-
-  def getBinIndicesRTree[S <: Geometry](rTree: RTree[S], queryArr: Array[Duration]): Array[Array[Int]] =
-    queryArr.map(query =>
-      rTree.range1d((query.start, query.end)).map(_._2.toInt))
-
-
-  def getBinIndices(bins: Array[Duration], queryArr: Array[Long]): Array[Array[Int]] = {
-    queryArr.map(q =>
-      bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
-    )
-  }
-
-  def getBinIndex[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] =
-    queryArr.map(q =>
-      Array(bins.indexWhere(poly => poly.intersects(q)))
-    )
-
-  def getBinIndices[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T]): Array[Array[Int]] = {
-    queryArr.map(q =>
-      bins.zipWithIndex.filter(_._1.intersects(q)).map(_._2)
-    )
-  }
-
-  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
-    queryArr.map(query => RTree.range(query).map(_._2.toInt))
-  }
-
-  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
-    queryArr.map(query => RTree.distanceRange(query, distance).map(_._2.toInt))
   }
 
   implicit class smRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, V, D]]) {
@@ -139,23 +97,78 @@ private object Utils {
     }
   }
 
+  // funcs2 means considering spatial and temporal information of each entry
   implicit class smRDDFuncs2[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, Array[V], D]]) extends Serializable {
-    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): RDD[SpatialMap[S, Array[V1], D]] =
+    def mapValuePlus2[V1: ClassTag](f: (V, S) => V1): RDD[SpatialMap[S, Array[V1], D]] =
       rdd.map(x => x.mapValuePlus2(f))
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[S]) => D1): RDD[SpatialMap[S, Array[V], D1]] =
+      rdd.map(x => x.mapDataPlus2(f))
   }
 
   implicit class smFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](sm: SpatialMap[S, Array[V], D]) extends Serializable {
-    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): SpatialMap[S, Array[V1], D] = {
+    def mapValuePlus2[V1: ClassTag](f: (V, S) => V1): SpatialMap[S, Array[V1], D] = {
       val newEntries = sm.entries.map(entry => {
         val spatial = entry.spatial
         val temporal = entry.temporal
-        Entry(spatial, temporal, entry.value.map(x => f(x, spatial, temporal)).toArray)
+        Entry(spatial, temporal, entry.value.map(x => f(x, spatial)))
       })
       SpatialMap(newEntries, sm.data)
     }
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[S]) => D1): SpatialMap[S, Array[V], D1] = {
+      val newData = f(sm.data, sm.spatials)
+      SpatialMap(sm.entries, newData)
+    }
   }
 
-  //TODO add func for ts and raster and mapdata
+  implicit class rasterRDDFuncs2[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[Raster[S, Array[V], D]]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): RDD[Raster[S, Array[V1], D]] =
+      rdd.map(x => x.mapValuePlus2(f))
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[S], Array[Duration]) => D1): RDD[Raster[S, Array[V], D1]] =
+      rdd.map(x => x.mapDataPlus2(f))
+  }
+
+  implicit class rasterFuncs[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](raster: Raster[S, Array[V], D]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, S, Duration) => V1): Raster[S, Array[V1], D] = {
+      val newEntries = raster.entries.map(entry => {
+        val spatial = entry.spatial
+        val temporal = entry.temporal
+        Entry(spatial, temporal, entry.value.map(x => f(x, spatial, temporal)))
+      })
+      Raster(newEntries, raster.data)
+    }
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[S], Array[Duration]) => D1): Raster[S, Array[V], D1] = {
+      val newData = f(raster.data, raster.spatials, raster.temporals)
+      Raster(raster.entries, newData)
+    }
+  }
+
+  implicit class tsRDDFuncs2[V: ClassTag, D: ClassTag](rdd: RDD[TimeSeries[Array[V], D]]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, Duration) => V1): RDD[TimeSeries[Array[V1], D]] =
+      rdd.map(x => x.mapValuePlus2(f))
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[Duration]) => D1): RDD[TimeSeries[Array[V], D1]] =
+      rdd.map(x => x.mapDataPlus2(f))
+  }
+
+  implicit class tsFuncs[V: ClassTag, D: ClassTag](ts: TimeSeries[Array[V], D]) extends Serializable {
+    def mapValuePlus2[V1: ClassTag](f: (V, Duration) => V1): TimeSeries[Array[V1], D] = {
+      val newEntries = ts.entries.map(entry => {
+        val spatial = entry.spatial
+        val temporal = entry.temporal
+        Entry(spatial, temporal, entry.value.map(x => f(x, temporal)))
+      })
+      TimeSeries(newEntries, ts.data)
+    }
+
+    def mapDataPlus2[D1: ClassTag](f: (D, Array[Duration]) => D1): TimeSeries[Array[V], D1] = {
+      val newData = f(ts.data, ts.temporals)
+      TimeSeries(ts.entries, newData)
+    }
+  }
 }
 
 

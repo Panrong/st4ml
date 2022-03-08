@@ -31,6 +31,21 @@ class EventCompanionExtractor(sThreshold: Double,
       .map(x => (x._1._1, x._1._2, x._2.size))
   }
 
+  def extractDetail(rdd: RDD[Event[Point, None.type, String]]): RDD[(String, Double, Double, Long, String, Double, Double, Long)] = {
+    val partitioner = new TSTRPartitioner(tPartition, sPartition, sThreshold = sThreshold, tThreshold = tThreshold, samplingRate = Some(0.2))
+    val partitionedRDD = partitioner.partitionWDup(rdd)
+    //    println(partitionedRDD.count)
+    partitionedRDD.mapPartitions { partition =>
+      val events = partition.toArray
+      val companion = for {i <- events; j <- events
+                           if i.data.hashCode < j.data.hashCode && // remove duplicated comparisons
+                             isCompanion(i, j, sThreshold, tThreshold)} yield
+        (i.data, i.entries.head.spatial.x, i.entries.head.spatial.y, i.entries.head.temporal.start,
+          j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start)
+      companion.toIterator
+    }
+  }
+
   def isCompanion(a: Event[Point, None.type, String], b: Event[Point, None.type, String],
                   sThreshold: Double, tThreshold: Double): Boolean = {
     if (a.data != b.data &&
