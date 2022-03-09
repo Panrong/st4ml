@@ -36,6 +36,8 @@ object EventCompanionExample {
 
     /** load data */
     val cameraDf = spark.read.parquet(cameraDir)
+      .filter(col("latitude_w84") > 30).filter(col("latitude_w84") < 50)
+      .filter(col("longitude_w84") > 110).filter(col("longitude_w84") < 130)
       .select(col("deviceId"), col("latitude_w84"), col("longitude_w84"))
     //    cameraDf.printSchema()
     val eventsRaw = if (samplingRate < 1) spark.read.parquet(dataDir).sample(false, samplingRate, 1)
@@ -67,11 +69,11 @@ object EventCompanionExample {
     val extractedRDD = extractor.extractDetail(eventRDD)
 
     if (saveRes.isDefined) {
-      extractedRDD.toDF("id1", "lon1", "lat1", "t1", "id2", "lon2", "lat2", "t2").distinct.write.csv(saveRes.get)
+      extractedRDD.toDF("id1", "lon1", "lat1", "t1", "id2", "lon2", "lat2", "t2").write.csv(saveRes.get)
       println(s"results saved at '${saveRes.get}'")
     }
     else {
-      println(extractedRDD.distinct.count)
+      println(extractedRDD.count)
       extractedRDD.take(5).foreach(println)
     }
 

@@ -9,7 +9,10 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
 
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
-  var rTree: Option[RTree[Polygon]] = None
+
+  // the rTree is built when 1) explicitly call attachInstanceRTree function or
+  // 2) convert event/traj to raster with optimization
+  var rTree: Option[RTree[S]] = None
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val spatials: Array[S] = entries.map(_.spatial)
@@ -307,6 +310,8 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](
                                                               instanceArr: Array[T]
                                                             )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
+    // in called in a converter, a broadcast Rtree will pass in and this line will not execute
+    if(rTree.isEmpty) rTree = Some(Utils.buildRTree(spatials, temporals))
     val entryIndexToInstance = getEntryIndexToObjRTree(instanceArr, "both")
     createRaster(entryIndexToInstance)
   }

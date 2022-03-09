@@ -188,7 +188,19 @@ class TimeSeriesSpec extends AnyFunSpec with Matchers {
         eventTs1.entries.map(_.value) ++ eventTs1.entries.map(_.value)
     }
 
-//    it("ts rdd functions work") {
+    it("can allocate Instance objects with Rtree") {
+      /** check if allocateInstance and allocateInstanceRTree result the same */
+      val pointInstanceArr = pointArr.map(p => Event(p, Duration(0)))
+      val pointTs = TimeSeries.empty[Event[Point, None.type, None.type]](durationArr)
+        .attachInstanceRTree(pointInstanceArr)
+      val pointTs2 = TimeSeries.empty[Event[Point, None.type, None.type]](durationArr)
+        .attachInstance(pointInstanceArr)
+
+      pointTs.entries.map(_.value) shouldBe pointTs2.entries.map(_.value)
+    }
+
+
+    //    it("ts rdd functions work") {
 //      val sc = SparkSession.builder().master("local[2]")
 //        .appName("test").getOrCreate().sparkContext
 //      val ts1 = TimeSeries(Array(Duration(0), Duration(1), Duration(2)), Array(Array(Point(0, 0)), Array(Point(1, 1)), Array(Point(2, 2))))

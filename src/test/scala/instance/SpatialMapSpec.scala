@@ -4,7 +4,7 @@ import st4ml.instances._
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
-class SpatialMapSpec extends AnyFunSpec with Matchers{
+class SpatialMapSpec extends AnyFunSpec with Matchers {
   describe("SpatialMap") {
     val extendArrOverlapping: Array[Extent] = Array(
       Extent(0, 0, 1, 1),
@@ -80,13 +80,59 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
         Array(polygonArr(1), polygonArr(2)),
       )
     }
+    it("can allocate Instance objects with Rtree") {
+      /** check if allocateInstance and allocateInstanceRTree result the same */
+      val pointInstanceArr = pointArr.map(p => Event(p, Duration(0)))
+      val pointSm = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
+        .attachInstanceRTree(pointInstanceArr, pointArr)
+      val pointSm2 = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
+        .attachInstance(pointInstanceArr, pointArr)
+
+      val lineStringInstanceArr = lineStringArr.map(p => Event(p, Duration(0)))
+      val lineStringSm = SpatialMap.empty[Event[LineString, None.type, None.type]](extendArrDisjoint)
+        .attachInstanceRTree(lineStringInstanceArr, lineStringArr)
+      val lineStringSm2 = SpatialMap.empty[Event[LineString, None.type, None.type]](extendArrDisjoint)
+        .attachInstance(lineStringInstanceArr, lineStringArr)
+
+      val polygonInstanceArr = polygonArr.map(p => Event(p, Duration(0)))
+      val polygonSm = SpatialMap.empty[Event[Polygon, None.type, None.type]](extendArrDisjoint)
+        .attachInstanceRTree(polygonInstanceArr, polygonArr)
+      val polygonSm2 = SpatialMap.empty[Event[Polygon, None.type, None.type]](extendArrDisjoint)
+        .attachInstance(polygonInstanceArr, polygonArr)
+
+      pointSm.entries.map(_.value) shouldBe pointSm2.entries.map(_.value)
+      lineStringSm.entries.map(_.value) shouldBe lineStringSm2.entries.map(_.value)
+      polygonSm.entries.map(_.value) shouldBe polygonSm2.entries.map(_.value)
+
+
+      //      pointSm.entries.map(_.value) shouldBe Array(
+      //        Array(pointInstanceArr(0), pointInstanceArr(1), pointInstanceArr(2)),
+      //        Array.empty[Point],
+      //        Array(pointInstanceArr(3)),
+      //        Array.empty[Point]
+      //      )
+      //
+      //      lineStringSm.entries.map(_.value) shouldBe Array(
+      //        Array(lineStringInstanceArr(0), lineStringInstanceArr(1), lineStringInstanceArr(2)),
+      //        Array(lineStringInstanceArr(1), lineStringInstanceArr(2)),
+      //        Array.empty[LineString],
+      //        Array.empty[LineString]
+      //      )
+
+      //      polygonSm.entries.map(_.value) shouldBe Array(
+      //        Array(pointInstanceArr(0), pointInstanceArr(1), pointInstanceArr(2)),
+      //        Array(pointInstanceArr(1), pointInstanceArr(2)),
+      //        Array(pointInstanceArr(1), pointInstanceArr(2)),
+      //        Array(pointInstanceArr(1), pointInstanceArr(2)),
+      //      )
+    }
 
     //    it("won't compile when attach mismatched Geometry objects") {
     //      val mismatchedSm = SpatialMap.empty[LineString](extendArrDisjoint)
     //        .attachGeometry(pointArr)
     //    }
 
-    it("can allocate Instance objects based on the input st4ml.geometry") {
+    it("can allocate Instance objects based on the input geometry") {
       val eventGeom = eventArr.flatMap(_.entries.map(_.spatial))
       val eventSm = SpatialMap.empty[Event[Point, None.type, None.type]](extendArrDisjoint)
         .attachInstance(eventArr, eventGeom)
@@ -156,7 +202,6 @@ class SpatialMapSpec extends AnyFunSpec with Matchers{
         Array.empty[Point]
       )
     }
-
 
 
   }

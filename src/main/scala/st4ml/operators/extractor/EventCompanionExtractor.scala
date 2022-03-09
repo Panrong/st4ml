@@ -43,7 +43,7 @@ class EventCompanionExtractor(sThreshold: Double,
         (i.data, i.entries.head.spatial.x, i.entries.head.spatial.y, i.entries.head.temporal.start,
           j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start)
       companion.toIterator
-    }
+    }.distinct
   }
 
   def isCompanion(a: Event[Point, None.type, String], b: Event[Point, None.type, String],

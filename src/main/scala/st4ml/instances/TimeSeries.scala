@@ -11,7 +11,6 @@ class TimeSeries[V, D](
   lazy val spatials: Array[Polygon] = temporals.map(_ => Polygon.empty)
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
   var rTree: Option[RTree[Polygon]] = None
-  //  var intervalTree: Option[IntervalTree[Int]] = None
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 
@@ -225,6 +224,8 @@ class TimeSeries[V, D](
 
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
                                                             (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
+    // in called in a converter, a broadcast Rtree will pass in and this line will not execute
+    if(rTree.isEmpty) rTree = Some(Utils.buildRTree(temporals))
     val durationArr = instanceArr.map(_.duration)
     val entryIndexToInstance = getTemporalIndexToObjRTree(instanceArr, durationArr)
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)

@@ -10,7 +10,9 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   lazy val spatials: Array[S] = entries.map(_.spatial)
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
-  //  var rTreeDeprecated: Option[RTreeDeprecated[st4ml.geometry.Rectangle]] = None
+
+  // the rTree is built when 1) explicitly call attachInstanceRTree function or
+  // 2) convert event/traj to spatial map with optimization
   var rTree: Option[RTree[S]] = None
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
@@ -135,6 +137,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     else
       getBinIndices(spatials, geomArr)
   }
+
   def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G]): Array[Array[Int]] = {
     getBinIndicesRTree(rTree.get, geomArr)
   }
@@ -212,17 +215,10 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
     createSpatialMap(entryIndexToInstance)
   }
 
-
-  //  def attachInstanceRTreeDeprecated[T <: Instance[_,_,_] : ClassTag, G <: Geometry: ClassTag]
-  //  (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[Array[T], D] = {
-  //    require(instanceArr.length == geomArr.length,
-  //      "the length of two arguments must match")
-  //    val entryIndexToInstance = getSpatialIndexToObjRTreeDeprecated(instanceArr, geomArr)
-  //    createSpatialMap(entryIndexToInstance)
-  //  }
-
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag, G <: Geometry : ClassTag]
   (instanceArr: Array[T], geomArr: Array[G])(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = {
+    // in called in a converter, a broadcast Rtree will pass in and this line will not execute
+    if (rTree.isEmpty) rTree = Some(Utils.buildRTree(spatials))
     require(instanceArr.length == geomArr.length,
       "the length of two arguments must match")
     val entryIndexToInstance = getSpatialIndexToObjRTree(instanceArr, geomArr)
