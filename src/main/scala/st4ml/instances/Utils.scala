@@ -55,6 +55,13 @@ object Utils {
     RTree[T](entries, r)
   }
 
+
+  def buildRTree[T <: Geometry : ClassTag](geomArr: Array[Event[T, None.type, String]]): RTree[T] = {
+    val r = math.sqrt(geomArr.length).toInt
+    val entries = geomArr.zipWithIndex.map(x => (x._1.entries.head.spatial, x._1.data, x._2))
+    RTree[T](entries, r)
+  }
+
   // 3d rtree for raster
   def buildRTree[T <: Geometry : ClassTag](geomArr: Array[T],
                                            durArr: Array[Duration]): RTree[T] = {

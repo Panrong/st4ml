@@ -98,6 +98,8 @@ class RasterSpec extends AnyFunSpec with Matchers {
     }
 
     it("can allocate Instance objects with Rtree") {
+      println(Polygon(Point(0,0), Point(1,1), Point(1, 0), Point( 0,0)))
+
       /** check if allocateInstance and allocateInstanceRTree result the same */
       val pointInstanceArr = pointArr.map(p => Event(p, Duration(0)))
       val pointRaster = Raster.empty[Event[Point, None.type, None.type]](sBins, tBins)
