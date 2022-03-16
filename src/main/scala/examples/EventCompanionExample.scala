@@ -26,7 +26,7 @@ object EventCompanionExample {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
-      //      .master("local[8]") // TODO remove when deploying
+      // .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
       .getOrCreate()
     import spark.implicits._
@@ -73,7 +73,9 @@ object EventCompanionExample {
       println(s"results saved at '${saveRes.get}'")
     }
     else {
-      println(extractedRDD.count)
+      val extractedNative = extractor.extractNative(eventRDD).collect.toSet
+      val extractedOptimized = extractedRDD.collect.toSet
+      println(extractedNative.diff(extractedOptimized)) // should be empty
       extractedRDD.take(5).foreach(println)
     }
 

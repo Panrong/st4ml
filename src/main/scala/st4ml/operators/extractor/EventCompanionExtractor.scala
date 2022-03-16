@@ -57,9 +57,8 @@ class EventCompanionExtractor(sThreshold: Double,
     val partitionedRDD = partitioner.partitionWDup(rdd).mapPartitionsWithIndex { case (id, p) => p.map(x => (id, x)) }
     //    println(partitionedRDD.count)
     //    partitionedRDD.map(x => (x._2, x._1)).calPartitionInfo.foreach(println)
-
-    val joinedRDD = partitionedRDD.join(partitionedRDD).filter(x => x._2._1.data.hashCode < x._2._2.data.hashCode // for (a, b) and (b, a), calculate only once
-      && isCompanion(x._2._1, x._2._2, sThreshold, tThreshold))
+    val joinedRDD = partitionedRDD.join(partitionedRDD).filter(x => x._2._1.data.hashCode < x._2._2.data.hashCode && // for (a, b) and (b, a), calculate only once
+      isCompanion(x._2._1, x._2._2, sThreshold, tThreshold))
       .map { case (_, (i, j)) =>
         (i.data, i.entries.head.spatial.x, i.entries.head.spatial.y, i.entries.head.temporal.start,
           j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start,
@@ -95,9 +94,9 @@ class EventCompanionExtractor(sThreshold: Double,
 
   def extractNative(rdd: RDD[Event[Point, None.type, String]]): RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
     val joinedRDD = rdd.cartesian(rdd).map { case (i, j) =>
-      (i.data, i.entries.head.spatial.x, i.entries.head.spatial.y, i.entries.head.temporal.start,
-        j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start, i.entries.head.temporal.start - j.entries.head.temporal.start,
-        i.entries.head.spatial.greatCircle(j.entries.head.spatial))
+      (i.data, i.spatialCenter.x, i.spatialCenter.y, i.temporalCenter,
+        j.data, j.spatialCenter.x, j.spatialCenter.y, j.temporalCenter, i.temporalCenter - j.temporalCenter,
+        i.spatialCenter.greatCircle(j.spatialCenter))
     }.filter(x => x._1.hashCode < x._5.hashCode && math.abs(x._9) <= tThreshold && x._10 <= sThreshold)
     joinedRDD
   }
@@ -105,7 +104,7 @@ class EventCompanionExtractor(sThreshold: Double,
   def isCompanion(a: Event[Point, None.type, String], b: Event[Point, None.type, String],
                   sThreshold: Double, tThreshold: Double): Boolean = {
     if (math.abs(a.temporalCenter - b.temporalCenter) <= tThreshold &&
-      a.entries.head.spatial.greatCircle(b.entries.head.spatial) <= sThreshold) true
+      a.spatialCenter.greatCircle(b.spatialCenter) <= sThreshold) true
     else false
   }
 }

@@ -31,7 +31,7 @@ class TSTRPartitioner(tNumPartition: Int,
     for (i <- 0 until tNumPartition) {
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
         .map(x => Event(x.spatialCenter, Duration(0))) // the duration is not used, just put 0 to make it instance
-      val sRanges = getPartitionRange(samples)
+      val sRanges = getPartitionRange(samples, Some(getWholeSpatialRange(dataRDD)))
       for (s <- sRanges)
         stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
@@ -60,6 +60,7 @@ class TSTRPartitioner(tNumPartition: Int,
   }
 
   override def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+    val spatialRange = getWholeSpatialRange(dataRDD)
     val temporalPartitioner = new TemporalPartitioner(tNumPartition, samplingRate, ref)
     val tPartitionRdd = temporalPartitioner.partitionWithOverlap(dataRDD, tThreshold)
     val tRanges = temporalPartitioner.slots.zipWithIndex.map(_.swap).toMap
@@ -70,11 +71,11 @@ class TSTRPartitioner(tNumPartition: Int,
     val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
     for (i <- 0 until tNumPartition) {
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
-      val sRanges = getPartitionRange(samples)
+      val sRanges = getPartitionRange(samples, Some(spatialRange))
       for (s <- sRanges)
         stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
-//    stRanges.toArray.sortBy(_._1).foreach(println)
+    //    stRanges.toArray.sortBy(_._1).foreach(println)
     val idxRDD = dataRDD.flatMap(x => {
       stRanges.filter(st => x.intersects(st._2._2, st._2._1)).keys
         .map(i => (i, x))
@@ -83,7 +84,8 @@ class TSTRPartitioner(tNumPartition: Int,
       .map(_._2)
   }
 
-  def getPartitionRange[T <: Instance[_, _, _] : ClassTag](instances: Array[T]): Map[Int, Extent] = {
+  def getPartitionRange[T <: Instance[_, _, _] : ClassTag](instances: Array[T],
+                                                           spatialRange: Option[Array[Double]] = None): Map[Int, Extent] = {
     def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
       val interval = 1.0 / n
       var t: Double = 0
@@ -171,7 +173,7 @@ class TSTRPartitioner(tNumPartition: Int,
         y_boundaries = y_boundaries :+ y_boundary
       }
       if (coverWholeRange) {
-        val wholeRange = getWholeRange(df, List("x", "y"))
+        val wholeRange = spatialRange.getOrElse(getWholeRange(df, List("x", "y")))
         val new_boundaries = replaceBoundary(x_boundaries, y_boundaries, wholeRange)
         x_boundaries = new_boundaries._1
         y_boundaries = new_boundaries._2
@@ -193,6 +195,14 @@ class TSTRPartitioner(tNumPartition: Int,
     }
     if (sThreshold != 0) boxesWIthID.mapValues(rectangle => rectangle.expandBy(sThreshold)).map(identity)
     else boxesWIthID
+  }
+
+  def getWholeSpatialRange[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): Array[Double] = {
+    val xMin = dataRDD.map(_.extent.xMin).min
+    val xMax = dataRDD.map(_.extent.xMax).max
+    val yMin = dataRDD.map(_.extent.yMin).min
+    val yMax = dataRDD.map(_.extent.yMax).max
+    Array(xMin, yMin, xMax, yMax)
   }
 }
 
