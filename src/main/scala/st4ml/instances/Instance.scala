@@ -82,6 +82,7 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
   override def hashCode(): Int =
     31 * entries.## + data.##
 
+  def setData[D1](data: D1): Instance[S, V, D1]
 }
 
 

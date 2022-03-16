@@ -74,6 +74,18 @@ object Utils {
     RTree[T](entries, r, dimension = 3)
   }
 
+  def buildRTree3d[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T]): RTree[Polygon] = {
+    val r = math.sqrt(instanceArr.length).toInt
+    var entries = new Array[(Polygon, String, Int)](0)
+    val geomArr = instanceArr.map(_.extent.toPolygon)
+    val durArr = instanceArr.map(_.duration)
+    for (i <- instanceArr.indices) {
+      geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
+      entries = entries :+ (geomArr(i).copy.asInstanceOf[Polygon], instanceArr(i).data.toString, i)
+    }
+    RTree[Polygon](entries, r, dimension = 3)
+  }
+
   implicit class smRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, V, D]]) {
     def mapValuePlus[V1](f: (V, S, Duration) => V1): RDD[SpatialMap[S, V1, D]] =
       rdd.map(x => x.mapValuePlus(f))

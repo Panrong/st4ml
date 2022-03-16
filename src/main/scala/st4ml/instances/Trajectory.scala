@@ -3,8 +3,8 @@ package st4ml.instances
 import GeometryImplicits.withExtraPointOps
 
 class Trajectory[V, D](
-  override val entries: Array[Entry[Point, V]],
-  override val data: D)
+                        override val entries: Array[Entry[Point, V]],
+                        override val data: D)
   extends Instance[Point, V, D] {
 
   require(validation,
@@ -41,9 +41,9 @@ class Trajectory[V, D](
       data)
 
   override def mapEntries[V1](
-    f1: Point => Point,
-    f2: Duration => Duration,
-    f3: V => V1): Trajectory[V1, D] =
+                               f1: Point => Point,
+                               f2: Duration => Duration,
+                               f3: V => V1): Trajectory[V1, D] =
     Trajectory(
       entries.map(entry =>
         Entry(
@@ -83,15 +83,15 @@ class Trajectory[V, D](
       }.toArray
       case _ => throw new Exception(
         s"""Invalid metric: the input metric should be either "euclidean" or "greatCircle"
-          | but got $metric
-          |""".stripMargin)
+           | but got $metric
+           |""".stripMargin)
     }
   }
 
   def consecutiveSpatialDistance(metric: (Point, Point) => Double): Array[Double] = {
     spatialSliding(2).map {
-        case Array(p1, p2) => metric(p1, p2)
-      }.toArray
+      case Array(p1, p2) => metric(p1, p2)
+    }.toArray
   }
 
   def consecutiveTemporalDistance(metric: String): Array[Long] = {
@@ -116,20 +116,20 @@ class Trajectory[V, D](
   }
 
   def mapConsecutive(
-    f: (Array[Double], Array[Long]) => Array[Double],
-    spatialMetric: String = "euclidean",
-    temporalMetric: String = "start"
-  ): Array[Double] = {
+                      f: (Array[Double], Array[Long]) => Array[Double],
+                      spatialMetric: String = "euclidean",
+                      temporalMetric: String = "start"
+                    ): Array[Double] = {
     val csd = consecutiveSpatialDistance(spatialMetric)
     val ctd = consecutiveTemporalDistance(temporalMetric)
     f(csd, ctd)
   }
 
   def mapConsecutive(
-    f: (Array[Double], Array[Long]) => Array[Double],
-    spatialMetric: (Point, Point) => Double,
-    temporalMetric: (Duration, Duration) => Long
-  ): Array[Double] = {
+                      f: (Array[Double], Array[Long]) => Array[Double],
+                      spatialMetric: (Point, Point) => Double,
+                      temporalMetric: (Duration, Duration) => Long
+                    ): Array[Double] = {
     val csd = consecutiveSpatialDistance(spatialMetric)
     val ctd = consecutiveTemporalDistance(temporalMetric)
     f(csd, ctd)
@@ -162,31 +162,33 @@ class Trajectory[V, D](
   }
 
   def sortByEntry(
-    entrySorter: Entry[Point, V] => Double,
-    ascending: Boolean = true): Trajectory[V, D] = {
+                   entrySorter: Entry[Point, V] => Double,
+                   ascending: Boolean = true): Trajectory[V, D] = {
     val sign = if (ascending) 1 else -1
-    Trajectory(entries.sortBy(x => entrySorter(x)  * sign), data)
+    Trajectory(entries.sortBy(x => entrySorter(x) * sign), data)
   }
 
   def reverse: Trajectory[V, D] =
     Trajectory(entries.reverse, data)
 
   def merge(
-    other: Trajectory[V, D],
-    dataCombiner: (D, D) => D
-  ): Trajectory[V, D] =
+             other: Trajectory[V, D],
+             dataCombiner: (D, D) => D
+           ): Trajectory[V, D] =
     Trajectory(entries ++ other.entries, dataCombiner(data, other.data))
 
   def mergeAndSort(
-    other: Trajectory[V, D],
-    dataCombiner: (D, D) => D,
-    entrySorter: Entry[Point, V] => Double
-  ): Trajectory[V, D] =
+                    other: Trajectory[V, D],
+                    dataCombiner: (D, D) => D,
+                    entrySorter: Entry[Point, V] => Double
+                  ): Trajectory[V, D] =
     Trajectory((entries ++ other.entries).sortBy(x => entrySorter(x)),
       dataCombiner(data, other.data))
 
   override def toGeometry: LineString =
     LineString(entries.map(_.spatial))
+
+  override def setData[D1](newData: D1): Trajectory[V, D1] = new Trajectory(entries, newData)
 
 }
 
@@ -203,11 +205,13 @@ object Trajectory {
   def apply[V](arr: Array[(Point, Duration, V)]): Trajectory[V, None.type] =
     new Trajectory(arr.map(Entry(_)), None)
 
-  def apply[V, D](
-    pointArr: Array[Point],
-    durationArr: Array[Duration],
-    valueArr: Array[V],
-    d2: D): Trajectory[V, D] = {
+  def apply(arr: Array[(Point, Duration)]): Trajectory[None.type, None.type] =
+    new Trajectory(arr.map(x => Entry(x._1, x._2, None)), None)
+
+  def apply[V, D](pointArr: Array[Point],
+                  durationArr: Array[Duration],
+                  valueArr: Array[V],
+                  d2: D): Trajectory[V, D] = {
     require(pointArr.length == durationArr.length,
       "the length of second argument should match the length of first argument")
     require(pointArr.length == valueArr.length,
@@ -216,10 +220,9 @@ object Trajectory {
     new Trajectory(entries, d2)
   }
 
-  def apply[V](
-    pointArr: Array[Point],
-    durationArr: Array[Duration],
-    valueArr: Array[V]): Trajectory[V, None.type] = {
+  def apply[V](pointArr: Array[Point],
+               durationArr: Array[Duration],
+               valueArr: Array[V]): Trajectory[V, None.type] = {
     require(pointArr.length == durationArr.length,
       "the length of second argument should match the length of first argument")
     require(pointArr.length == valueArr.length,
@@ -228,24 +231,23 @@ object Trajectory {
     new Trajectory(entries, None)
   }
 
-  // todo: delete or find a way around
-//  def apply[D](
-//    pointArr: Array[Point],
-//    durationArr: Array[Duration],
-//    d: D): Trajectory[None.type, D] = {
-//    require(pointArr.length == durationArr.length,
-//      "the length of second argument should match the length of first argument")
-//    val entries = (pointArr, durationArr).zipped.toArray.map(Entry(_))
-//    new Trajectory(entries, d)
-//  }
-
-  def apply(
-    pointArr: Array[Point],
-    durationArr: Array[Duration]): Trajectory[None.type, None.type] = {
+  def apply(pointArr: Array[Point],
+               durationArr: Array[Duration]): Trajectory[None.type, None.type] = {
     require(pointArr.length == durationArr.length,
       "the length of second argument should match the length of first argument")
     val entries = (pointArr, durationArr).zipped.toArray.map(Entry(_))
     new Trajectory(entries, None)
   }
+
+  // todo: delete or find a way around
+  //  def apply[D](
+  //    pointArr: Array[Point],
+  //    durationArr: Array[Duration],
+  //    d: D): Trajectory[None.type, D] = {
+  //    require(pointArr.length == durationArr.length,
+  //      "the length of second argument should match the length of first argument")
+  //    val entries = (pointArr, durationArr).zipped.toArray.map(Entry(_))
+  //    new Trajectory(entries, d)
+  //  }
 
 }

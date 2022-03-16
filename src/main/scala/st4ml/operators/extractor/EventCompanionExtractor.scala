@@ -1,10 +1,11 @@
 package st4ml.operators.extractor
 
-import st4ml.instances.{Event, Point, RTree}
+import st4ml.instances.{Event, Point}
 import st4ml.operators.selector.partitioner.TSTRPartitioner
 import org.apache.spark.rdd.RDD
 import st4ml.instances.GeometryImplicits._
-import st4ml.instances.Utils.buildRTree
+import st4ml.instances.Utils.buildRTree3d
+import st4ml.operators.selector.SelectionUtils.InstanceWithIdFuncs
 
 /**
  * Extract companion relationship from point-shaped events
@@ -52,8 +53,10 @@ class EventCompanionExtractor(sThreshold: Double,
   def extractDetailV2(rdd: RDD[Event[Point, None.type, String]]):
   RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
     val partitioner = new TSTRPartitioner(tPartition, sPartition,
-      sThreshold = sThreshold, tThreshold = tThreshold, samplingRate = Some(0.2))
+      sThreshold = sThreshold / 111000 / 2, tThreshold = tThreshold / 2, samplingRate = Some(0.2))
     val partitionedRDD = partitioner.partitionWDup(rdd).mapPartitionsWithIndex { case (id, p) => p.map(x => (id, x)) }
+    //    println(partitionedRDD.count)
+    //    partitionedRDD.map(x => (x._2, x._1)).calPartitionInfo.foreach(println)
 
     val joinedRDD = partitionedRDD.join(partitionedRDD).filter(x => x._2._1.data.hashCode < x._2._2.data.hashCode // for (a, b) and (b, a), calculate only once
       && isCompanion(x._2._1, x._2._2, sThreshold, tThreshold))
@@ -63,9 +66,31 @@ class EventCompanionExtractor(sThreshold: Double,
           i.entries.head.temporal.start - j.entries.head.temporal.start,
           i.entries.head.spatial.greatCircle(j.entries.head.spatial))
       }
-    val resRDD = joinedRDD.filter(x => math.abs(x._9) <= tThreshold && x._10 <= sThreshold).distinct
-
+    val resRDD = joinedRDD.distinct
     resRDD
+  }
+
+  //  not working
+  def extractDetailV3(rdd: RDD[Event[Point, None.type, String]]):
+  RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
+    val partitioner = new TSTRPartitioner(tPartition, sPartition,
+      sThreshold = sThreshold / 111000 / 2, tThreshold = tThreshold / 2, samplingRate = Some(0.2))
+    val pRDD = partitioner.partition(rdd)
+    pRDD.mapPartitions(x => Iterator(x.size)).collect.foreach(println)
+    partitioner.partitionWDup(rdd).mapPartitions(x => Iterator(x.size)).collect.foreach(println)
+    val pRDD2 = partitioner.partitionWDup(rdd).mapPartitions { x =>
+      val arr = x.toArray
+      Iterator(buildRTree3d(arr))
+    }
+    val combined = pRDD.zipPartitions(pRDD2, true) {
+      case (p1, p2) =>
+        val rtree = p2.next()
+        p1.flatMap(x => rtree.range3d(x).filter(y => y._2 != x.data).map(y => (x, y)))
+    }
+    combined.map(x => (x._1.data, x._1.spatialCenter.x, x._1.spatialCenter.y, x._1.temporalCenter,
+      x._2._2, x._2._1.getCentroid.x, x._2._1.getCentroid.y, x._2._1.getUserData.asInstanceOf[Array[Double]].head.toLong,
+      x._1.temporalCenter - x._2._1.getUserData.asInstanceOf[Array[Double]].head.toLong,
+      x._1.spatialCenter.greatCircle(x._2._1)))
   }
 
   def extractNative(rdd: RDD[Event[Point, None.type, String]]): RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {

@@ -16,8 +16,8 @@ object SelectionUtils {
                            count: Long
                           )
 
-  implicit class InstanceFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[T]) {
-    def calPartitionInfo(rdd: RDD[(T, Int)]): Array[(Int, Extent, Duration, Int)] = {
+  implicit class InstanceWithIdFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[(T, Int)]) {
+    def calPartitionInfo: Array[(Int, Extent, Duration, Int)] = {
       rdd.mapPartitionsWithIndex {
         case (id, iter) =>
           var xMin = 180.0
@@ -43,7 +43,9 @@ object SelectionUtils {
       }.filter(_.isDefined).map(_.get)
         .collect
     }
+  }
 
+  implicit class InstanceFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[T]) {
     def stPartition[P <: STPartitioner : ClassTag](partitioner: P): RDD[T] = partitioner.partition(rdd)
 
     def stPartitionWithInfo[P <: STPartitioner : ClassTag](partitioner: P,
@@ -53,7 +55,7 @@ object SelectionUtils {
       val pRDD = partitionedRDD.mapPartitionsWithIndex {
         case (idx, partition) => partition.map(x => (x, idx))
       }
-      val pInfo = calPartitionInfo(pRDD).map(x =>
+      val pInfo = pRDD.calPartitionInfo.map(x =>
         PartitionInfo(x._1, Array(x._2.xMin, x._2.yMin, x._2.xMax, x._2.yMax), Array(x._3.start, x._3.end), x._4)
       )
       (pRDD, pInfo)

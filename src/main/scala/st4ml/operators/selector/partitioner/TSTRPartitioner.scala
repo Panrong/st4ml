@@ -61,13 +61,9 @@ class TSTRPartitioner(tNumPartition: Int,
 
   override def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
     val temporalPartitioner = new TemporalPartitioner(tNumPartition, samplingRate, ref)
-    val tPartitionRdd = temporalPartitioner.partition(dataRDD)
-    val tRanges = tPartitionRdd.mapPartitionsWithIndex {
-      case (idx, iter) =>
-        val arr = iter.map(_.duration).toArray
-        Iterator((idx, Duration(arr.map(_.start).min, arr.map(_.end).max)))
-    }.collect.toMap
-    var stRanges = mutable.Map.empty[Int, (Duration, Extent)]
+    val tPartitionRdd = temporalPartitioner.partitionWithOverlap(dataRDD, tThreshold)
+    val tRanges = temporalPartitioner.slots.zipWithIndex.map(_.swap).toMap
+    val stRanges = mutable.Map.empty[Int, (Duration, Extent)]
     val tSplitRdd = tPartitionRdd.mapPartitionsWithIndex {
       case (idx, iter) => iter.map(x => (idx, x))
     }
@@ -76,8 +72,9 @@ class TSTRPartitioner(tNumPartition: Int,
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
       val sRanges = getPartitionRange(samples)
       for (s <- sRanges)
-        stRanges += ((i * tNumPartition + s._1) -> (tRanges(i), s._2))
+        stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
+//    stRanges.toArray.sortBy(_._1).foreach(println)
     val idxRDD = dataRDD.flatMap(x => {
       stRanges.filter(st => x.intersects(st._2._2, st._2._1)).keys
         .map(i => (i, x))

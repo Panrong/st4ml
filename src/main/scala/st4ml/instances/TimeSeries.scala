@@ -225,7 +225,7 @@ class TimeSeries[V, D](
   def attachInstanceRTree[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T])
                                                             (implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = {
     // in called in a converter, a broadcast Rtree will pass in and this line will not execute
-    if(rTree.isEmpty) rTree = Some(Utils.buildRTree(temporals))
+    if (rTree.isEmpty) rTree = Some(Utils.buildRTree(temporals))
     val durationArr = instanceArr.map(_.duration)
     val entryIndexToInstance = getTemporalIndexToObjRTree(instanceArr, durationArr)
     createTimeSeries(entryIndexToInstance, Utils.getPolygonFromInstanceArray)
@@ -312,6 +312,9 @@ class TimeSeries[V, D](
     val newEntries = entries.sortBy(x => x.temporal.start)
     new TimeSeries[V, D](newEntries, data)
   }
+
+  override def setData[D1](newData: D1): TimeSeries[V, D1] = new TimeSeries(entries, newData)
+
 }
 
 object TimeSeries {

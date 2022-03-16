@@ -412,6 +412,9 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
 
   override def toGeometry: Polygon = extent.toPolygon
 
+  override def setData[D1](newData: D1): Raster[S, V, D1] = new Raster(entries, newData)
+
+
 }
 
 object Raster {

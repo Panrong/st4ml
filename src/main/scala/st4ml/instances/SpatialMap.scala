@@ -2,8 +2,7 @@ package st4ml.instances
 
 import scala.reflect.ClassTag
 
-class SpatialMap[S <: Geometry : ClassTag, V, D](
-                                                  override val entries: Array[Entry[S, V]],
+class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S, V]],
                                                   override val data: D)
   extends Instance[S, V, D] {
 
@@ -293,6 +292,9 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](
   }
 
   override def toGeometry: Polygon = extent.toPolygon
+
+  override def setData[D1](newData: D1): SpatialMap[S, V, D1] = new SpatialMap(entries, newData)
+
 }
 
 object SpatialMap {

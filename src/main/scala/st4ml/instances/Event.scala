@@ -65,6 +65,12 @@ case class Event[S <: Geometry, V, D](entries: Array[Entry[S, V]],
 
   override def toGeometry: Geometry =
     entries(0).spatial
+
+  override def setData[D1](newData: D1): Event[S, V, D1] = new Event(entries, newData)
+
+  override def spatialCenter: Point = this.entries.head.spatialCenter
+
+  override def temporalCenter: Long = this.entries.head.temporalCenter
 }
 
 object Event {
