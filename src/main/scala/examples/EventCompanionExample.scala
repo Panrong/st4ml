@@ -26,7 +26,7 @@ object EventCompanionExample {
       Some(TimeParsing.date2Long(date.get))
     } else None
     val spark = SparkSession.builder()
-      // .master("local[8]") // TODO remove when deploying
+       .master("local[8]") // TODO remove when deploying
       .appName("EventCompanionExample")
       .getOrCreate()
     import spark.implicits._

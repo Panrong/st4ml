@@ -9,14 +9,14 @@ object AddNoise {
   def main(args: Array[String]): Unit = {
     val fileDir = args(0)
     val resDir = args(1)
-    val deviation1 = args(2).toDouble //1.8018e-4, 200m
-    val deviation2 = args(3).toDouble //1200
+    val deviation1 = args(2).toDouble //1.8018e-4, 20m
+    val deviation2 = args(3).toDouble //120
     val copies = args(4).toInt
     val r = new scala.util.Random
 
     val spark = SparkSession.builder()
       .appName("addNoise")
-      .master("local[4]")
+      //.master("local[4]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")

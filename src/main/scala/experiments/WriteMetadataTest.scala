@@ -21,9 +21,8 @@ object WriteMetadataTest extends App {
   val res = args(2)
   val metadata = args(3)
   val m = args(4)
-  val stRatio = args(5).toDouble
-  val sNumPartitions = math.sqrt(numPartitions / stRatio).toInt
-  val tNumPartitions = numPartitions / sNumPartitions
+  val sNumPartitions =  args(5).toInt
+  val tNumPartitions = args(6).toInt
   val spark = SparkSession.builder()
     .appName("MetaDataTest")
     .master(Config.get("master"))
