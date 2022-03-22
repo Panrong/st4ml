@@ -42,7 +42,7 @@ object SelectionTest {
           val events = x.toArray.zipWithIndex.map { y =>
             (y._1.spatialCenter, y._2.toString, y._2)
           }
-          Iterator(RTree[Point](events, scala.math.sqrt(events.length).toInt))
+          Iterator(RTree[Point, String](events, scala.math.sqrt(events.length).toInt))
       }
       println(sQuery.take(lim).map(s => rTreeRDD.map(x => x.range(s)).count).sum)
       println(s"rtree time: ${(nanoTime - t) * 1e-9} s")

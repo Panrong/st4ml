@@ -10,9 +10,9 @@ class Traj2TimeSeriesConverter(tArray: Array[Duration],
                                override val optimization: String = "rtree") extends Converter {
 
   val tMap: Array[(Int, Duration)] = tArray.sortBy(_.start).zipWithIndex.map(_.swap)
-  var rTree: Option[RTree[Polygon]] = None
+  var rTree: Option[RTree[Polygon, String]] = None
 
-  def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
+  def buildRTree(temporals: Array[Duration]): RTree[Polygon, String] = {
     val r = math.sqrt(temporals.length).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- temporals.zipWithIndex) {
@@ -20,7 +20,7 @@ class Traj2TimeSeriesConverter(tArray: Array[Duration],
       p.setUserData(Array(i._1.start.toDouble, i._1.end.toDouble))
       entries = entries :+ (p.copy.asInstanceOf[Polygon], i._2.toString, i._2)
     }
-    RTree[Polygon](entries, r, dimension = 3)
+    RTree[Polygon, String](entries, r, dimension = 3)
   }
 
   def convert[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]]): RDD[TimeSeries[Array[Trajectory[V, D]], None.type]] = {

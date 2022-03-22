@@ -1,9 +1,6 @@
 package st4ml.instances
 
-import org.apache.spark.sql.SparkSession
-
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks
 import scala.reflect.ClassTag
 import st4ml.instances.GeometryImplicits._
@@ -14,35 +11,35 @@ abstract class RTreeEntry {
   def intersect(x: Geometry): Boolean
 }
 
-case class RTreeLeafEntry[T <: Geometry : ClassTag](shape: T, mData: String, size: Int) extends RTreeEntry {
+case class RTreeLeafEntry[T <: Geometry : ClassTag, D: ClassTag](shape: T, mData: D, size: Int) extends RTreeEntry {
   override def minDist(x: Geometry): Double = shape.distance(x)
 
   override def intersect(x: Geometry): Boolean = x.intersects(shape)
 }
 
-case class RTreeInternalEntry(mbr: Polygon, node: RTreeNode) extends RTreeEntry {
+case class RTreeInternalEntry[D: ClassTag](mbr: Polygon, node: RTreeNode[D]) extends RTreeEntry {
   override def minDist(x: Geometry): Double = mbr.distance(x)
 
   override def intersect(x: Geometry): Boolean = x.intersects(mbr)
 }
 
-case class RTreeNode(mMbr: Polygon, mChild: Array[RTreeEntry], isLeaf: Boolean) {
+case class RTreeNode[D: ClassTag](mMbr: Polygon, mChild: Array[RTreeEntry], isLeaf: Boolean) {
   val size: Long = {
-    if (isLeaf) mChild.map(x => x.asInstanceOf[RTreeLeafEntry[Geometry]].size).sum
-    else mChild.map(x => x.asInstanceOf[RTreeInternalEntry].node.size).sum
+    if (isLeaf) mChild.map(x => x.asInstanceOf[RTreeLeafEntry[Geometry, D]].size).sum
+    else mChild.map(x => x.asInstanceOf[RTreeInternalEntry[D]].node.size).sum
   }
 }
 
 object RTreeNode {
-  def apply(mMbr: Polygon, children: Array[(Polygon, RTreeNode)]): RTreeNode = {
+  def apply[D: ClassTag](mMbr: Polygon, children: Array[(Polygon, RTreeNode[D])]): RTreeNode[D] = {
     RTreeNode(mMbr, children.map(x => RTreeInternalEntry(x._1, x._2)), isLeaf = false)
   }
 
-  def apply[T <: Geometry : ClassTag](mMbr: Polygon, children: => Array[(T, String)]): RTreeNode = {
+  def apply[T <: Geometry : ClassTag, D: ClassTag](mMbr: Polygon, children: => Array[(T, D)]): RTreeNode[D] = {
     RTreeNode(mMbr, children.map(x => RTreeLeafEntry(x._1, x._2, 1)), isLeaf = true)
   }
 
-  def apply[T <: Geometry : ClassTag](mMbr: Polygon, children: Array[(T, String, Int)]): RTreeNode = {
+  def apply[T <: Geometry : ClassTag, D: ClassTag](mMbr: Polygon, children: Array[(T, D, Int)]): RTreeNode[D] = {
     RTreeNode(mMbr, children.map(x => RTreeLeafEntry(x._1, x._2, x._3)), isLeaf = true)
   }
 }
@@ -51,52 +48,56 @@ class NNOrdering() extends Ordering[(_, Double)] {
   def compare(a: (_, Double), b: (_, Double)): Int = -a._2.compare(b._2)
 }
 
-case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable {
+case class RTree[T <: Geometry : ClassTag, D: ClassTag](root: RTreeNode[D]) extends Serializable {
   var numEntries: Int = 0
   //  var count: Int = 0
 
-  def setNumEntries(n: Int): RTree[T] = {
+  def setNumEntries(n: Int): RTree[T, D] = {
     numEntries = n
     this
   }
 
-  def range[Q <: Geometry : ClassTag](query: Q): Array[(T, String)] = {
-    val ans = mutable.ArrayBuffer[(T, String)]()
-    val st = new mutable.Stack[RTreeNode]()
+  def range[Q <: Geometry : ClassTag](query: Q): Array[(T, D)] = {
+    val ans = mutable.ArrayBuffer[(T, D)]()
+    val st = new mutable.Stack[RTreeNode[D]]()
     if (root.mMbr.intersects(query) && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (query.intersects(mbr)) st.push(node)
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (query.intersects(y.mbr)) st.push(y.node)
         }
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape: T, mData, _) =>
-            if (query.intersects(shape)) ans += ((shape, mData))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (query.intersects(y.shape)) ans += ((y.shape, y.mData))
         }
       }
     }
     ans.toArray
   }
 
-  def distanceRange[Q <: Geometry : ClassTag](query: Q, distance: Double, meter: Boolean = true): Array[(T, String)] = {
+  def distanceRange[Q <: Geometry : ClassTag](query: Q, distance: Double, meter: Boolean = true): Array[(T, D)] = {
     val d = if (meter) distance / 111000 else distance
-    val ans = mutable.ArrayBuffer[(T, String)]()
-    val st = new mutable.Stack[RTreeNode]()
+    val ans = mutable.ArrayBuffer[(T, D)]()
+    val st = new mutable.Stack[RTreeNode[D]]()
     if (root.mMbr.intersects(query) && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (mbr.minDistance(query) <= d) st.push(node)
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (query.intersects(y.mbr)) st.push(y.node)
         }
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape: T, mData, _) =>
-            if (query.getCentroid.minDistance(shape) <= d) ans += ((shape, mData))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (query.intersects(y.shape)) ans += ((y.shape, y.mData))
         }
       }
     }
@@ -127,24 +128,26 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       !(dur(1) < duration.start || duration.end < dur(0))
   }
 
-  def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, String)] = {
-    val ans = mutable.ArrayBuffer[(T, String)]()
+  def range3d[Q <: Instance[_, _, _] : ClassTag](query: Q): Array[(T, D)] = {
+    val ans = mutable.ArrayBuffer[(T, D)]()
     val extent = query.extent
     val geometry = query.toGeometry
     val duration = query.duration
-    val st = new mutable.Stack[RTreeNode]()
+    val st = new mutable.Stack[RTreeNode[D]]()
     if (intersect(root.mMbr, extent, duration) && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (intersect(mbr, geometry, duration)) st.push(node)
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (query.intersects(y.mbr)) st.push(y.node)
         }
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape: T, mData, _) =>
-            if (intersect(shape, geometry, duration)) ans += ((shape, mData))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (intersect(y.shape, geometry, duration)) ans += ((y.shape, y.mData))
         }
       }
     }
@@ -157,22 +160,24 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     !(dur(1) < b._1 || b._2 < dur(0))
   }
 
-  def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, String)] = {
-    val ans = mutable.ArrayBuffer[(T, String)]()
-    var st = List[RTreeNode]()
+  def range1d[Q <: Geometry : ClassTag](query: (Long, Long)): Array[(T, D)] = {
+    val ans = mutable.ArrayBuffer[(T, D)]()
+    var st = List[RTreeNode[D]]()
     if (intersects1d(root.mMbr, query) && root.mChild.nonEmpty) st = st :+ root
     while (st.nonEmpty) {
       val now = st.last
       st = st.dropRight(1)
       if (!now.isLeaf) {
         now.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (intersects1d(mbr, query)) st = st :+ node
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (intersects1d(y.mbr, query)) st = st :+ y.node
         }
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape: T, mData, _) =>
-            if (intersects1d(shape, query)) ans += ((shape, mData))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (intersects1d(y.shape, query)) ans += ((y.shape, y.mData))
         }
       }
     }
@@ -181,9 +186,9 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     ans.toArray
   }
 
-  def range(query: Polygon, levelLimit: Int, sThreshold: Double): Option[Array[(T, String)]] = {
-    val ans = mutable.ArrayBuffer[(T, String)]()
-    val q = new mutable.Queue[(RTreeNode, Int)]()
+  def range(query: Polygon, levelLimit: Int, sThreshold: Double): Option[Array[(T, D)]] = {
+    val ans = mutable.ArrayBuffer[(T, D)]()
+    val q = new mutable.Queue[(RTreeNode[D], Int)]()
     if (root.mMbr.intersects(query) && root.mChild.nonEmpty) q.enqueue((root, 1))
     var estimate: Double = 0
     val loop = new Breaks
@@ -195,13 +200,15 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
         val cur_level = now._2
         if (cur_node.isLeaf) {
           cur_node.mChild.foreach {
-            case RTreeLeafEntry(shape: T, m_data, _) =>
-              if (query.intersects(shape)) ans += ((shape, m_data))
+            x =>
+              val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+              if (query.intersects(y.shape)) ans += ((y.shape, y.mData))
           }
         } else if (cur_level < levelLimit) {
           cur_node.mChild.foreach {
-            case RTreeInternalEntry(mbr, node) =>
-              if (query.intersects(mbr)) q.enqueue((node, cur_level + 1))
+            x =>
+              val y = x.asInstanceOf[RTreeInternalEntry[D]]
+              if (query.intersects(y.mbr)) q.enqueue((y.node, cur_level + 1))
           }
         } else if (cur_level == levelLimit) {
 
@@ -213,8 +220,9 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
           }
           estimate += overlappingRatio * cur_node.size
           cur_node.mChild.foreach {
-            case RTreeInternalEntry(mbr, node) =>
-              if (query.intersects(mbr)) q.enqueue((node, cur_level + 1))
+            x =>
+              val y = x.asInstanceOf[RTreeInternalEntry[D]]
+              if (query.intersects(y.mbr)) q.enqueue((y.node, cur_level + 1))
           }
         } else break
       }
@@ -227,44 +235,48 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
       val cur_level = now._2
       if (cur_node.isLeaf) {
         cur_node.mChild.foreach {
-          case RTreeLeafEntry(shape: T, m_data, _) =>
-            if (query.intersects(shape)) ans += ((shape, m_data))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (query.intersects(y.shape)) ans += ((y.shape, y.mData))
         }
       } else {
         cur_node.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (query.intersects(mbr)) q.enqueue((node, cur_level + 1))
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (query.intersects(y.mbr)) q.enqueue((y.node, cur_level + 1))
         }
       }
     }
     Some(ans.toArray)
   }
 
-  def circleRangeCnt(origin: Geometry, r: Double): Array[(Geometry, String, Int)] = {
-    val ans = mutable.ArrayBuffer[(Geometry, String, Int)]()
-    val st = new mutable.Stack[RTreeNode]()
+  def circleRangeCnt(origin: Geometry, r: Double): Array[(Geometry, D, Int)] = {
+    val ans = mutable.ArrayBuffer[(Geometry, D, Int)]()
+    val st = new mutable.Stack[RTreeNode[D]]()
     if (root.mMbr.distance(origin) <= r && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
-          case RTreeInternalEntry(mbr, node) =>
-            if (origin.distance(mbr) <= r) st.push(node)
+          x =>
+            val y = x.asInstanceOf[RTreeInternalEntry[D]]
+            if (origin.distance(y.mbr) <= r) st.push(y.node)
         }
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape, mData, size) =>
-            if (origin.distance(shape) <= r) ans += ((shape, mData, size))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (origin.distance(y.shape) <= r) ans += ((y.shape, y.mData, y.size))
         }
       }
     }
     ans.toArray
   }
 
-  def circleRangeConj(queries: Array[(Point, Double)]): Array[(Geometry, String)] = {
+  def circleRangeConj(queries: Array[(Point, Double)]): Array[(Geometry, D)] = {
 
-    val ans = mutable.ArrayBuffer[(Geometry, String)]()
-    val st = new mutable.Stack[RTreeNode]()
+    val ans = mutable.ArrayBuffer[(Geometry, D)]()
+    val st = new mutable.Stack[RTreeNode[D]]()
 
     def check(now: Geometry): Boolean = {
       for (i <- queries.indices)
@@ -276,20 +288,22 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) now.mChild.foreach {
-        case RTreeInternalEntry(mbr, node) =>
-          if (check(mbr)) st.push(node)
+        x =>
+          val y = x.asInstanceOf[RTreeInternalEntry[D]]
+          if (check(y.mbr)) st.push(y.node)
       } else {
         now.mChild.foreach {
-          case RTreeLeafEntry(shape, mData, _) =>
-            if (check(shape)) ans += ((shape, mData))
+          x =>
+            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
+            if (check(y.shape)) ans += ((y.shape, y.mData))
         }
       }
     }
     ans.toArray
   }
 
-  def kNN(query: Point, k: Int, keepSame: Boolean = false): Array[(Geometry, String)] = {
-    val ans = mutable.ArrayBuffer[(Geometry, String)]()
+  def kNN(query: Point, k: Int, keepSame: Boolean = false): Array[(Geometry, D)] = {
+    val ans = mutable.ArrayBuffer[(Geometry, D)]()
     val pq = new mutable.PriorityQueue[(_, Double)]()(new NNOrdering())
     var cnt = 0
     var kNN_dis = 0.0
@@ -306,12 +320,12 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
           case RTreeNode(_, m_child, isLeaf) =>
             m_child.foreach(entry =>
               if (isLeaf) pq.enqueue((entry, entry.minDist(query)))
-              else pq.enqueue((entry.asInstanceOf[RTreeInternalEntry].node, entry.minDist(query)))
+              else pq.enqueue((entry.asInstanceOf[RTreeInternalEntry[D]].node, entry.minDist(query)))
             )
-          case RTreeLeafEntry(p, m_data, size) =>
-            cnt += size
+          case x: RTreeLeafEntry[T, D] =>
+            cnt += x.size
             kNN_dis = now._2
-            ans += ((p, m_data))
+            ans += ((x.shape, x.mData))
         }
       }
     }
@@ -322,10 +336,10 @@ case class RTree[T <: Geometry : ClassTag](root: RTreeNode) extends Serializable
 
 
 object RTree {
-  def apply[T <: Geometry : ClassTag](entries: Array[(T, String, Int)], maxEntriesPerNode: Int, dimension: Int = 2): RTree[T] = {
+  def apply[T <: Geometry : ClassTag, D: ClassTag](entries: Array[(T, D, Int)], maxEntriesPerNode: Int, dimension: Int = 2): RTree[T, D] = {
     val entriesLen = entries.length.toDouble
     if (entriesLen == 0) {
-      val root = new RTreeNode(Extent(0, 0, 0, 0).toPolygon, new Array[RTreeEntry](0), false)
+      val root = new RTreeNode[D](Extent(0, 0, 0, 0).toPolygon, new Array[RTreeEntry](0), false)
       new RTree(root).setNumEntries(0)
     }
     else {
@@ -337,7 +351,7 @@ object RTree {
         remaining /= dim(i)
       }
 
-      def compMBR(dim: Int)(left: (T, String, Int), right: (T, String, Int)): Boolean = {
+      def compMBR(dim: Int)(left: (T, D, Int), right: (T, D, Int)): Boolean = {
 
         val left_center = dim match {
           case 0 => left._1.getCentroid.getCoordinate.x
@@ -355,8 +369,8 @@ object RTree {
         //        left._1.intersects(right._1)
       }
 
-      def recursiveGroupMBR(entries: Array[(T, String, Int)], curDim: Int, untilDim: Int)
-      : Array[Array[(T, String, Int)]] = {
+      def recursiveGroupMBR(entries: Array[(T, D, Int)], curDim: Int, untilDim: Int)
+      : Array[Array[(T, D, Int)]] = {
         val len = entries.length.toDouble
         val grouped = entries.sortWith(compMBR(curDim))
           .grouped(Math.ceil(len / dim(curDim)).toInt).toArray
@@ -366,7 +380,7 @@ object RTree {
       }
 
       val grouped = recursiveGroupMBR(entries, 0, dimension - 1)
-      val rtreeNodes = mutable.ArrayBuffer[(Polygon, RTreeNode)]()
+      val rtreeNodes = mutable.ArrayBuffer[(Polygon, RTreeNode[D])]()
       grouped.foreach(list => {
         val min = new Array[Double](dimension).map(_ => Double.MaxValue)
         val max = new Array[Double](dimension).map(_ => Double.MinValue)
@@ -386,7 +400,7 @@ object RTree {
         })
         val mbr = Extent(min(0), min(1), max(0), max(1)).toPolygon
         if (dimension == 3) mbr.setUserData(Array(min(2), max(2)))
-        rtreeNodes += ((mbr, RTreeNode(mbr, list)))
+        rtreeNodes += ((mbr, RTreeNode[T, D](mbr, list)))
       })
 
       var curRtreeNodes = rtreeNodes.toArray
@@ -403,7 +417,7 @@ object RTree {
         true
       }
 
-      def comp(dim: Int)(left: (Polygon, RTreeNode), right: (Polygon, RTreeNode)): Boolean = {
+      def comp(dim: Int)(left: (Polygon, RTreeNode[D]), right: (Polygon, RTreeNode[D])): Boolean = {
         val leftCenter = dim match {
           case 0 => left._1.getCentroid.getCoordinate.x
           case 1 => left._1.getCentroid.getCoordinate.y
@@ -419,8 +433,8 @@ object RTree {
         leftCenter < rightCenter
       }
 
-      def recursiveGroupRTreeNode(entries: Array[(Polygon, RTreeNode)],
-                                  curDim: Int, untilDim: Int): Array[Array[(Polygon, RTreeNode)]] = {
+      def recursiveGroupRTreeNode(entries: Array[(Polygon, RTreeNode[D])],
+                                  curDim: Int, untilDim: Int): Array[Array[(Polygon, RTreeNode[D])]] = {
         val len = entries.length.toDouble
         val grouped = entries.sortWith(comp(curDim))
           .grouped(Math.ceil(len / dim(curDim)).toInt).toArray
@@ -431,7 +445,7 @@ object RTree {
 
       while (!over(dim)) {
         val grouped = recursiveGroupRTreeNode(curRtreeNodes, 0, dimension - 1)
-        val tmpNodes = mutable.ArrayBuffer[(Polygon, RTreeNode)]()
+        val tmpNodes = mutable.ArrayBuffer[(Polygon, RTreeNode[D])]()
         grouped.foreach(list => {
           val min = new Array[Double](dimension).map(x => Double.MaxValue)
           val max = new Array[Double](dimension).map(x => Double.MinValue)

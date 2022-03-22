@@ -10,7 +10,7 @@ class TimeSeries[V, D](
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val spatials: Array[Polygon] = temporals.map(_ => Polygon.empty)
   lazy val temporal: Duration = Duration(temporals.head.start, temporals.last.end)
-  var rTree: Option[RTree[Polygon]] = None
+  var rTree: Option[RTree[Polygon, String]] = None
   require(validation,
     s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
 

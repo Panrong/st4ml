@@ -36,10 +36,10 @@ class MapMatcher(fileDir: String) extends Serializable {
   }
 
   // build rTree for lineString spatial map
-  def buildRTree(spatials: Array[LineString]): RTree[LineString] = {
+  def buildRTree(spatials: Array[LineString]): RTree[LineString, String] = {
     val r = math.sqrt(spatials.length).toInt
     val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-    RTree[LineString](entries, r)
+    RTree[LineString, String](entries, r)
   }
 
   // find candidates of each point in a trajectory in a road network with a threshold using RTree

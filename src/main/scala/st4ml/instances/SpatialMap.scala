@@ -12,7 +12,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Ent
 
   // the rTree is built when 1) explicitly call attachInstanceRTree function or
   // 2) convert event/traj to spatial map with optimization
-  var rTree: Option[RTree[S]] = None
+  var rTree: Option[RTree[S, String]] = None
   require(validation,
     s"The length of entries for SpatialMap should be at least 1, but got ${entries.length}")
 
@@ -100,7 +100,7 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Ent
   def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): SpatialMap[S, V, D1] =
     SpatialMap(entries, f(data, extent.toPolygon, temporal))
 
-  def getBinIndicesRTree[S <: Geometry](rTree: RTree[S], queryArr: Array[Duration]): Array[Array[Int]] =
+  def getBinIndicesRTree[S <: Geometry](rTree: RTree[S, String], queryArr: Array[Duration]): Array[Array[Int]] =
     queryArr.map(query =>
       rTree.range1d((query.start, query.end)).map(_._2.toInt))
 
@@ -122,11 +122,11 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Ent
     )
   }
 
-  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T]): Array[Array[Int]] = {
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S, String], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
 
-  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
+  def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S, String], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
     queryArr.map(query => RTree.distanceRange(query, distance).map(_._2.toInt))
   }
 

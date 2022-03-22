@@ -13,7 +13,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)
 
-  var rTree: Option[RTree[Polygon]] = None
+  var rTree: Option[RTree[Polygon, String]] = None
   lazy val rasterXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
   lazy val rasterYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
   lazy val rasterXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
@@ -28,14 +28,14 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
   lazy val tsSlots: Int = ((tsMax - tsMin) / tsLength).toInt
 
   def buildRTree(polygonArr: Array[Polygon],
-                 durArr: Array[Duration]): RTree[Polygon] = {
+                 durArr: Array[Duration]): RTree[Polygon, String] = {
     val r = math.sqrt(polygonArr.length).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- polygonArr.indices) {
       polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
       entries = entries :+ (polygonArr(i).copy.asInstanceOf[Polygon], i.toString, i)
     }
-    RTree[Polygon](entries, r, dimension = 3)
+    RTree[Polygon, String](entries, r, dimension = 3)
   }
 
   def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](input: RDD[Event[S, V, D]]): RDD[Raster[Polygon, Array[Event[S, V, D]], None.type]] = {

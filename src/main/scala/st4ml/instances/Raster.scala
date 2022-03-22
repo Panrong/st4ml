@@ -12,7 +12,7 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
 
   // the rTree is built when 1) explicitly call attachInstanceRTree function or
   // 2) convert event/traj to raster with optimization
-  var rTree: Option[RTree[S]] = None
+  var rTree: Option[RTree[S, String]] = None
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val spatials: Array[S] = entries.map(_.spatial)

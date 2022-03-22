@@ -69,29 +69,6 @@ class EventCompanionExtractor(sThreshold: Double,
     resRDD
   }
 
-  //  not working
-  def extractDetailV3(rdd: RDD[Event[Point, None.type, String]]):
-  RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
-    val partitioner = new TSTRPartitioner(tPartition, sPartition,
-      sThreshold = sThreshold / 111000 / 2, tThreshold = tThreshold / 2, samplingRate = Some(0.2))
-    val pRDD = partitioner.partition(rdd)
-    pRDD.mapPartitions(x => Iterator(x.size)).collect.foreach(println)
-    partitioner.partitionWDup(rdd).mapPartitions(x => Iterator(x.size)).collect.foreach(println)
-    val pRDD2 = partitioner.partitionWDup(rdd).mapPartitions { x =>
-      val arr = x.toArray
-      Iterator(buildRTree3d(arr))
-    }
-    val combined = pRDD.zipPartitions(pRDD2, true) {
-      case (p1, p2) =>
-        val rtree = p2.next()
-        p1.flatMap(x => rtree.range3d(x).filter(y => y._2 != x.data).map(y => (x, y)))
-    }
-    combined.map(x => (x._1.data, x._1.spatialCenter.x, x._1.spatialCenter.y, x._1.temporalCenter,
-      x._2._2, x._2._1.getCentroid.x, x._2._1.getCentroid.y, x._2._1.getUserData.asInstanceOf[Array[Double]].head.toLong,
-      x._1.temporalCenter - x._2._1.getUserData.asInstanceOf[Array[Double]].head.toLong,
-      x._1.spatialCenter.greatCircle(x._2._1)))
-  }
-
   def extractNative(rdd: RDD[Event[Point, None.type, String]]): RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
     val joinedRDD = rdd.cartesian(rdd).map { case (i, j) =>
       (i.data, i.spatialCenter.x, i.spatialCenter.y, i.temporalCenter,

@@ -17,12 +17,11 @@ import st4ml.utils.Config
 
 object WriteMetadataTest extends App {
   val fileName = args(0)
-  val numPartitions = args(1).toInt
-  val res = args(2)
-  val metadata = args(3)
-  val m = args(4)
-  val sNumPartitions =  args(5).toInt
-  val tNumPartitions = args(6).toInt
+  val res = args(1)
+  val metadata = args(2)
+  val m = args(3)
+  val sNumPartitions =  args(4).toInt
+  val tNumPartitions = args(5).toInt
   val spark = SparkSession.builder()
     .appName("MetaDataTest")
     .master(Config.get("master"))
@@ -48,7 +47,7 @@ object WriteMetadataTest extends App {
     val trajRDD = trajDs.toRdd
     println(trajRDD.count)
     /** partition trajRDD and persist on disk */
-    val partitioner = new TSTRPartitioner(sNumPartitions, tNumPartitions, Some(1))
+    val partitioner = new TSTRPartitioner(sNumPartitions, tNumPartitions, Some(0.01))
     val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
     //    pInfo.foreach(println)
     val trajDsWithPid = partitionedRDDWithPId.toDs()
@@ -85,7 +84,7 @@ object WriteMetadataTest extends App {
     eventRDD.take(2).foreach(println)
     println(eventRDD.count)
     /** partition trajRDD and persist on disk */
-    val partitioner = TSTRPartitioner(numPartitions, Some(0.2))
+    val partitioner = new TSTRPartitioner(sNumPartitions, tNumPartitions, Some(0.01))
     val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
     val EventDsWithPid = partitionedRDDWithPId.toDs()
     EventDsWithPid.show(2, truncate = false)

@@ -13,7 +13,7 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
   val sMap: Array[(Int, Polygon)] = sArray.sortBy(x =>
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
 
-  var rTree: Option[RTree[Polygon]] = None
+  var rTree: Option[RTree[Polygon, String]] = None
 
   lazy val smXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
   lazy val smYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
@@ -24,10 +24,10 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
   lazy val smXSlots: Long = ((smXMax - smXMin) / smXLength).round
   lazy val smYSlots: Long = ((smYMax - smYMin) / smYLength).round
 
-  def buildRTree(spatials: Array[Polygon]): RTree[Polygon] = {
+  def buildRTree(spatials: Array[Polygon]): RTree[Polygon, String] = {
     val r = math.sqrt(spatials.length).toInt
     val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-    RTree[Polygon](entries, r)
+    RTree[Polygon, String](entries, r)
   }
 
   def convert[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](input: RDD[Event[S, V, D]]): RDD[SpatialMap[Polygon, Array[Event[S, V, D]], None.type]] = {

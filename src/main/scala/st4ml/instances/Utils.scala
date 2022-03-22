@@ -36,8 +36,9 @@ object Utils {
     }
     Duration(durArr)
   }
+
   // 1d rtree for time series
-  def buildRTree(temporals: Array[Duration]): RTree[Polygon] = {
+  def buildRTree(temporals: Array[Duration]): RTree[Polygon, String] = {
     val r = math.sqrt(temporals.length).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- temporals.zipWithIndex) {
@@ -45,36 +46,36 @@ object Utils {
       p.setUserData(Array(i._1.start.toDouble, i._1.end.toDouble))
       entries = entries :+ (p.copy.asInstanceOf[Polygon], i._2.toString, i._2)
     }
-    RTree[Polygon](entries, r, dimension = 3)
+    RTree[Polygon, String](entries, r, dimension = 3)
   }
 
   //  2d rtree for spatial map
-  def buildRTree[T <: Geometry : ClassTag](geomArr: Array[T]): RTree[T] = {
+  def buildRTree[T <: Geometry : ClassTag](geomArr: Array[T]): RTree[T, String] = {
     val r = math.sqrt(geomArr.length).toInt
     val entries = geomArr.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-    RTree[T](entries, r)
+    RTree[T, String](entries, r)
   }
 
 
-  def buildRTree[T <: Geometry : ClassTag](geomArr: Array[Event[T, None.type, String]]): RTree[T] = {
+  def buildRTree[T <: Geometry : ClassTag](geomArr: Array[Event[T, None.type, String]]): RTree[T, String] = {
     val r = math.sqrt(geomArr.length).toInt
     val entries = geomArr.zipWithIndex.map(x => (x._1.entries.head.spatial, x._1.data, x._2))
-    RTree[T](entries, r)
+    RTree[T, String](entries, r)
   }
 
   // 3d rtree for raster
   def buildRTree[T <: Geometry : ClassTag](geomArr: Array[T],
-                                           durArr: Array[Duration]): RTree[T] = {
+                                           durArr: Array[Duration]): RTree[T, String] = {
     val r = math.sqrt(geomArr.length).toInt
     var entries = new Array[(T, String, Int)](0)
     for (i <- geomArr.indices) {
       geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
       entries = entries :+ (geomArr(i).copy.asInstanceOf[T], i.toString, i)
     }
-    RTree[T](entries, r, dimension = 3)
+    RTree[T, String](entries, r, dimension = 3)
   }
 
-  def buildRTree3d[T <: Instance[_,_,_] : ClassTag](instanceArr: Array[T]): RTree[Polygon] = {
+  def buildRTree3d[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T]): RTree[Polygon, String] = {
     val r = math.sqrt(instanceArr.length).toInt
     var entries = new Array[(Polygon, String, Int)](0)
     val geomArr = instanceArr.map(_.extent.toPolygon)
@@ -83,7 +84,7 @@ object Utils {
       geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
       entries = entries :+ (geomArr(i).copy.asInstanceOf[Polygon], instanceArr(i).data.toString, i)
     }
-    RTree[Polygon](entries, r, dimension = 3)
+    RTree[Polygon, String](entries, r, dimension = 3)
   }
 
   implicit class smRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[SpatialMap[S, V, D]]) {

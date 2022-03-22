@@ -18,7 +18,7 @@ object MapMatching {
    val sparkConf = new SparkConf()
       .setAppName("MapMatching")
      .setMaster(Config.get("master"))
-     .registerKryoClasses(Array(classOf[MapMatcher], classOf[Traj2TrajConverter[Option[String]]], classOf[RTree[LineString]]))
+     .registerKryoClasses(Array(classOf[MapMatcher], classOf[Traj2TrajConverter[Option[String]]], classOf[RTree[LineString, String]]))
      val spark = SparkSession.builder()
       .config(sparkConf).getOrCreate()
 

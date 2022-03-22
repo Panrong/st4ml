@@ -9,14 +9,14 @@ import st4ml.utils.Config
 import scala.reflect.ClassTag
 
 object Join {
-  private def buildRTree[S <: Geometry : ClassTag](geomArr: Array[S], durArr: Array[Duration]): RTree[S] = {
+  private def buildRTree[S <: Geometry : ClassTag](geomArr: Array[S], durArr: Array[Duration]): RTree[S, String] = {
     val r = math.sqrt(geomArr.length).toInt
     var entries = new Array[(S, String, Int)](0)
     for (i <- geomArr.indices) {
       geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
       entries = entries :+ (geomArr(i).copy.asInstanceOf[S], (geomArr(i)).hashCode().toString, i)
     }
-    RTree[S](entries, r, dimension = 3)
+    RTree[S, String](entries, r, dimension = 3)
   }
 
   implicit class BcJoin[T1 <: Instance[_, _, _] : ClassTag](rdd: RDD[T1]) extends Serializable {

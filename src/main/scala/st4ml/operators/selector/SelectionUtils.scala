@@ -16,6 +16,47 @@ object SelectionUtils {
                            count: Long
                           )
 
+  def granularitySetter[T <: Instance[_, _, _]](rdd: RDD[T], numPartitions: Int,
+                                                sIndicator: String, tIndicator: String): (Int, Int) = {
+    val tGranularity = sIndicator match {
+      case "second" => 1
+      case "minute" => 60
+      case "hour" => 3600
+      case "day" => 86400
+      case "month" => 2592000
+      case "season" => 7776000
+      case "year" => 31536000
+    }
+    val sGranularity = tIndicator match {
+      case "meter" => 1
+      case "kilometer" => 1000
+      case "km" => 1000
+      case "meter_gps" => 1 / 111000
+      case "km_gps" => 1 / 111
+      case "kilometer_gps" => 1 / 111
+      case "degree" => 1
+    }
+    val rangeRDD = rdd.sample(false, 0.1)
+      .map(x => (x.extent.xMin, x.extent.xMax, x.extent.yMin, x.extent.yMax, x.duration.start, x.duration.end))
+    val xMin = rangeRDD.map(_._1).min
+    val xMax = rangeRDD.map(_._2).max
+    val yMin = rangeRDD.map(_._3).min
+    val yMax = rangeRDD.map(_._4).max
+    val tMin = rangeRDD.map(_._5).min
+    val tMax = rangeRDD.map(_._6).max
+
+    val sWeight = (xMax - xMin) * (yMax - yMin) / sGranularity / sGranularity
+    val tWeight = (tMax - tMin) / tGranularity
+    val stRatio = sWeight / tWeight
+    if (stRatio > numPartitions) (numPartitions, 1)
+    if (stRatio < 1.0 / numPartitions) (1, numPartitions)
+    else {
+      val tNum = (numPartitions / (1 + stRatio)).toInt
+      val sNum = (numPartitions / tNum)
+      (sNum, tNum)
+    }
+  }
+
   implicit class InstanceWithIdFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[(T, Int)]) {
     def calPartitionInfo: Array[(Int, Extent, Duration, Int)] = {
       rdd.mapPartitionsWithIndex {
@@ -124,7 +165,7 @@ object SelectionUtils {
   //  }
 
 
-  implicit class EventRDDFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) {
+  implicit class EventRDDFunc[S <: Geometry : ClassTag, V: ClassTag, D: ClassTag](rdd: RDD[Event[S, V, D]]) extends Serializable {
     val spark: SparkSession = SparkSession.builder.getOrCreate()
 
     import spark.implicits._
@@ -139,6 +180,20 @@ object SelectionUtils {
         val shape = entry.spatial.toString
         E(shape, timeStamp, v, d)
       }).toDS
+    }
+
+    def perPartitionIndex(capacity: Int): RDD[RTree[S, Event[S, V, D]]] = {
+      rdd.mapPartitions { partition =>
+        val arr = partition.toArray
+        val geomArr = arr.map(_.entries.head.spatial)
+        val durArr = arr.map(_.duration)
+        var entries = new Array[(S, Event[S, V, D], Int)](0)
+        for (i <- arr.indices) {
+          geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
+          entries = entries :+ (geomArr(i).copy.asInstanceOf[S], arr(i), i)
+        }
+        Iterator(RTree[S, Event[S, V, D]](entries, capacity, dimension = 3))
+      }
     }
   }
 

@@ -14,7 +14,7 @@ class Event2EventConverter[V: ClassTag, D: ClassTag](map: Array[LineString],
   type O = Event[Point, V, String]
   override val optimization: String = ""
   val entries: Array[(LineString, String, Int)] = map.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
-  val rTree: RTree[LineString] = RTree(entries, scala.math.sqrt(entries.length).toInt)
+  val rTree: RTree[LineString, String] = RTree(entries, scala.math.sqrt(entries.length).toInt)
 
   def convert(input: RDD[I], discard: Boolean = false): RDD[O] = {
     val resRDD = input.map(event => {
