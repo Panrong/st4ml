@@ -29,7 +29,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
 
   def buildRTree(polygonArr: Array[Polygon],
                  durArr: Array[Duration]): RTree[Polygon, String] = {
-    val r = math.sqrt(polygonArr.length).toInt
+    val r = math.min(math.sqrt(polygonArr.length).toInt, 8)
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- polygonArr.indices) {
       polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))

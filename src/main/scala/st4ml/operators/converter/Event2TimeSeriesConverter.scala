@@ -16,7 +16,7 @@ class Event2TimeSeriesConverter(tArray: Array[Duration],
   var rTree: Option[RTree[Polygon, String]] = None
 
   def buildRTree(temporals: Array[Duration]): RTree[Polygon, String] = {
-    val r = math.sqrt(temporals.length).toInt
+    val r = math.min(math.sqrt(temporals.length).toInt, 8)
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- temporals.zipWithIndex) {
       val p = Extent(0, 0, 1, 1).toPolygon

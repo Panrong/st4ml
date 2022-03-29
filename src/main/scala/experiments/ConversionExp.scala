@@ -54,6 +54,7 @@ object ConversionExp {
       val converter = if (useRTree) new Event2SpatialMapConverter(ranges) else new Event2SpatialMapConverter(ranges, "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(xSplit, ySplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
 
       //            /** print converted result */
@@ -75,6 +76,7 @@ object ConversionExp {
       val converter = if (useRTree) new Traj2SpatialMapConverter(ranges) else new Traj2SpatialMapConverter(ranges, "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(xSplit, ySplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
       //            val sms = convertedRDD.collect
@@ -96,6 +98,7 @@ object ConversionExp {
       else new Event2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(xSplit, ySplit, tSplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
       //      val sms = convertedRDD.map(x => x.mapValue(x => Array(x.length))).collect
@@ -118,6 +121,7 @@ object ConversionExp {
       else new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2), "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(xSplit, ySplit, tSplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
       //      val sms = convertedRDD.collect
@@ -138,6 +142,7 @@ object ConversionExp {
       val converter = if (useRTree) new Event2TimeSeriesConverter(tRanges) else new Event2TimeSeriesConverter(tRanges, "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(tSplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //            /** print converted result */
       //            val sms = convertedRDD.collect
@@ -157,6 +162,7 @@ object ConversionExp {
       val converter = if (useRTree) new Traj2TimeSeriesConverter(tRanges) else new Traj2TimeSeriesConverter(tRanges, "none")
       val convertedRDD = converter.convert(selectedRDD)
       println(convertedRDD.count)
+      println(tSplit, useRTree)
       println(s"Conversion time: ${(nanoTime - t) * 1e-9} s")
       //      /** print converted result */
       //      val sms = convertedRDD.collect

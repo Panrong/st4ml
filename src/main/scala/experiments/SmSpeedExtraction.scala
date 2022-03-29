@@ -1,5 +1,6 @@
 package experiments
 
+import experiments.ExpUtils.splitSpatial
 import st4ml.instances.{Duration, Extent, Polygon, Trajectory}
 import st4ml.operators.selector.Selector
 import st4ml.operators.converter.Traj2SpatialMapConverter
@@ -20,7 +21,6 @@ object SmSpeedExtraction {
       .appName("trajRangeQuery")
       .master(Config.get("master"))
       .getOrCreate()
-
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     // read queries
@@ -31,7 +31,6 @@ object SmSpeedExtraction {
     })
     val t = nanoTime()
     type TRAJ = Trajectory[Option[String], String]
-
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
@@ -53,25 +52,8 @@ object SmSpeedExtraction {
       val mergedSm = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, valueMerge, (_, _) => None))
       smRDD.unpersist()
       println(mergedSm.entries.map(x => (x.value._1 / x.value._2)).deep)
-
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
-  }
-
-  def splitSpatial(spatialRange: Polygon, gridSize: Double): Array[Polygon] = {
-    //    val xMin = spatialRange(0)
-    //    val yMin = spatialRange(1)
-    //    val xMax = spatialRange(2)
-    //    val yMax = spatialRange(3)
-    val xMin = spatialRange.getCoordinates.map(_.x).min
-    val xMax = spatialRange.getCoordinates.map(_.x).max
-    val yMin = spatialRange.getCoordinates.map(_.y).min
-    val yMax = spatialRange.getCoordinates.map(_.y).max
-    val xSplit = ((xMax - xMin) / gridSize).toInt
-    val xs = (0 to xSplit).map(x => x * gridSize + xMin).sliding(2).toArray
-    val ySplit = ((yMax - yMin) / gridSize).toInt
-    val ys = (0 to ySplit).map(y => y * gridSize + yMin).sliding(2).toArray
-    for (x <- xs; y <- ys) yield Extent(x(0), y(0), x(1), y(1)).toPolygon
   }
 }

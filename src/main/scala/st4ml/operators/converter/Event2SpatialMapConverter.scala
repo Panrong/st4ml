@@ -25,7 +25,7 @@ class Event2SpatialMapConverter(sArray: Array[Polygon],
   lazy val smYSlots: Long = ((smYMax - smYMin) / smYLength).round
 
   def buildRTree(spatials: Array[Polygon]): RTree[Polygon, String] = {
-    val r = math.sqrt(spatials.length).toInt
+    val r = math.min(math.sqrt(spatials.length).toInt, 8)
     val entries = spatials.zipWithIndex.map(x => (x._1, x._2.toString, x._2))
     RTree[Polygon, String](entries, r)
   }

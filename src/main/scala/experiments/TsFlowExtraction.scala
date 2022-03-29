@@ -1,11 +1,11 @@
 package experiments
 
+import experiments.ExpUtils.splitTemporal
 import st4ml.instances.{Duration, Event, Extent, Point}
 import st4ml.operators.converter.Event2TimeSeriesConverter
 import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
 import st4ml.utils.Config
-
 import java.lang.System.nanoTime
 import scala.io.Source
 
@@ -20,7 +20,6 @@ object TsFlowExtraction {
       .appName("TsFlowExtraction")
       .master(Config.get("master"))
       .getOrCreate()
-
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
     // read queries
@@ -31,7 +30,6 @@ object TsFlowExtraction {
     })
     val t = nanoTime()
     type EVENT = Event[Point, Option[String], String]
-
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[EVENT](spatial, temporal, numPartitions)
       val eventRDD = selector.selectEvent(fileName, metadata, false)
@@ -41,9 +39,7 @@ object TsFlowExtraction {
       val f: Array[Event[Point, None.type, String]] => Int = _.length
       val tsRDD = converter.convert(eventRDD, f)
       val res = tsRDD.collect()
-
       def valueMerge(x: Int, y: Int): Int = x + y
-
       val mergedTs = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
       eventRDD.unpersist()
       println(mergedTs.entries.map(_.value).deep)
@@ -51,13 +47,4 @@ object TsFlowExtraction {
     println(s"Anomaly extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
-
-  def splitTemporal(temporalRange: Array[Long], tStep: Int): Array[Duration] = {
-    val tMin = temporalRange(0)
-    val tMax = temporalRange(1)
-    val tSplit = ((tMax - tMin) / tStep).toInt
-    val ts = (0 to tSplit).map(x => x * tStep + tMin).sliding(2).toArray
-    for (t <- ts) yield Duration(t(0), t(1))
-  }
-
 }

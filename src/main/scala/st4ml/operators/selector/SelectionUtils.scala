@@ -182,9 +182,10 @@ object SelectionUtils {
       }).toDS
     }
 
-    def perPartitionIndex(capacity: Int): RDD[RTree[S, Event[S, V, D]]] = {
+    def perPartitionIndex: RDD[RTree[S, Event[S, V, D]]] = {
       rdd.mapPartitions { partition =>
         val arr = partition.toArray
+        val capacity = math.sqrt(arr.length).toInt
         val geomArr = arr.map(_.entries.head.spatial)
         val durArr = arr.map(_.duration)
         var entries = new Array[(S, Event[S, V, D], Int)](0)

@@ -71,7 +71,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Polygon.
     val pInstanceDf = if (metaDataDir == "None") loadDf(dataDir) else loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.as[E].toRdd
     val selectedRDD = if (index) {
-      val indexedRDD = pInstanceRDD.perPartitionIndex(4)
+      val indexedRDD = pInstanceRDD.perPartitionIndex
       indexedRDD.flatMap(x => x.range3d(Event(sQuery, tQuery))).map(_._2)
     }
     else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
