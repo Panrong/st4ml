@@ -17,19 +17,11 @@ class RasterTransitionExtractor[Traj <: Trajectory[_, _] : ClassTag] extends Ext
       raster.entries.map(entry => {
         implicit val s: Polygon = entry.spatial
         implicit val t: Duration = entry.temporal
-        Entry(
-          entry.spatial,
-          entry.temporal,
-          findInOut(entry.value))
-      }),
-      None))
+        Entry(entry.spatial, entry.temporal, findInOut(entry.value))}), None))
     val res = resRDD.collect
-
     def valueMerge(x: (Int, Int), y: (Int, Int)): (Int, Int) = (x._1 + y._1, x._2 + y._2)
-
-    res.drop(1).foldRight(res.head)(_.merge(_, valueMerge _, (_, _) => None))
+    res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
   }
-
   def findInOut[T <: Trajectory[_, _]](arr: Array[T])(implicit sRange: Polygon, tRange: Duration): (Int, Int) = {
     val inOuts = arr.map { traj =>
       val inside = traj.entries.map(p => p.intersects(sRange, tRange)).sliding(2).toArray

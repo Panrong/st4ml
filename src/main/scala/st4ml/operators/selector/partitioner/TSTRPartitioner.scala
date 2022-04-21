@@ -19,6 +19,7 @@ class TSTRPartitioner(tNumPartition: Int,
   override val numPartitions: Int = tNumPartition * sNumPartition
 
   override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+    val spatialRange = Some(getWholeSpatialRange(dataRDD))
     val temporalPartitioner = new TemporalPartitioner(tNumPartition, samplingRate, ref)
     val tPartitionRdd = if (tThreshold == 0) temporalPartitioner.partition(dataRDD)
     else temporalPartitioner.partitionWithOverlap(dataRDD, tThreshold)
@@ -31,20 +32,13 @@ class TSTRPartitioner(tNumPartition: Int,
     for (i <- 0 until tNumPartition) {
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
         .map(x => Event(x.spatialCenter, Duration(0))) // the duration is not used, just put 0 to make it instance
-      val sRanges = getPartitionRange(samples, Some(getWholeSpatialRange(dataRDD)))
+      val sRanges = getPartitionRange(samples, spatialRange)
       for (s <- sRanges)
         stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
     val idxRDD = dataRDD.map(x => {
-      //      val idxs = stRanges.filter(st => x.intersects(st._2._2, st._2._1))
-      //      val idx = if (idxs.isEmpty) {
-      //        stRanges.filter(st => st._2._1.intersects(x.duration))
-      //          .mapValues(st => st._2.distance(x.spatialCenter))
-      //          .minBy(_._2)._1
-      //      }
-      //      else idxs.head._1
-      val idxs = stRanges.filter(st => {
-        val centroid = x.center
+      val centroid = x.center
+      val idxs = stRanges.find(st => {
         Event(centroid._1, Duration(centroid._2)).intersects(st._2._2, st._2._1)
       })
       val idx = if (idxs.isEmpty) {
@@ -52,7 +46,7 @@ class TSTRPartitioner(tNumPartition: Int,
           .mapValues(st => st._2.distance(x.spatialCenter))
           .minBy(_._2)._1
       }
-      else idxs.head._1
+      else idxs.get._1
       (idx, x)
     })
     idxRDD.partitionBy(new KeyPartitioner(numPartitions))

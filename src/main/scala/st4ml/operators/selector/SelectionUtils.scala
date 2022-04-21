@@ -4,6 +4,7 @@ import st4ml.instances._
 import st4ml.operators.selector.partitioner.STPartitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -59,30 +60,61 @@ object SelectionUtils {
 
   implicit class InstanceWithIdFuncs[T <: Instance[_ <: Geometry, _, _] : ClassTag](rdd: RDD[(T, Int)]) {
     def calPartitionInfo: Array[(Int, Extent, Duration, Int)] = {
-      rdd.mapPartitionsWithIndex {
-        case (id, iter) =>
-          var xMin = 180.0
-          var yMin = 90.0
-          var xMax = -180.0
-          var yMax = -90.0
-          var tMin = 10000000000L
-          var tMax = 0L
-          var count = 0
-          while (iter.hasNext) {
-            val next = iter.next()._1
-            val mbr = next.extent
-            if (mbr.xMin < xMin) xMin = mbr.xMin
-            if (mbr.xMax > xMax) xMax = mbr.xMax
-            if (mbr.yMin < yMin) yMin = mbr.yMin
-            if (mbr.yMax > yMax) yMax = mbr.yMax
-            if (next.duration.start < tMin) tMin = next.duration.start
-            if (next.duration.end > tMax) tMax = next.duration.end
-            count += 1
-          }
-          if (count == 0) Iterator(None)
-          else Iterator(Some((id, new Extent(xMin, yMin, xMax, yMax), Duration(tMin, tMax), count)))
-      }.filter(_.isDefined).map(_.get)
-        .collect
+      rdd.persist(MEMORY_AND_DISK_SER)
+      val xMinRdd = rdd.map(x => x._1.extent.xMin)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.min))
+        }
+      val yMinRdd = rdd.map(x => x._1.extent.yMin)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.min))
+        }
+      val xMaxRdd = rdd.map(x => x._1.extent.xMax)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.max))
+        }
+      val yMaxRdd = rdd.map(x => x._1.extent.yMax)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.max))
+        }
+      val tMinRdd = rdd.map(x => x._1.duration.start)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.min))
+        }
+      val tMaxRdd = rdd.map(x => x._1.duration.end)
+        .mapPartitionsWithIndex {
+          case (id, iter) => Iterator((id, iter.max))
+        }
+      val countRdd = rdd.mapPartitionsWithIndex { case (id, iter) => Iterator((id, iter.size)) }
+
+      val extentRdd = xMinRdd.join(yMinRdd).join(xMaxRdd).join(yMaxRdd).map(x => (x._1, Extent(x._2._1._1._1, x._2._1._1._2, x._2._1._2, x._2._2)))
+      val tRdd = tMinRdd.join(tMaxRdd).map(x => (x._1, Duration(x._2._1, x._2._2)))
+      val resRdd = extentRdd.join(tRdd).join(countRdd).map(x => (x._1, x._2._1._1, x._2._1._2, x._2._2))
+      resRdd.collect()
+      //      rdd.mapPartitionsWithIndex {
+      //        case (id, iter) =>
+      //          var xMin = 180.0
+      //          var yMin = 90.0
+      //          var xMax = -180.0
+      //          var yMax = -90.0
+      //          var tMin = 10000000000L
+      //          var tMax = 0L
+      //          var count = 0
+      //          while (iter.hasNext) {
+      //            val next = iter.next()._1
+      //            val mbr = next.extent
+      //            if (mbr.xMin < xMin) xMin = mbr.xMin
+      //            if (mbr.xMax > xMax) xMax = mbr.xMax
+      //            if (mbr.yMin < yMin) yMin = mbr.yMin
+      //            if (mbr.yMax > yMax) yMax = mbr.yMax
+      //            if (next.duration.start < tMin) tMin = next.duration.start
+      //            if (next.duration.end > tMax) tMax = next.duration.end
+      //            count += 1
+      //          }
+      //          if (count == 0) Iterator(None)
+      //          else Iterator(Some((id, new Extent(xMin, yMin, xMax, yMax), Duration(tMin, tMax), count)))
+      //      }.filter(_.isDefined).map(_.get)
+      //        .collect
     }
   }
 
@@ -217,8 +249,7 @@ object SelectionUtils {
 
     def toDisk(dataDir: String,
                vFunc: V => Option[String] = x => if (x.isInstanceOf[None.type]) None else Some(x.toString),
-               dFunc: D => String = _.toString,
-               maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
+               dFunc: D => String = _.toString): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir)
   }
 
   implicit class TrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[Trajectory[V, D]]) {
@@ -254,8 +285,7 @@ object SelectionUtils {
 
     def toDisk(dataDir: String,
                vFunc: V => Option[String] = x => if (x.isInstanceOf[None.type]) None else Some(x.toString),
-               dFunc: D => String = x => x.toString,
-               maxRecords: Int = 10000): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir, maxRecords)
+               dFunc: D => String = x => x.toString): Unit = this.toDs(vFunc, dFunc).toDisk(dataDir)
   }
 
   implicit class TrajDsFuncs(ds: Dataset[T]) {
@@ -272,10 +302,8 @@ object SelectionUtils {
       })
     }
 
-    def toDisk(dataDir: String, maxRecords: Int = 10000): Unit = {
-      ds.toDF.write
-        .option("maxRecordsPerFile", maxRecords)
-        .parquet(dataDir)
+    def toDisk(dataDir: String): Unit = {
+      ds.toDF.write.parquet(dataDir)
     }
   }
 
@@ -294,10 +322,8 @@ object SelectionUtils {
       })
     }
 
-    def toDisk(dataDir: String, maxRecords: Int = 10000): Unit = {
-      ds.toDF.write
-        .option("maxRecordsPerFile", maxRecords)
-        .partitionBy("pId").parquet(dataDir)
+    def toDisk(dataDir: String): Unit = {
+      ds.toDF.write.partitionBy("pId").parquet(dataDir)
     }
   }
 
@@ -327,9 +353,8 @@ object SelectionUtils {
       })
     }
 
-    def toDisk(dataDir: String, maxRecords: Int = 10000): Unit = {
+    def toDisk(dataDir: String): Unit = {
       ds.toDF.write
-        .option("maxRecordsPerFile", maxRecords)
         .partitionBy("pId").parquet(dataDir)
     }
   }

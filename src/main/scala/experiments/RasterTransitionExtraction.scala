@@ -2,7 +2,7 @@ package experiments
 
 import experiments.ExpUtils.{splitSpatial, splitTemporal}
 import st4ml.instances.{Duration, Entry, Extent, Polygon, Raster, Trajectory}
-import st4ml.operators.converter.{Traj2RasterConverter, Traj2SpatialMapConverter}
+import st4ml.operators.converter.Traj2RasterConverter
 import st4ml.operators.extractor.RasterTransitionExtractor
 import st4ml.operators.selector.Selector
 import org.apache.spark.sql.SparkSession
@@ -32,15 +32,7 @@ object RasterTransitionExtraction {
     })
     val t = nanoTime()
     type TRAJ = Trajectory[Option[String], String]
-    def findInOut[T <: Trajectory[_, _]](arr: Array[T])(implicit sRange: Polygon, tRange: Duration): (Int, Int) = {
-      val inOuts = arr.map { traj =>
-        val inside = traj.entries.map(p => p.intersects(sRange, tRange)).sliding(2).toArray
-        val in = inside.count(_ sameElements Array(false, true))
-        val out = inside.count(_ sameElements Array(true, false))
-        (in, out)
-      }
-      (inOuts.map(_._1).sum, inOuts.map(_._2).sum)
-    }
+
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
       val trajRDD = selector.selectTraj(fileName, metadata, false)
@@ -48,21 +40,12 @@ object RasterTransitionExtraction {
       val tRanges = splitTemporal(Array(temporal.start, temporal.end), tStep)
       val stRanges = for (s <- sRanges; t <- tRanges) yield (s, t)
       val converter = new Traj2RasterConverter(stRanges.map(_._1), stRanges.map(_._2))
-      val rRdd = converter.convert(trajRDD)
+      val convertedRDD = converter.convert(trajRDD)
       val extractor = new RasterTransitionExtractor[Trajectory[Option[String], String]]
-      val a = extractor.extract(rRdd)
-      val rasterRDD = converter.convert(trajRDD).map(raster => Raster(
-        raster.entries.map(entry => {
-          implicit val s: Polygon = entry.spatial
-          implicit val t: Duration = entry.temporal
-          Entry(entry.spatial, entry.temporal, findInOut(entry.value))
-        }),
-        raster.data))
-      val res = rasterRDD.collect
-      def valueMerge(x: (Int, Int), y: (Int, Int)): (Int, Int) = (x._1 + y._1, x._2 + y._2)
-      val mergedRaster = res.drop(1).foldRight(res.head)(_.merge(_, valueMerge, (_, _) => None))
-      rasterRDD.unpersist()
-      mergedRaster.entries.take(5).foreach(println)
+      val extracted = extractor.extract(convertedRDD)
+      convertedRDD.unpersist()
+      trajRDD.unpersist()
+      extracted.entries.take(5).foreach(println)
     }
     println(s"Raster transition extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()

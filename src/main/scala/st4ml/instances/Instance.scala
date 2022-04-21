@@ -33,9 +33,9 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
 
   def intersects(dur: Duration): Boolean = duration.intersects(dur)
 
-  def intersects(g: Geometry, dur: Duration): Boolean = intersects(g) && intersects(dur)
+  def intersects(g: Geometry, dur: Duration): Boolean = intersects(dur) && intersects(g)
 
-  def intersects(e: Extent, dur: Duration): Boolean = intersects(e) && intersects(dur)
+  def intersects(e: Extent, dur: Duration): Boolean = intersects(dur) && intersects(e)
 
   def contains(g: Geometry): Boolean = this.toGeometry.contains(g)
 
@@ -43,9 +43,9 @@ abstract class Instance[S <: Geometry, V, D] extends Serializable {
 
   def contains(dur: Duration): Boolean = duration.contains(dur)
 
-  def contains(g: Geometry, dur: Duration): Boolean = contains(g) && contains(dur)
+  def contains(g: Geometry, dur: Duration): Boolean = contains(dur) && contains(g)
 
-  def contains(e: Extent, dur: Duration): Boolean = contains(e) && contains(dur)
+  def contains(e: Extent, dur: Duration): Boolean = contains(dur) && contains(e)
 
   // Methods
   //  def mapSpatial[T <: Geometry : ClassTag, G <: Instance[_, _, _]](f: S => T): G

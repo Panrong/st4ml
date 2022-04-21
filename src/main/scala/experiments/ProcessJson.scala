@@ -22,7 +22,6 @@ object ProcessJson {
       var res = Map[String, String]()
       if (ele.isDefined) res = res + ("ele" -> ele.get.toString)
       if (fileName.isDefined) res = res + ("fileName" -> fileName.get)
-      if (g.isDefined) res = res + ("g" -> g.get)
       if (segmentnumber.isDefined) res = res + ("segmentnumber" -> segmentnumber.get.toString)
       if (time.isDefined) res = res + ("time" -> time.get)
       if (trackindex.isDefined) res = res + ("trackindex" -> trackindex.get.toString)
@@ -35,6 +34,7 @@ object ProcessJson {
   }
 
   case class Nyc(g: Option[String],
+                 `attr#0`: Option[String],
                  `attr#1`: Option[String],
                  `attr#2`: Option[String],
                  `attr#3`: Option[String],
@@ -49,17 +49,18 @@ object ProcessJson {
     def toMap: Map[String, String] = {
       var res = Map[String, String]()
       if (g.isDefined) res = res + ("g" -> g.get)
-      if (`attr#1`.isDefined) res = res + ("attr#1" -> `attr#1`.get)
-      if (`attr#2`.isDefined) res = res + ("attr#2" -> `attr#2`.get)
-      if (`attr#3`.isDefined) res = res + ("attr#3" -> `attr#3`.get)
-      if (`attr#4`.isDefined) res = res + ("attr#4" -> `attr#4`.get)
-      if (`attr#5`.isDefined) res = res + ("attr#5" -> `attr#5`.get)
-      if (`attr#6`.isDefined) res = res + ("attr#6" -> `attr#6`.get)
-      if (`attr#7`.isDefined) res = res + ("attr#7" -> `attr#7`.get)
-      if (`attr#8`.isDefined) res = res + ("attr#8" -> `attr#8`.get)
-      if (`attr#9`.isDefined) res = res + ("attr#9" -> `attr#9`.get)
-      if (`attr#10`.isDefined) res = res + ("attr#10" -> `attr#10`.get)
-      if (`attr#11`.isDefined) res = res + ("attr#11" -> `attr#11`.get)
+      if (`attr#0`.isDefined) res = res + ("medallion" -> `attr#1`.get)
+      if (`attr#1`.isDefined) res = res + ("hack_license" -> `attr#1`.get)
+      if (`attr#2`.isDefined) res = res + ("vendor_id" -> `attr#2`.get)
+      if (`attr#3`.isDefined) res = res + ("rate_code" -> `attr#3`.get)
+      if (`attr#4`.isDefined) res = res + ("store_and_fwd_flag" -> `attr#4`.get)
+      if (`attr#5`.isDefined) res = res + ("pickup_datetime" -> `attr#5`.get)
+      if (`attr#6`.isDefined) res = res + ("dropoff_datetime" -> `attr#6`.get)
+      if (`attr#7`.isDefined) res = res + ("passenger_count" -> `attr#7`.get)
+      if (`attr#8`.isDefined) res = res + ("trip_time_in_secs" -> `attr#8`.get)
+      if (`attr#9`.isDefined) res = res + ("trip_distance" -> `attr#9`.get)
+      if (`attr#10`.isDefined) res = res + ("dropoff_longitude" -> `attr#10`.get)
+      if (`attr#11`.isDefined) res = res + ("dropoff_latitude" -> `attr#11`.get)
       res
     }
   }
@@ -67,7 +68,7 @@ object ProcessJson {
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
       .appName("processJson")
-      //      .master("local[4]")
+      //     .master("local[4]")
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -104,13 +105,13 @@ object ProcessJson {
       println(eventsRDD.map(_.spatialCenter.getX).min, eventsRDD.map(_.spatialCenter.getY).min,
         eventsRDD.map(_.spatialCenter.getX).max, eventsRDD.map(_.spatialCenter.getY).max,
         eventsRDD.map(_.temporalCenter).min, eventsRDD.map(_.temporalCenter).max)
-      val (a, b) = eventsRDD.map(_.temporalCenter).histogram(30)
-      println(a.deep)
-      println(b.deep)
+      //      val (a, b) = eventsRDD.map(_.temporalCenter).histogram(30)
+      //      println(a.deep)
+      //      println(b.deep)
       val eventsDs = eventsRDD.toDs()
       eventsDs.printSchema()
       eventsDs.show(5)
-      if (save != "none") eventsDs.write.option("maxRecordsPerFile", 10000).parquet(save)
+      if (save != "none") eventsDs.write.option("maxRecordsPerFile", 100000).parquet(save)
     }
 
     // ../NYCTaxi.json nyc 1356998400,1388534400 none
@@ -126,23 +127,22 @@ object ProcessJson {
         val tEnd = parseTemporalString(x.`attr#6`.get, timeZone = TimeZone.getTimeZone("America/New_York"))
         val lonEnd = x.`attr#10`.get.toDouble
         val latEnd = x.`attr#11`.get.toDouble
-        val d = x.toMap
-
+        val d = x.toMap + ("pickup_longitude" -> lonStart.toString) + ("pickup_latitude" -> latStart.toString)
         Array(Event(Point(lonStart, latStart), Duration(tStart), None, d),
           Event(Point(lonEnd, latEnd), Duration(tEnd), None, d))
       }.filter(x => x.temporalCenter <= tRange(1) && x.temporalCenter >= tRange(0) && x.intersects(sRange))
       eventsRDD.take(5).foreach(println)
-      println(eventsRDD.map(_.spatialCenter.getX).min, eventsRDD.map(_.spatialCenter.getY).min,
-        eventsRDD.map(_.spatialCenter.getX).max, eventsRDD.map(_.spatialCenter.getY).max,
-        eventsRDD.map(_.temporalCenter).min, eventsRDD.map(_.temporalCenter).max)
-      val (a, b) = eventsRDD.map(_.temporalCenter).histogram(30)
-      println(a.deep)
-      println(b.deep)
+      //      println(eventsRDD.map(_.spatialCenter.getX).min, eventsRDD.map(_.spatialCenter.getY).min,
+      //        eventsRDD.map(_.spatialCenter.getX).max, eventsRDD.map(_.spatialCenter.getY).max,
+      //        eventsRDD.map(_.temporalCenter).min, eventsRDD.map(_.temporalCenter).max)
+      //      val (a, b) = eventsRDD.map(_.temporalCenter).histogram(30)
+      //      println(a.deep)
+      //      println(b.deep)
       val eventsDs = eventsRDD.toDs()
       eventsDs.printSchema()
       eventsDs.show(5, false)
       println(eventsDs.count)
-      if (save != "none") eventsDs.write.option("maxRecordsPerFile", 10000).parquet(save)
+      if (save != "none") eventsDs.write.parquet(save)
     }
     sc.stop()
 

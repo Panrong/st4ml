@@ -7,7 +7,6 @@ import org.apache.spark.sql.SparkSession
 
 import scala.reflect.ClassTag
 
-
 class Traj2RasterConverter(polygonArr: Array[Polygon],
                            durArr: Array[Duration],
                            override val optimization: String = "rtree") extends Converter {

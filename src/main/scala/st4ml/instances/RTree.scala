@@ -139,15 +139,13 @@ case class RTree[T <: Geometry : ClassTag, D: ClassTag](root: RTreeNode[D]) exte
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
-          x =>
-            val y = x.asInstanceOf[RTreeInternalEntry[D]]
-            if (query.intersects(y.mbr)) st.push(y.node)
+          case x: RTreeInternalEntry[D] =>
+            if (query.intersects(x.mbr)) st.push(x.node)
         }
       } else {
         now.mChild.foreach {
-          x =>
-            val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
-            if (intersect(y.shape, geometry, duration)) ans += ((y.shape, y.mData))
+          case x: RTreeLeafEntry[T, D] =>
+            if (intersect(x.shape, geometry, duration)) ans += ((x.shape, x.mData))
         }
       }
     }
@@ -474,7 +472,6 @@ object RTree {
           remaining /= dim(i)
         }
       }
-
       val min = new Array[Double](dimension).map(x => Double.MaxValue)
       val max = new Array[Double](dimension).map(x => Double.MinValue)
       curRtreeNodes.foreach(now => {
@@ -499,4 +496,3 @@ object RTree {
     }
   }
 }
-

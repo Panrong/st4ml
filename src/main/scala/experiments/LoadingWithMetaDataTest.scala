@@ -62,7 +62,7 @@ object LoadingWithMetaDataTest {
         // metadata
         t = nanoTime()
         val selector = Selector[EVT](spatial, temporal, numPartitions)
-        val rdd1 = selector.selectEvent(fileName, metadata, false)
+        val rdd1 = selector.selectEvent(fileName, metadata, partition = false)
         println(rdd1.count)
         println(s"metadata: ${(nanoTime() - t) * 1e-9} s.")
       }

@@ -36,7 +36,7 @@ object AnomalyExtraction {
 
     for ((spatial, temporal) <- ranges) {
       val selector = new Selector[EVENT]().setSQuery(spatial).setTQuery(temporal).setParallelism(numPartitions)
-      val eventRDD = selector.select(fileName, metadata)
+      val eventRDD = selector.selectEvent(fileName, metadata, partition = false)
 
       val res = eventRDD.filter(x => condition(getHour(x.duration.start))).map(_.data)
       eventRDD.unpersist()

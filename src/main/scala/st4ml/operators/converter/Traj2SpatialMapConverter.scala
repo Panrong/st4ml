@@ -3,6 +3,7 @@ package st4ml.operators.converter
 import st4ml.instances._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.util.SizeEstimator
 import st4ml.instances.RoadNetwork._
 
 import scala.reflect.ClassTag
@@ -74,7 +75,7 @@ class Traj2SpatialMapConverter(sArray: Array[Polygon],
     else if (optimization == "rtree2") {
       input.mapPartitions(partition => {
         val trajs = partition.toArray.map(x => (x.extent.toPolygon, x, 0))
-        val rTree = RTree[Polygon, I](trajs, math.sqrt(trajs.length).toInt, 2)
+        val rTree = RTree[Polygon, I](trajs, math.min(math.sqrt(trajs.length).toInt, 128), 2)
         val entries = sArray.map(x => new Entry(x,Duration.empty, rTree.range(x).map(_._2)))
         Iterator(SpatialMap(entries))
       })

@@ -190,6 +190,8 @@ class Trajectory[V, D](
 
   override def setData[D1](newData: D1): Trajectory[V, D1] = new Trajectory(entries, newData)
 
+  override lazy val duration: Duration = Duration(entries.head.duration.start, entries.last.duration.end)
+
 }
 
 object Trajectory {
@@ -232,7 +234,7 @@ object Trajectory {
   }
 
   def apply(pointArr: Array[Point],
-               durationArr: Array[Duration]): Trajectory[None.type, None.type] = {
+            durationArr: Array[Duration]): Trajectory[None.type, None.type] = {
     require(pointArr.length == durationArr.length,
       "the length of second argument should match the length of first argument")
     val entries = (pointArr, durationArr).zipped.toArray.map(Entry(_))

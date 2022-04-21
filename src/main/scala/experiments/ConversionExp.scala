@@ -6,6 +6,7 @@ import st4ml.operators.selector.SelectionUtils.{E, T}
 import st4ml.operators.selector.partitioner.HashPartitioner
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
+import org.apache.spark.util.SizeEstimator
 import st4ml.utils.Config
 
 import java.lang.System.nanoTime
@@ -184,6 +185,10 @@ object ConversionExp {
       val f3:(Array[Nothing], Polygon, Duration) => Long = (_,_, t) => t.start
       val raster2 = raster.mapValuePlus(f3)
       println(raster2)
+
+      val m = 33483200
+      val n = 30*30
+      println(m * math.log(m) + n * math.log(m),n * math.log(n) + m * math.log(n), m*n)
     }
     sc.stop
   }
