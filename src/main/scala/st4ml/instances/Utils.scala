@@ -75,6 +75,17 @@ object Utils {
     RTree[T, String](entries, r, dimension = 3)
   }
 
+  def buildRTreeLite[T <: Geometry : ClassTag](geomArr: Array[T],
+                                               durArr: Array[Duration]): RTreeLite[T] = {
+    val r = math.sqrt(geomArr.length).toInt
+    var entries = new Array[(T, String, Int)](0)
+    for (i <- geomArr.indices) {
+      geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
+      entries = entries :+ (geomArr(i).copy.asInstanceOf[T], i.toString, i)
+    }
+    RTreeLite[T](entries, r, dimension = 3)
+  }
+
   def buildRTree3d[T <: Instance[_, _, _] : ClassTag](instanceArr: Array[T]): RTree[Polygon, String] = {
     val r = math.sqrt(instanceArr.length).toInt
     var entries = new Array[(Polygon, String, Int)](0)

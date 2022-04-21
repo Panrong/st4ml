@@ -3,6 +3,7 @@ package st4ml.operators.converter
 import st4ml.instances._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import st4ml.instances.Utils.buildRTreeLite
 
 import scala.reflect.ClassTag
 
@@ -13,7 +14,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)
 
-  var rTree: Option[RTree[Polygon, String]] = None
+  var rTree: Option[RTreeLite[Polygon]] = None
   lazy val rasterXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
   lazy val rasterYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
   lazy val rasterXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
@@ -49,7 +50,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
       })
     }
     else if (optimization == "rtree") {
-      rTree = Some(buildRTree(polygonArr, durArr))
+      rTree = Some(buildRTreeLite(polygonArr, durArr))
       val spark = SparkSession.builder().getOrCreate()
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
@@ -103,7 +104,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
       })
     }
     else if (optimization == "rtree") {
-      rTree = Some(buildRTree(polygonArr, durArr))
+      rTree = Some(buildRTreeLite(polygonArr, durArr))
       val spark = SparkSession.builder().getOrCreate()
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.mapPartitions(partition => {
@@ -161,7 +162,7 @@ class Event2RasterConverter(polygonArr: Array[Polygon],
       })
     }
     else if (optimization == "rtree") {
-      rTree = Some(buildRTree(polygonArr, durArr))
+      rTree = Some(buildRTreeLite(polygonArr, durArr))
       val spark = SparkSession.builder().getOrCreate()
       val rTreeBc = spark.sparkContext.broadcast(rTree)
       input.map(preMap).mapPartitions(partition => {

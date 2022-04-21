@@ -1,7 +1,7 @@
 package st4ml.operators.converter
 
 import st4ml.instances.RoadNetwork.RoadNetwork
-import st4ml.instances.{Duration, Entry, Geometry, LineString, Polygon, RTree, Raster, SpatialMap, Trajectory}
+import st4ml.instances.{Duration, Entry, Geometry, LineString, Polygon, RTree, RTreeLite, Raster, SpatialMap, Trajectory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 
@@ -14,7 +14,7 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)
 
-  var rTree: Option[RTree[Polygon, String]] = None
+  var rTree: Option[RTreeLite[Polygon]] = None
   lazy val rasterXMin: Double = sMap.head._2.getEnvelopeInternal.getMinX
   lazy val rasterYMin: Double = sMap.head._2.getEnvelopeInternal.getMinY
   lazy val rasterXMax: Double = sMap.last._2.getEnvelopeInternal.getMaxX
@@ -29,14 +29,14 @@ class Traj2RasterConverter(polygonArr: Array[Polygon],
   lazy val tsSlots: Int = ((tsMax - tsMin) / tsLength).toInt
 
   def buildRTree(polygonArr: Array[Polygon],
-                 durArr: Array[Duration]): RTree[Polygon, String] = {
+                 durArr: Array[Duration]): RTreeLite[Polygon] = {
     val r = math.min(math.sqrt(polygonArr.length).toInt, 8)
     var entries = new Array[(Polygon, String, Int)](0)
     for (i <- polygonArr.indices) {
       polygonArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
       entries = entries :+ (polygonArr(i).copy.asInstanceOf[Polygon], i.toString, i)
     }
-    RTree[Polygon, String](entries, r, dimension = 3)
+    RTreeLite[Polygon](entries, r, dimension = 3)
   }
 
   def convert[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]]): RDD[Raster[Polygon, Array[Trajectory[V, D]], None.type]] = {

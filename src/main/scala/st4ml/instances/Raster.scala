@@ -12,7 +12,7 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
 
   // the rTree is built when 1) explicitly call attachInstanceRTree function or
   // 2) convert event/traj to raster with optimization
-  var rTree: Option[RTree[S, String]] = None
+  var rTree: Option[RTreeLite[S]] = None
 
   lazy val temporals: Array[Duration] = entries.map(_.temporal)
   lazy val spatials: Array[S] = entries.map(_.spatial)
@@ -311,7 +311,7 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
                                                               instanceArr: Array[T]
                                                             )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = {
     // in called in a converter, a broadcast Rtree will pass in and this line will not execute
-    if(rTree.isEmpty) rTree = Some(Utils.buildRTree(spatials, temporals))
+    if(rTree.isEmpty) rTree = Some(Utils.buildRTreeLite(spatials, temporals))
     val entryIndexToInstance = getEntryIndexToObjRTree(instanceArr, "both")
     createRaster(entryIndexToInstance)
   }
