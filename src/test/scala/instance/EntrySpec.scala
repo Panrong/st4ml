@@ -4,6 +4,8 @@ import st4ml.instances._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.funspec.AnyFunSpec
 
+import java.util.TimeZone
+
 class EntrySpec extends AnyFunSpec with Matchers {
   describe("Entry") {
     val p = Point(123.321, -0.4343434)
@@ -42,6 +44,11 @@ class EntrySpec extends AnyFunSpec with Matchers {
       Entry((poly, t))
     }
 
+    it("duration construction with string") {
+      Duration("2022-01-01 00:00:00") shouldBe Duration(1640966400)
+      Duration("2022-01-01 00:00:00", timeZone = TimeZone.getTimeZone("GMT")) shouldBe Duration(1640995200)
+      Duration(("2022-01-01 00:00:00", "2022-01-02 00:00:00"), format = "yyyy-MM-dd HH:mm:ss", timeZone =TimeZone.getDefault) shouldBe Duration(1640966400, 1641052800)
+    }
 
   }
 

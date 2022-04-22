@@ -21,9 +21,10 @@ class TemporalPartitioner(override val numPartitions: Int,
       case "end" => dataRDD.map(x => (x.duration.end, x))
     }
     import spark.implicits._
-    val tDf = rdd.sample(withReplacement = false, sr).map(_._1).toDF
+    val tDf = rdd.map(_._1).toDF
     val wholeTRange = (rdd.map(_._1).min, rdd.map(_._1).max)
     val splitPoints = (0 to numPartitions).map(_ / numPartitions.toDouble).toArray
+
     val tRanges = tDf.stat.approxQuantile("value", splitPoints, 0.01)
       .sliding(2).toArray.map(x => Duration(x(0).toLong, x(1).toLong)).zipWithIndex
     val tRangesExtended = (Duration(wholeTRange._1, tRanges(0)._1.end), 0) +:

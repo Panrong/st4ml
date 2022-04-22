@@ -1,5 +1,8 @@
 package st4ml.instances
 
+import java.text.SimpleDateFormat
+import java.util.TimeZone
+
 case class DurationRangeError(msg: String) extends Exception(msg)
 
 /**
@@ -38,11 +41,12 @@ case class Duration(start: Long, end: Long) {
   def intersects(dur: Duration): Boolean =
     !(dur.end < start || end < dur.start)
 
+  // both ends are exclusive
   def contains(timestampInSecond: Long): Boolean =
     start < timestampInSecond && timestampInSecond < end
 
   def contains(dur: Duration): Boolean =
-    start <= dur.start && dur.end <= end
+    start < dur.start && dur.end < end
 
   /**
    * If the length of intersection > 0, return Some(Duration), else None
@@ -54,10 +58,11 @@ case class Duration(start: Long, end: Long) {
     else Some(Duration(newStart, newEnd))
   }
 
-  def plusSeconds(deltaStart: Long, deltaEnd: Long): Duration = Duration(
-    start + deltaStart,
-    end + deltaEnd
-  )
+  def plusSeconds(deltaStart: Long, deltaEnd: Long): Duration =
+    Duration(start + deltaStart, end + deltaEnd)
+
+  def plusSeconds(delta: Long): Duration =
+    Duration(start + delta, end + delta)
 
   override def toString: String = s"Duration($start, $end)"
 }
@@ -69,8 +74,8 @@ object Duration {
   def apply(epochSecond1: Instant, epochSecond2: Instant): Duration =
     new Duration(epochSecond1.getEpochSecond, epochSecond2.getEpochSecond)
 
-  def apply(epochSecond1: String, epochSecond2: String): Duration =
-    new Duration(Instant(epochSecond1).getEpochSecond, Instant(epochSecond2).getEpochSecond)
+  //  def apply(epochSecond1: String, epochSecond2: String): Duration =
+  //    new Duration(Instant(epochSecond1).getEpochSecond, Instant(epochSecond2).getEpochSecond)
 
   def apply(epochSecond: Long): Duration = {
     new Duration(epochSecond, epochSecond)
@@ -81,10 +86,10 @@ object Duration {
     new Duration(epochSecondLong, epochSecondLong)
   }
 
-  def apply(epochSecond: String): Duration = {
-    val epochSecondLong = Instant(epochSecond).getEpochSecond
-    new Duration(epochSecondLong, epochSecondLong)
-  }
+  //  def apply(epochSecond: String): Duration = {
+  //    val epochSecondLong = Instant(epochSecond).getEpochSecond
+  //    new Duration(epochSecondLong, epochSecondLong)
+  //  }
 
   def apply(durations: Array[Duration]): Duration = {
     val nonEmptyDurations = durations.filter(!_.isEmpty)
@@ -100,6 +105,21 @@ object Duration {
   def apply(arr: Array[Long]): Duration = {
     assert(arr.length == 2, s"The array length for a duration should be two. Got ${arr.length}")
     Duration(arr(0), arr(1))
+  }
+
+  // construct with human readable time
+  def apply(str: String, format: String = "yyyy-MM-dd HH:mm:ss", timeZone: TimeZone = TimeZone.getDefault): Duration = {
+    val fm = new SimpleDateFormat(format)
+    fm.setTimeZone(timeZone)
+    val d = fm.parse(str)
+    Duration(d.getTime / 1000)
+  }
+
+  def apply(strs: (String, String), format: String, timeZone: TimeZone): Duration = {
+    val fm = new SimpleDateFormat(format)
+    fm.setTimeZone(timeZone)
+    val ds = Array(strs._1, strs._2).map(d => fm.parse(d).getTime / 1000)
+    Duration(ds(0), ds(1))
   }
 }
 

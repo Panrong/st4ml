@@ -13,6 +13,9 @@ class Trajectory[V, D](
   override def validation: Boolean =
     entries.length > 1
 
+  def isLegit: Boolean =
+    entries.length > 1 && entries.map(_.duration).sliding(2).map(x => x(0).start < x(1).end).forall(_ == true)
+
   def mapSpatial(f: Point => Point): Trajectory[V, D] =
     Trajectory(
       entries.map(entry =>

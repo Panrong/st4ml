@@ -29,7 +29,7 @@ object AddNoise {
 
     val noiseRDD = trajRDD.flatMap(x => new Array[x.type](copies).map(_ => x)).map { traj =>
       val entries = traj.entries.map(entry => new Entry(addNoise(entry.spatial, deviation1, r),
-        addNoise(entry.temporal, deviation2, r), entry.value))
+        addNoise(entry.temporal, deviation2, r), entry.value)).sortBy(_.temporal.start)
       new Trajectory(entries, traj.data)
     }
     noiseRDD.toDs().toDisk(resDir)

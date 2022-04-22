@@ -61,8 +61,6 @@ class GeomSpec extends AnyFunSpec with Matchers {
       TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Shanghai")) shouldBe 19
       TimeParsing.getHour(Duration(1638186168, 1638186168).start, TimeZone.getTimeZone("Asia/Tokyo")) shouldBe 20
       val a = TimeParsing.date2Long("2021-11-29")
-      println(a)
-      println(TimeParsing.timeLong2String(a+86400))
     }
   }
 }
