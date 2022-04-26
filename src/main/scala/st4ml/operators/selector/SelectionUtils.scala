@@ -91,7 +91,7 @@ object SelectionUtils {
       //      val tRdd = tMinRdd.join(tMaxRdd).map(x => (x._1, Duration(x._2._1, x._2._2)))
       //      val resRdd = extentRdd.join(tRdd).join(countRdd).map(x => (x._1, x._2._1._1, x._2._1._2, x._2._2))
       //      resRdd.collect()
-      // the method above takes too much memory 
+      // the method above takes too much memory
       rdd.mapPartitionsWithIndex {
         case (id, iter) =>
           var xMin = 180.0

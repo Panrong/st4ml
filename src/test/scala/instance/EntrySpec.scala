@@ -45,9 +45,9 @@ class EntrySpec extends AnyFunSpec with Matchers {
     }
 
     it("duration construction with string") {
-      Duration("2022-01-01 00:00:00") shouldBe Duration(1640966400)
+      Duration("2022-01-01 00:00:00", timeZone = TimeZone.getTimeZone("Asia/Shanghai")) shouldBe Duration(1640966400)
       Duration("2022-01-01 00:00:00", timeZone = TimeZone.getTimeZone("GMT")) shouldBe Duration(1640995200)
-      Duration(("2022-01-01 00:00:00", "2022-01-02 00:00:00"), format = "yyyy-MM-dd HH:mm:ss", timeZone =TimeZone.getDefault) shouldBe Duration(1640966400, 1641052800)
+      Duration(("2022-01-01 00:00:00", "2022-01-02 00:00:00"), format = "yyyy-MM-dd HH:mm:ss", timeZone = TimeZone.getTimeZone("Asia/Shanghai")) shouldBe Duration(1640966400, 1641052800)
     }
 
   }

@@ -36,6 +36,9 @@ class TSTRPartitioner(tNumPartition: Int,
       for (s <- sRanges)
         stRanges += ((i * sNumPartition + s._1) -> (tRanges(i), s._2))
     }
+    tPartitionRdd.unpersist()
+    tSplitRdd.unpersist()
+
     val idxRDD = dataRDD.map(x => {
       val centroid = x.center
       val idxs = stRanges.find(st => {

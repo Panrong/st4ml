@@ -173,22 +173,28 @@ object ConversionExp {
       //      println(s"Sum: ${sm.entries.map(_.value.length).sum}")
     }
     else if (m == "7") {
-      val timeSeries = TimeSeries.empty[Int](Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
-      val f: Array[Int] => Int = _=>5
-      val f2: (Array[Int], Polygon, Duration) => Long = (_,_, t) => t.start
-      val ts1 = timeSeries.mapValue(f)
-      val ts2 = timeSeries.mapValuePlus(f2)
-      println(ts1)
-      println(ts2)
-
-      val raster = Raster.empty(Array(Extent(0,0,1,1).toPolygon),Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
-      val f3:(Array[Nothing], Polygon, Duration) => Long = (_,_, t) => t.start
-      val raster2 = raster.mapValuePlus(f3)
-      println(raster2)
-
-      val m = 33483200
-      val n = 30*30
-      println(m * math.log(m) + n * math.log(m),n * math.log(n) + m * math.log(n), m*n)
+      //      val timeSeries = TimeSeries.empty[Int](Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
+      //      val f: Array[Int] => Int = _=>5
+      //      val f2: (Array[Int], Polygon, Duration) => Long = (_,_, t) => t.start
+      //      val ts1 = timeSeries.mapValue(f)
+      //      val ts2 = timeSeries.mapValuePlus(f2)
+      //      println(ts1)
+      //      println(ts2)
+      //
+      //      val raster = Raster.empty(Array(Extent(0,0,1,1).toPolygon),Array(Duration(0, 10), Duration(10, 20), Duration(20, 30)))
+      //      val f3:(Array[Nothing], Polygon, Duration) => Long = (_,_, t) => t.start
+      //      val raster2 = raster.mapValuePlus(f3)
+      //      println(raster2)
+      //
+      //      val m = 33483200
+      //      val n = 30*30
+      //      println(m * math.log(m) + n * math.log(m),n * math.log(n) + m * math.log(n), m*n)
+      val df = Range(0, 99).toDF
+      val partitionedDf = df.withColumn("idx", $"value"%10).repartition(10)
+      println(partitionedDf.rdd.mapPartitions(x => Iterator(x.size)).collect.deep)
+      val res = partitionedDf.rdd.mapPartitionsWithIndex{case(idx, iter) =>
+      iter.map(x => (idx, x))}.collect
+      println(res.deep)
     }
     sc.stop
   }
