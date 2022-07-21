@@ -14,4 +14,8 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 
-libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.17.1"
+libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.18.2"
+resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
+resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
+resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
+resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))

@@ -11,8 +11,8 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Polygon.empty,
-                                                  var tQuery: Duration = Duration.empty,
+class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-180, -180, 180, 180).toPolygon,
+                                                  var tQuery: Duration = Duration(Long.MinValue, Long.MaxValue),
                                                   var parallelism: Int = 1,
                                                  ) extends Operator with Serializable {
 
@@ -57,11 +57,19 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Polygon.
 
   def loadDf(dataDir: String): DataFrame = spark.read.parquet(dataDir)
 
-  def selectTraj(dataDir: String, metaDataDir: String = "None", partition: Boolean = true): RDD[Trajectory[Option[String], String]] = {
+  def selectTraj(dataDir: String,
+                 metaDataDir: String = "None",
+                 index: Boolean = false,
+                 partition: Boolean = true): RDD[Trajectory[Option[String], String]] = {
     val pInstanceDf = if (metaDataDir == "None") loadDf(dataDir) else loadDf(dataDir, metaDataDir)
     val pInstanceRDD = pInstanceDf.as[T].toRdd
-    if (partition) pInstanceRDD.filter(_.intersects(sQuery, tQuery)).stPartition(partitioner)
+    val selectedRDD = if (index) {
+      val indexedRDD = pInstanceRDD.perPartitionIndex
+      indexedRDD.flatMap(x => x.range3d(Event(sQuery, tQuery))).map(_._2)
+    }
     else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
+    if (partition) selectedRDD.stPartition(partitioner)
+    else selectedRDD
   }
 
   def selectEvent(dataDir: String,
@@ -76,7 +84,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Polygon.
     }
     else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
     if (partition) selectedRDD.stPartition(partitioner)
-    else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
+    else selectedRDD
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {
@@ -136,7 +144,7 @@ object SelectorTest extends App {
   val sc = spark.sparkContext
   sc.setLogLevel("ERROR")
 
-  val selector = new Selector[Event[Point, None.type, String]](Extent(-180,-180,180,180).toPolygon, Duration(0,2000000000), 16)
+  val selector = new Selector[Event[Point, None.type, String]](Extent(-180, -180, 180, 180).toPolygon, Duration(0, 2000000000), 16)
   val selectedRDD = selector.selectEvent("datasets/event_example_parquet_tstr", index = true)
   println(selectedRDD.count)
 

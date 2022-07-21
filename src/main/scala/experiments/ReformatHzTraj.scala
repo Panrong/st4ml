@@ -19,6 +19,7 @@ object ReformatHzTraj {
       .master(Config.get("master"))
       .getOrCreate()
     val sc = spark.sparkContext
+
     sc.setLogLevel("ERROR")
 
     val readDs = spark.read.json(fileName)

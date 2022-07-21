@@ -1,12 +1,11 @@
 package st4ml.operators.converter
+
 import st4ml.instances.{Event, Point, Trajectory}
 import org.apache.spark.rdd.RDD
 
-class Traj2EventConverter[TV, TD] {
-  type I = Trajectory[TV, TD]
-  type O = Event[Point, TV, TD]
+class Traj2EventConverter {
 
-   def convert(input: RDD[I]): RDD[O] = {
+  def convert[TV, TD](input: RDD[Trajectory[TV, TD]]): RDD[Event[Point, TV, TD]] = {
     val entries = input.flatMap(traj => {
       val points = traj.entries
       val attribute = traj.data

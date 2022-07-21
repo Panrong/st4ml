@@ -33,11 +33,11 @@ object TrajSpeedExtraction {
 
     for ((spatial, temporal) <- ranges) {
       val selector = Selector[TRAJ](spatial, temporal, numPartitions)
-      val trajRDD = selector.selectTraj(fileName, metadata, false)
+      val trajRDD = selector.selectTraj(fileName, metadata, true)
       val speedRDD = trajRDD.map(x => (x.data, x.consecutiveSpatialDistance("greatCircle").sum / x.duration.seconds * 3.6))
       val res = speedRDD.collect
       trajRDD.unpersist()
-      println(res.take(5).deep)
+      println(res.sortBy(_._2).take(5).deep)
     }
     println(s"Stay point extraction ${(nanoTime - t) * 1e-9} s")
     sc.stop()

@@ -10,11 +10,10 @@ import scala.reflect.ClassTag
 // only fully contained cells are converted
 class Raster2SmConverter[S <: Geometry : ClassTag,
   V: ClassTag, D: ClassTag, V2: ClassTag](sArray: Array[Polygon]) extends Converter {
-  type I = Raster[S, V, D]
-  type O = SpatialMap[Polygon, V2, None.type]
+
   override val optimization: String = ""
 
-  def convert(input: RDD[I], f: Array[V] => V2): RDD[O] = {
+  def convert(input: RDD[Raster[S, V, D]], f: Array[V] => V2): RDD[SpatialMap[Polygon, V2, None.type]] = {
     input.map { raster =>
       val grouped = raster.entries.map(entry =>
         (sArray.zipWithIndex.find(_._1.contains(entry.spatial)), entry))

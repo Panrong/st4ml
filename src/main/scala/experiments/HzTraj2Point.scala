@@ -37,7 +37,7 @@ object HzTraj2Point {
       .filter(_.isDefined).map(_.get)
     println(trajRDD.take(5).deep)
 
-    val converter = new Traj2EventConverter[None.type, String]
+    val converter = new Traj2EventConverter
     val eventRDD = converter.convert(trajRDD)
     println(eventRDD.take(5).deep)
 

@@ -266,6 +266,22 @@ object SelectionUtils {
         T(points, d)
       }).toDS
     }
+
+    def perPartitionIndex: RDD[RTree[Polygon, Trajectory[V, D]]] = {
+      rdd.mapPartitions { partition =>
+        val arr = partition.toArray
+        val capacity = math.sqrt(arr.length).toInt
+        val geomArr = arr.map(_.extent.toPolygon)
+        val durArr = arr.map(_.duration)
+        var entries = new Array[(Polygon, Trajectory[V, D], Int)](0)
+        for (i <- arr.indices) {
+          geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
+          entries = entries :+ (geomArr(i).copy.asInstanceOf[Polygon], arr(i), i)
+        }
+        Iterator(RTree[Polygon, Trajectory[ V, D]](entries, capacity, dimension = 3))
+      }
+    }
+
   }
 
   implicit class PTrajRDDFuncs[V: ClassTag, D: ClassTag](rdd: RDD[(Trajectory[V, D], Int)]) {

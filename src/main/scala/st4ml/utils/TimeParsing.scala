@@ -52,4 +52,10 @@ object TimeParsing {
     fm.setTimeZone(timeZone)
     fm.parse(s).getTime / 1000
   }
+
+  def time2Long(s: String, timeZone: TimeZone = TimeZone.getDefault): Long = {
+    val fm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+    fm.setTimeZone(timeZone)
+    fm.parse(s).getTime / 1000
+  }
 }
