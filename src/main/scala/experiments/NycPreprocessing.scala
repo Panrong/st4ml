@@ -14,7 +14,10 @@ import java.util.TimeZone
 
 object NycPreprocessing {
   def main(args: Array[String]): Unit = {
+    // C:\Users\kaiqi001\Desktop\nyc\green\puYear=2013\puMonth=8 green datasets/green_example
     val rootDir = args(0)
+    val color = args(1)
+    val resDir = args(2)
 
     val spark = SparkSession.builder()
       .appName("NycPreprocessing")
@@ -24,26 +27,21 @@ object NycPreprocessing {
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
 
-    val greenTaxiDf = spark.read.parquet("../yellow") //.filter(col("startLon").isNotNull)
-    greenTaxiDf.printSchema()
-    greenTaxiDf.show(2, false)
-    println(greenTaxiDf.count())
+    val taxiDf = spark.read.parquet(rootDir)
+    taxiDf.printSchema()
+    taxiDf.show(2, false)
+    println(taxiDf.count())
 
-    val greenTaxiDs = parseEventYellow(greenTaxiDf.sample(1 / 10000.0))
-    //    println(greenTaxiDs.count)
-    //    greenTaxiDs.persist(StorageLevel.MEMORY_AND_DISK)
-    //    greenTaxiDs.show(2)
-    //    Thread.sleep(1000000)
+    val taxiDs = if (color == "yellow") parseEventYellow(taxiDf) else parseEventGreen(taxiDf)
+
+    taxiDs.show(2)
+    taxiDs.write.parquet(resDir)
 
 
-    //    /** test */
-    //    //    greenTaxiDs.sample(1/10000.0).write.parquet("datasets/green_example")
-    //    val selector = new Selector[Event[Point, Option[String], String]]()
-    //    val rdd = selector.selectEvent("datasets/green_example")
-    //    println(rdd.count)
-    //    rdd.take(5).foreach(println)
+    /** test */
+    //    val selector = new Selector[Event[Point, None.type, String]]()
+    //    selector.selectEvent(resDir).take(2).foreach(println)
 
-    //    spark.read.parquet("datasets/green_example").show(5,false)
     sc.stop()
   }
 
