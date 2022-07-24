@@ -26,21 +26,21 @@ object NycPreprocessing {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-//
-//    val taxiDf = spark.read.parquet(rootDir)
-//    taxiDf.printSchema()
-//    taxiDf.show(2, false)
-//    println(taxiDf.count())
-//
-//    val taxiDs = if (color == "yellow") parseEventYellow(taxiDf) else parseEventGreen(taxiDf)
-//
-//    taxiDs.show(2)
-//    taxiDs.write.parquet(resDir)
-//
 
-    /** test */
-        val selector = new Selector[Event[Point, None.type, String]]()
-        selector.selectEvent(resDir).take(2).foreach(println)
+    val taxiDf = spark.read.parquet(rootDir)
+    taxiDf.printSchema()
+    taxiDf.show(2, false)
+    println(taxiDf.count())
+
+    val taxiDs = if (color == "yellow") parseEventYellow(taxiDf) else parseEventGreen(taxiDf)
+
+    taxiDs.show(2)
+    taxiDs.write.parquet(resDir)
+
+
+    //    /** test */
+    //        val selector = new Selector[Event[Point, None.type, String]]()
+    //        selector.selectEvent(resDir).take(2).foreach(println)
 
     sc.stop()
   }
