@@ -26,21 +26,21 @@ object NycPreprocessing {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-
-    val taxiDf = spark.read.parquet(rootDir)
-    taxiDf.printSchema()
-    taxiDf.show(2, false)
-    println(taxiDf.count())
-
-    val taxiDs = if (color == "yellow") parseEventYellow(taxiDf) else parseEventGreen(taxiDf)
-
-    taxiDs.show(2)
-    taxiDs.write.parquet(resDir)
-
+//
+//    val taxiDf = spark.read.parquet(rootDir)
+//    taxiDf.printSchema()
+//    taxiDf.show(2, false)
+//    println(taxiDf.count())
+//
+//    val taxiDs = if (color == "yellow") parseEventYellow(taxiDf) else parseEventGreen(taxiDf)
+//
+//    taxiDs.show(2)
+//    taxiDs.write.parquet(resDir)
+//
 
     /** test */
-    //    val selector = new Selector[Event[Point, None.type, String]]()
-    //    selector.selectEvent(resDir).take(2).foreach(println)
+        val selector = new Selector[Event[Point, None.type, String]]()
+        selector.selectEvent(resDir).take(2).foreach(println)
 
     sc.stop()
   }
@@ -51,7 +51,16 @@ object NycPreprocessing {
     val rdd = df.withColumn("auxi", map(colVals: _*))
       .select("lpepPickupDatetime", "lpepDropoffDatetime",
         "pickupLongitude", "pickupLatitude",
-        "dropoffLongitude", "dropoffLatitude", "auxi").rdd
+        "dropoffLongitude", "dropoffLatitude", "auxi")
+      .filter(col("pickupLatitude").cast("double") <= 50 &&
+        col("pickupLatitude").cast("double") >= 25 &&
+        col("pickupLongitude").cast("double") <= -65 &&
+        col("pickupLongitude").cast("double") >= -130 &&
+        col("dropoffLatitude").cast("double") <= 50 &&
+        col("dropoffLatitude").cast("double") >= 25 &&
+        col("dropoffLongitude").cast("double") <= -65 &&
+        col("dropoffLongitude").cast("double") >= -130
+      ).rdd
     val reformattedRdd = rdd.flatMap { x =>
       val t1 = time2Long(x.getTimestamp(0).toString.dropRight(2), timeZone = TimeZone.getTimeZone("America/New_York"))
       val timeStamp1 = Array(t1, t1)
@@ -75,10 +84,15 @@ object NycPreprocessing {
       .select("tpepPickupDatetime", "tpepDropoffDatetime",
         "startLon", "startLat",
         "endLon", "endLat", "auxi")
-      .filter(col("startLat").isNotNull &&
-        col("startLon").isNotNull &&
-        col("endLat").isNotNull &&
-        col("endLon").isNotNull)
+      .filter(col("startLat").cast("double") <= 50 &&
+        col("startLat").cast("double") >= 25 &&
+        col("startLon").cast("double") <= -65 &&
+        col("startLon").cast("double") >= -130 &&
+        col("endLat").cast("double") <= 50 &&
+        col("endLat").cast("double") >= -25 &&
+        col("endLon").cast("double") <= -65 &&
+        col("endLon").cast("double") >= -130
+      )
       .rdd
     val reformattedRdd = rdd.flatMap { x =>
       val t1 = time2Long(x.getTimestamp(0).toString.dropRight(2), timeZone = TimeZone.getTimeZone("America/New_York"))
