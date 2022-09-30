@@ -1,0 +1,324 @@
+package st4ml.operators.selector.partitioner
+
+import st4ml.instances.{Geometry, _}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{DataFrame, SparkSession, functions}
+
+import scala.math.{floor, max, min, sqrt}
+import scala.reflect.ClassTag
+import org.apache.spark.util.SizeEstimator
+import st4ml.operators.selector.Selector
+import st4ml.utils.Config
+
+class STR3DPartitioner(override val numPartitions: Int,
+                       override var samplingRate: Option[Double] = None,
+                       threshold: Double = 0,
+                       tThreshold: Double = 0)
+  extends STPartitioner {
+  var partitionRange: Map[Int, Extent] = Map()
+  var partitionRangeWithT: Map[Int, (Extent, Duration)] = Map()
+
+  val s = scala.math.pow(numPartitions, 1 / 3.0).toInt
+  val n = s
+  val t = (numPartitions / s / n.toDouble).toInt
+
+  def getPartitionRange[T <: Instance[_, _, _]](dataRDD: RDD[T]): Map[Int, Extent] = {
+    def getBoundary(df: DataFrame, n: Int, column: String): Array[Double] = {
+      val interval = 1.0 / n
+      val q = ((BigDecimal(0.0) until BigDecimal(1.0) by BigDecimal(interval))
+        :+ BigDecimal(1.0)).toArray.map(_.toDouble)
+      df.stat.approxQuantile(column, q, 0.001)
+    }
+
+    def getStrip(df: DataFrame, range: List[Double], column: String): DataFrame = {
+      df.filter(functions.col(column) >= range.head && functions.col(column) < range(1))
+    }
+
+    def genBoxes(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]]):
+    (Array[List[Double]], Map[List[Double], Array[(List[Double], Int)]]) = {
+      var metaBoxes = new Array[List[Double]](0)
+      for (x <- 0 to x_boundaries.length - 2) metaBoxes = metaBoxes :+
+        List(x_boundaries(x), y_boundaries(x)(0), x_boundaries(x + 1), y_boundaries(0).last)
+      var boxMap: Map[List[Double], Array[(List[Double], Int)]] = Map()
+      var boxes = new Array[List[Double]](0)
+      var n = 0
+      for (i <- 0 to x_boundaries.length - 2) {
+        var stripBoxes = new Array[(List[Double], Int)](0)
+        val x_min = x_boundaries(i)
+        val x_max = x_boundaries(i + 1)
+        for (j <- 0 to y_boundaries(i).length - 2) {
+          val y_min = y_boundaries(i)(j)
+          val y_max = y_boundaries(i)(j + 1)
+          val box = List(x_min, y_min, x_max, y_max)
+          boxes = boxes :+ box
+          stripBoxes = stripBoxes :+ (box, n)
+          n += 1
+        }
+        boxMap += metaBoxes(i) -> stripBoxes
+      }
+      (boxes, boxMap)
+    }
+
+    def getWholeRange(df: DataFrame, column: List[String]): Array[Double] = {
+      implicit def toDouble: Any => Double = {
+        case i: Int => i
+        case f: Float => f
+        case d: Double => d
+      }
+
+      val x_min = df.select(functions.min(column.head)).collect()(0)(0)
+      val x_max = df.select(functions.max(column.head)).collect()(0)(0)
+      val y_min = df.select(functions.min(column(1))).collect()(0)(0)
+      val y_max = df.select(functions.max(column(1))).collect()(0)(0)
+      val x_border = (x_max - x_min) * 0.001
+      val y_border = (y_max - y_min) * 0.001
+      Array(x_min - x_border, y_min - y_border, x_max + x_border, y_max + y_border)
+    }
+
+    def replaceBoundary(x_boundaries: Array[Double], y_boundaries: Array[Array[Double]], wholeRange: Array[Double]):
+    (Array[Double], Array[Array[Double]]) = {
+      val n_x_boundaries = x_boundaries
+      var n_y_boundaries = new Array[Array[Double]](0)
+      n_x_boundaries(0) = wholeRange(0)
+      n_x_boundaries(n_x_boundaries.length - 1) = wholeRange(2)
+      for (y <- y_boundaries) {
+        val n_y_boundary = wholeRange(1) +: y.slice(1, y.length - 1) :+ wholeRange(3)
+        n_y_boundaries = n_y_boundaries :+ n_y_boundary
+      }
+      (n_x_boundaries, n_y_boundaries)
+    }
+
+    def STR(df: DataFrame, columns: List[String], coverWholeRange: Boolean):
+    (Array[List[Double]], Map[List[Double], Array[(List[Double], Int)]]) = {
+      // columns: sequence of partitioning columns, e.g. List("x", "y") means partition on x first then y
+      // return boxes
+      var x_boundaries = getBoundary(df, s, columns.head)
+      assert(s * n <= numPartitions)
+      var y_boundaries = new Array[Array[Double]](0)
+      for (i <- 0 to x_boundaries.length - 2) {
+        val range = List(x_boundaries(i), x_boundaries(i + 1))
+        val stripRDD = getStrip(df, range, columns.head)
+        val y_boundary = getBoundary(stripRDD, n, columns(1))
+        y_boundaries = y_boundaries :+ y_boundary
+      }
+      if (coverWholeRange) {
+        val wholeRange = getWholeRange(df, List("x", "y"))
+        val new_boundaries = replaceBoundary(x_boundaries, y_boundaries, wholeRange)
+        x_boundaries = new_boundaries._1
+        y_boundaries = new_boundaries._2
+      }
+      genBoxes(x_boundaries, y_boundaries)
+    }
+
+    val spark = SparkSession.builder().getOrCreate()
+    val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
+    val rectangleRDD = dataRDD.sample(withReplacement = false, sr, seed = 1)
+      .map(x => (x.center._1.getX, x.center._1.getY, x.duration.center))
+    val df = spark.createDataFrame(rectangleRDD).toDF("x", "y", "t").cache()
+    val res = STR(df, List("x", "y", "t"), coverWholeRange = true)
+    val boxes = res._1
+    var boxesWIthID: Map[Int, Extent] = Map()
+    for (i <- boxes.indices) {
+      val lonMin = boxes(i).head
+      val latMin = boxes(i)(1)
+      val lonMax = boxes(i)(2)
+      val latMax = boxes(i)(3)
+      boxesWIthID += (i -> Extent(lonMin, latMin, lonMax, latMax))
+    }
+    this.partitionRange = boxesWIthID
+    this.partitionRangeWithT = boxesWIthID.toArray.flatMap(x => {
+      val s = x._2
+      val ts = rectangleRDD.filter(x => Point(x._1, x._2).intersects(s)).map(x => (x._3))
+      import spark.implicits._
+      val tDf = ts.toDF("t")
+      val interval = 1.0 / this.t
+      val q = ((BigDecimal(0.0) until BigDecimal(1.0) by BigDecimal(interval))
+        :+ BigDecimal(1.0)).toArray.map(_.toDouble)
+      val tRanges = tDf.stat.approxQuantile("t", q, 0.001).sliding(2).toArray
+      tRanges.map(x => (s, Duration(x(0).toLong, x(1).toLong)))
+    }).zipWithIndex.map(x => (x._2, x._1)).toMap
+    val areaSum = partitionRange.values.map(_.area).sum.formatted("%.5f")
+    val rangeArea = new Extent(
+      partitionRange.values.map(_.xMin).min,
+      partitionRange.values.map(_.yMin).min,
+      partitionRange.values.map(_.xMax).max,
+      partitionRange.values.map(_.yMax).max)
+      .area.formatted("%.5f")
+    assert(areaSum == rangeArea,
+      s"Range boundary error, whole range area $rangeArea, area sum $areaSum")
+    if (threshold != 0) boxesWIthID.mapValues(rectangle => rectangle.expandBy(threshold)).map(identity)
+    else boxesWIthID
+  }
+
+  /**
+   * Partition spatial dataRDD using STR algorithm
+   *
+   * @param dataRDD :data RDD
+   * @tparam T : type of spatial dataRDD, extending st4ml.geometry.Shape
+   * @return partitioned RDD of [(partitionNumber, dataRDD)]
+   */
+  override def partition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+    val partitionMap = if (partitionRange.isEmpty) getPartitionRange(dataRDD) else partitionRange
+    val indexedRDD = dataRDD.flatMap(d => partitionRangeWithT.filter(x => x._2._1.intersects(d.extent) && x._2._2.intersects(d.duration))
+      .map(xx => (xx._1, d)))
+    indexedRDD.partitionBy(new KeyPartitioner(numPartitions)).map(_._2)
+  }
+
+  override def partitionWDup[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T]): RDD[T] = {
+    val partitionMap = if (partitionRange.isEmpty) getPartitionRange(dataRDD) else partitionRange
+    val partitioner = new KeyPartitioner(numPartitions)
+    val boundary = genBoundary(partitionMap)
+    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+      .partitionBy(partitioner)
+    pRDD.map(_._2)
+  }
+
+  //  /**
+  //   * Partition spatial dataRDD and queries simultaneously
+  //   *
+  //   * @param dataRDD  : data RDD
+  //   * @param queryRDD : query RDD
+  //   * @tparam T : type of spatial dataRDD, extending st4ml.geometry.Shape
+  //   * @return tuple of (RDD[(partitionNumber, dataRDD)], RDD[(partitionNumber, queryRectangle)])
+  //   */
+  //  def copartition[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
+  //  (dataRDD: RDD[T], queryRDD: RDD[R]):
+  //  (RDD[(Int, T)], RDD[(Int, R)]) = {
+  //    val partitionMap = getPartitionRange(dataRDD)
+  //    val partitioner = new KeyPartitioner(numPartitions)
+  //    val boundary = genBoundary(partitionMap)
+  //    val pRDD = assignPartition(dataRDD, partitionMap, boundary)
+  //      .partitionBy(partitioner)
+  //    val pQueryRDD = assignPartition(queryRDD, partitionMap, boundary)
+  //      .partitionBy(partitioner)
+  //    (pRDD, pQueryRDD)
+  //  }
+
+  def copartitionWDup[T <: Instance[_, _, _] : ClassTag, R <: Instance[_, _, _] : ClassTag]
+  //performance not good
+  (RDD1: RDD[T], RDD2: RDD[R]):
+  (RDD[T], RDD[R]) = {
+    val sizes = (SizeEstimator.estimate(RDD1.take(1)), SizeEstimator.estimate(RDD2.take(1))) // assume all elements in one RDD having the same size
+    val sizeRatio = sizes._1 / sizes._2.toDouble
+    println(s"sizeRatio: $sizeRatio")
+    val weightedRDD = if (sizeRatio <= 0.5) {
+      RDD1.map(_.asInstanceOf[Instance[_, _, _]])
+        .union(RDD2.flatMap(x => Array.fill((1 / sizeRatio).round.toInt)(x))
+          .map(_.asInstanceOf[Instance[_, _, _]]))
+    }
+    else if (sizeRatio >= 2) {
+      RDD1.flatMap(x => Array.fill(sizeRatio.round.toInt)(x))
+        .map(_.asInstanceOf[Instance[_, _, _]])
+        .union(RDD2.map(_.asInstanceOf[Instance[_, _, _]]))
+    }
+    else RDD1.map(_.asInstanceOf[Instance[_, _, _]]).union(RDD2.map(_.asInstanceOf[Instance[_, _, _]]))
+    val partitionMap = getPartitionRange(weightedRDD)
+    val partitioner = new KeyPartitioner(numPartitions)
+    val boundary = genBoundary(partitionMap)
+    val pRDD1 = assignPartition(RDD1, partitionMap, boundary)
+      .partitionBy(partitioner)
+    val pRDD2 = assignPartition(RDD2, partitionMap, boundary)
+      .partitionBy(partitioner)
+    (pRDD1.map(_._2), pRDD2.map(_._2))
+  }
+
+  /**
+   * Generate the whole boundary of the sampled objects
+   *
+   * @param partitionMap : map of partitionID --> rectangle
+   * @return : List(xMin, yMin, xMax, yMax)
+   */
+  def genBoundary(partitionMap: Map[Int, Extent]): List[Double] = {
+    val boxes: Iterable[Array[Double]] = partitionMap.values.map(x =>
+      Array(x.xMin, x.yMin, x.xMax, x.yMax))
+    val minLon: Double = boxes.map(_.head).min
+    val minLat: Double = boxes.map(_ (1)).min
+    val maxLon: Double = boxes.map(_ (2)).max
+    val maxLat: Double = boxes.map(_.last).max
+    List(minLon, minLat, maxLon, maxLat)
+  }
+
+  /**
+   * Assign partition to each object
+   *
+   * @param dataRDD      : data RDD
+   * @param partitionMap : map of partitionID --> rectangle
+   * @param boundary     : the whole boundary of the sampled objects
+   * @tparam T :  type pf spatial dataRDD, extending st4ml.geometry.Shape
+   * @return : partitioned RDD of [(partitionNumber, dataRDD)]
+   */
+  def assignPartition[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T],
+                                                         partitionMap: Map[Int, Extent],
+                                                         boundary: List[Double]): RDD[(Int, T)] = {
+    val rddWithIndex = dataRDD
+      .map(x => {
+        val mbr = x.extent
+        val mbrShrink = Extent(
+          min(max(mbr.xMin, boundary.head), boundary(2)),
+          min(max(mbr.yMin, boundary(1)), boundary(3)),
+          max(min(mbr.xMax, boundary(2)), boundary.head),
+          max(min(mbr.yMax, boundary(3)), boundary(1)))
+        (x, partitionMap.filter {
+          case (_, v) => v.intersects(mbrShrink)
+        })
+      })
+    rddWithIndex.map(x => (x._1, x._2.keys))
+      .flatMapValues(x => x)
+      .map(_.swap)
+  }
+
+  def assignPartitionSingle[T <: Instance[_, _, _] : ClassTag](dataRDD: RDD[T],
+                                                               partitionMap: Map[Int, Extent],
+                                                               boundary: List[Double]): RDD[(Int, T)] = {
+    val rddWithIndex = dataRDD
+      .map(x => {
+        val mbr = x.extent
+        val mbrShrink = Extent(
+          min(max(mbr.xMin, boundary.head), boundary(2)),
+          min(max(mbr.yMin, boundary(1)), boundary(3)),
+          max(min(mbr.xMax, boundary(2)), boundary.head),
+          max(min(mbr.yMax, boundary(3)), boundary(1)))
+        (x, partitionMap.find {
+          case (_, v) => v.intersects(mbrShrink)
+        }.get)
+      })
+    rddWithIndex.map(x => (x._1, x._2._1))
+      .map(_.swap)
+  }
+}
+
+object StrTest {
+  def main(args: Array[String]): Unit = {
+    val spark = SparkSession.builder()
+      .appName("test")
+      .master(Config.get("master"))
+      .getOrCreate()
+
+    val sc = spark.sparkContext
+    sc.setLogLevel("ERROR")
+    val selector = new Selector[Event[Point, None.type, String]]()
+    val eventRDD = selector.selectEvent("datasets/event_example_parquet_tstr", partition = false)
+    val numPartitions = 8
+    val partitioner = new STR3DPartitioner(numPartitions, Some(1))
+    val t = partitioner.t
+    val tThreshold = 900
+    val resRDD = partitioner.partition(eventRDD)
+    //    val partitionedRDD = partitioner.partition(eventRDD).mapPartitionsWithIndex { case (idx, x) =>
+    //      val arr = x.toArray.sortBy(_.temporalCenter)
+    //      if (arr.length > 0) {
+    //        val l = scala.math.ceil(arr.length / t).toInt + 1
+    //        val groups = arr.sliding(l, l).toArray.map(x => (x.head.temporalCenter - tThreshold / 2, x.last.temporalCenter + tThreshold / 2)).zipWithIndex
+    //        val grouped = arr.flatMap(x => groups.filter(g => g._1._1 <= x.temporalCenter && g._1._2 >= x.temporalCenter).map(y => (y._2 + idx * 10000, x)))
+    //        grouped.toIterator
+    //      }
+    //      else Iterator()
+    //    }
+    //    val keys = partitionedRDD.map(_._1).distinct.collect().zipWithIndex.toMap
+    //    val resRDD = partitionedRDD.map(x => (keys(x._1), x._2)).partitionBy(new KeyPartitioner(numPartitions))
+    //    resRDD.mapPartitionsWithIndex {
+    //      case (x, y) => y.map(z => (x, z))
+    //    }.collect().foreach(println)
+
+    println(resRDD.mapPartitions(x => Iterator(x.length)).collect().deep)
+  }
+}

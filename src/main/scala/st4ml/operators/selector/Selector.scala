@@ -103,6 +103,9 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
     rdd1
   }
 
+  def selectRDD(rdd: RDD[I]): RDD[I] = rdd.filter(_.intersects(sQuery, tQuery))
+
+
   //  def select[A: ClassTag](dataDir: String, metaDataDir: String): RDD[A] = {
   //    val pInstanceDf = loadDf(dataDir, metaDataDir)
   //    val pInstanceRDD = pInstanceDf.head(1).head.get(0) match {

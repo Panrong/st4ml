@@ -47,7 +47,7 @@ object WriteMetadataTest extends App {
     val trajRDD = trajDs.toRdd
     println(trajRDD.count)
     /** partition trajRDD and persist on disk */
-    val partitioner = new TSTRPartitioner(sNumPartitions, tNumPartitions, Some(1))
+    val partitioner = new TSTRPartitioner(tNumPartitions, sNumPartitions, Some(1e-5))
     val (partitionedRDDWithPId, pInfo) = trajRDD.stPartitionWithInfo(partitioner)
     //    pInfo.foreach(println)
     val trajDsWithPid = partitionedRDDWithPId.toDs()
@@ -84,7 +84,7 @@ object WriteMetadataTest extends App {
     eventRDD.take(2).foreach(println)
     println(eventRDD.count)
     /** partition trajRDD and persist on disk */
-    val partitioner = new TSTRPartitioner(sNumPartitions, tNumPartitions, Some(0.0001))
+    val partitioner = new TSTRPartitioner(tNumPartitions, sNumPartitions, Some(0.0001))
     val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
     val EventDsWithPid = partitionedRDDWithPId.toDs()
     EventDsWithPid.show(2, truncate = false)

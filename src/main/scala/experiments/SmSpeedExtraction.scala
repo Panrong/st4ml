@@ -46,9 +46,7 @@ object SmSpeedExtraction {
       val converter = new Traj2SpatialMapConverter(sRanges)
       val smRDD = converter.convert(trajRDD, preMap, agg)
       val res = smRDD.collect
-
       def valueMerge(x: (Double, Int), y: (Double, Int)): (Double, Int) = (x._1 + y._1, x._2 + y._2)
-
       val mergedSm = res.drop(1).foldRight(res.head)((x, y) => x.merge(y, valueMerge, (_, _) => None))
       smRDD.unpersist()
       println(mergedSm.entries.map(x => (x.value._1 / x.value._2)).deep)

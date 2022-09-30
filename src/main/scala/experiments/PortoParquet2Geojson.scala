@@ -1,6 +1,6 @@
 package experiments
 
-import st4ml.instances.{Duration, Point, Trajectory}
+import st4ml.instances.{Duration, GeometryFactory, Point, Trajectory}
 import org.apache.spark.sql.SparkSession
 import st4ml.operators.selector.SelectionUtils.T
 
@@ -38,19 +38,24 @@ object PortoParquet2Geojson {
     })
     val formattedRDD = trajRDD.map(traj => {
       val id = traj.data
-      val start = timeLong2String(traj.duration.start).split(" ").head
+      val start = timeLong2String(traj.duration.start)
       val end = traj.duration.end
-      val coords = traj.entries.map(_.spatial).map(p => Seq(p.getX, p.getY)).toSeq
+      val coords = traj.entries.map(x => x.spatial.getCoordinate)
+      val linestring = GeometryFactory.factory.createLineString(coords)
+      //      val coords = traj.entries.map(_.spatial).map(p => Seq(p.getX, p.getY)).toSeq
       val `type` = "Feature"
 
-      (geometry(coords), id, properties(traj.duration.start), `type`, start, end)
+      (linestring.toString, id, traj.duration.start, `type`, start, end)
     })
     import spark.implicits._
     val df = formattedRDD.toDF("geometry", "id", "properties", "type", "start", "end")
     df.show(5, false)
     df.printSchema()
-    df.repartition(256).write.json(res)
-
+    println(df.count())
+    if (res != "none") {
+      df.repartition(128).write.mode("append").option("delimiter", "\t").csv(res)
+    }
     sc.stop
   }
 }
+

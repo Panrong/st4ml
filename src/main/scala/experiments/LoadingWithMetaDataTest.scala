@@ -84,7 +84,7 @@ object LoadingWithMetaDataTest {
         // metadata
         val selector = Selector[TRAJ](spatial, temporal, numPartitions)
         val t = nanoTime()
-        val rdd1 = selector.selectTraj(fileName, metadata, false)
+        val rdd1 = selector.selectTraj(fileName, metadata, partition = false)
         println(rdd1.count)
         println(s"total time: ${(nanoTime() - t) * 1e-9} s.\n")
       }
