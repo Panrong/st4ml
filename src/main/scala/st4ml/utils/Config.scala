@@ -61,7 +61,7 @@ object Config {
     } else if (localIpAddress contains "172.31.8.79") {
       aws(key)
     }
-    else if (localIpAddress contains "192.168.107.31") {
+    else if (localIpAddress contains "192.168") {
       server10(key)
     }
     else
