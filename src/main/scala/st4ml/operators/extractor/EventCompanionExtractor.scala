@@ -1,11 +1,9 @@
 package st4ml.operators.extractor
 
-import st4ml.instances.{Event, Point}
-import st4ml.operators.selector.partitioner.{KeyPartitioner, STR3DPartitioner, TSTRPartitioner}
 import org.apache.spark.rdd.RDD
 import st4ml.instances.GeometryImplicits._
-import st4ml.instances.Utils.buildRTree3d
-import st4ml.operators.selector.SelectionUtils.InstanceWithIdFuncs
+import st4ml.instances.{Event, Point}
+import st4ml.operators.selector.partitioner.{STR3DPartitioner, TSTRPartitioner}
 
 /**
  * Extract companion relationship from point-shaped events
@@ -137,7 +135,7 @@ class EventCompanionExtractor(sThreshold: Double,
 
 object EventCompanionExtractor {
   def apply(sThreshold: Double, tThreshold: Int, parallelism: Int): EventCompanionExtractor = {
-    val tPartition = math.pow(parallelism, 1 / 3.0).toInt
+    val tPartition = math.pow(parallelism, 1 / 2.0).toInt
     val sPartition = parallelism / tPartition
     new EventCompanionExtractor(sThreshold, tThreshold, sPartition, tPartition)
   }
