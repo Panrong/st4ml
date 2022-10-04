@@ -41,7 +41,7 @@ object LoadBalance {
       else new HashPartitioner(numPartitions)
       val partitionedRDD = partitioner.partition(eventRDD)
 
-      val sizes = partitionedRDD.mapPartitions(x => Iterator(x.size)).collect()
+      val sizes = partitionedRDD.mapPartitions(x => Iterator(x.size)).collect().filter(_ > 0)
       println(sizes.deep)
       println(stdDev(sizes) / mean(sizes))
 
@@ -64,7 +64,7 @@ object LoadBalance {
       else new HashPartitioner(numPartitions)
       val partitionedRDD = partitioner.partition(trajRDD)
 
-      val sizes = partitionedRDD.mapPartitions(x => Iterator(x.size)).collect()
+      val sizes = partitionedRDD.mapPartitions(x => Iterator(x.size)).collect().filter(_ > 0)
       println(sizes.deep)
       println(stdDev(sizes) / mean(sizes))
 

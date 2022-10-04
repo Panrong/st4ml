@@ -1,19 +1,18 @@
 package experiments
 
-import com.sun.xml.internal.ws.api.model.ExceptionType
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.col
-import org.apache.spark.storage.StorageLevel
-import org.locationtech.jts.geom.{GeometryFactory, MultiPolygon}
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import st4ml.instances.{Duration, Event, Point, Polygon}
+import st4ml.operators.converter.Event2SpatialMapConverter
 import st4ml.utils.Config
-
 import java.lang.System.nanoTime
 
 object Osm {
   def main(args: Array[String]): Unit = {
+    val t = nanoTime()
     val spark = SparkSession.builder()
       .appName("OSM")
       .master(Config.get("master"))
@@ -22,11 +21,16 @@ object Osm {
     sc.setLogLevel("ERROR")
 
     val areas = readArea()
-    println(s"== Loaded ${areas.length} postal code areas")
-
+    //    println(s"== Loaded ${areas.length} postal code areas")
     val poiRDD = readPOI()
-    println(s"== Loaded ${poiRDD.count} POIs")
-    //    Thread.sleep(1000000)
+    //    println(s"== Loaded ${poiRDD.count} POIs")
+    val converter = new Event2SpatialMapConverter(areas.map(_._2), optimization = "rtree")
+
+    def agg(x: Array[Event[Point, None.type, String]]): Int = x.length
+
+    val convertedRDD = converter.convert(poiRDD, agg = agg)
+    convertedRDD.take(2).foreach(println)
+    println(s"poi aggregation ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
 
@@ -44,9 +48,9 @@ object Osm {
     }
   }
 
-  def readArea(areaDir: String = "../postal_all.json"): Array[(Long, Polygon)] = {
+  def readArea(areaDir: String = "../postal_small.json"): Array[(Long, Polygon)] = {
     val spark = SparkSession.getActiveSession.get
-    spark.read.json(areaDir).printSchema()
+    //    spark.read.json(areaDir).printSchema()
     //    spark.read.json(areaDir).persist(StorageLevel.MEMORY_AND_DISK) // check size in UI
     val areaDf = spark.read.json(areaDir)
       .select("g", "id").filter(col("g").isNotNull && col("id").isNotNull &&
@@ -66,8 +70,6 @@ object Osm {
       }
       (id, polygon)
     }.filter(_._2.isDefined).map(x => (x._1, x._2.get))
-
-    areaRdd.cache()
     areaRdd.collect()
   }
 }

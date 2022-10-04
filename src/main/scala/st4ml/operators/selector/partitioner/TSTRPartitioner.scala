@@ -59,12 +59,13 @@ class TSTRPartitioner(tNumPartition: Int,
     val spatialRange = getWholeSpatialRange(dataRDD)
     val temporalPartitioner = new TemporalPartitioner(tNumPartition, samplingRate, ref)
     val tPartitionRdd = temporalPartitioner.partitionWithOverlap(dataRDD, tThreshold)
+    val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
     val tRanges = temporalPartitioner.slots.zipWithIndex.map(_.swap).toMap
     val stRanges = mutable.Map.empty[Int, (Duration, Extent)]
     val tSplitRdd = tPartitionRdd.mapPartitionsWithIndex {
       case (idx, iter) => iter.map(x => (idx, x))
     }
-    val sr = samplingRate.getOrElse(getSamplingRate(dataRDD))
+    tPartitionRdd.unpersist()
     for (i <- 0 until tNumPartition) {
       val samples = tSplitRdd.filter(_._1 == i).sample(withReplacement = false, sr).map(_._2).collect
       val sRanges = getPartitionRange(samples, Some(spatialRange))
