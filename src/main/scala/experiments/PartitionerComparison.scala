@@ -1,10 +1,11 @@
 package experiments
 
 import org.apache.spark.sql.SparkSession
-import st4ml.instances.Event
+import st4ml.instances.{Event, Extent}
 import st4ml.operators.extractor.{EventCompanionExtractor, TrajCompanionExtractor}
 import st4ml.operators.selector.SelectionUtils.{E, T}
 import st4ml.utils.Config
+
 import java.lang.System.nanoTime
 
 object PartitionerComparison {
@@ -23,12 +24,13 @@ object PartitionerComparison {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+    val ts = Range(1380585600, 1380585600+86400, 3600*6).sliding(2).toArray
 
     if (mode == "event") {
-      for (i <- List((1380585600, 1380628800), (1380628800 - tThreshold, 1380628800 - tThreshold + 86400 / 2))) {
+      for (i <- ts) {
         import spark.implicits._
         val eventRDD = spark.read.parquet(fileName).as[E].toRdd.map(x => Event(x.spatialCenter, x.entries.head.temporal, None, x.data))
-          .filter(x => x.temporalCenter >= i._1 && x.temporalCenter <= i._2)
+          .filter(x => x.temporalCenter >= i(0) && x.temporalCenter <= i(1) && x.intersects(Extent(-74.023,40.701,-73.903,40.874).toPolygon))
         println(eventRDD.count)
         val extractor = EventCompanionExtractor(sThreshold, tThreshold, numPartitions)
         val extractedRDD = if (opt) extractor.extractDetailV2(eventRDD)

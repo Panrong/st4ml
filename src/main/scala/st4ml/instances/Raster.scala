@@ -8,7 +8,7 @@ class Raster[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S
   extends Instance[S, V, D] {
 
   require(validation,
-    s"The length of entries for TimeSeries should be at least 1, but got ${entries.length}")
+    s"The length of entries for Raster should be at least 1, but got ${entries.length}")
 
   // the rTree is built when 1) explicitly call attachInstanceRTree function or
   // 2) convert event/traj to raster with optimization

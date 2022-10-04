@@ -2,7 +2,7 @@ package experiments
 
 import org.apache.spark.sql.SparkSession
 import st4ml.instances._
-import st4ml.operators.converter.{Event2RasterConverter, Event2SpatialMapConverter}
+import st4ml.operators.converter.Event2RasterConverter
 import st4ml.operators.selector.Selector
 import st4ml.utils.Config
 
@@ -27,8 +27,8 @@ object AirQuality {
     sc.setLogLevel("ERROR")
     import spark.implicits._
     val aqRDD = spark.read.option("header", true).parquet(dataDir).as[AirRaw].rdd
-    val eventRDD = aqRDD.map(x => Event(Point(x.longitude, x.latitude), Duration(x.t), Array(x.PM25_Concentration, x.PM10_Concentration, x.NO2_Concentration,
-      x.CO_Concentration, x.O3_Concentration, x.SO2_Concentration), x.station_id))
+    val eventRDD = aqRDD.map(x => Event(Point(x.latitude, x.longitude), Duration(x.t), Array(x.PM25_Concentration, x.PM10_Concentration, x.NO2_Concentration,
+      x.CO_Concentration, x.O3_Concentration, x.SO2_Concentration), x.station_id)) // the data labeled wrongly, lon and lat should reverse
     val f = Source.fromFile(queryFile)
     val ranges = f.getLines().toArray.map(line => {
       val r = line.split(" ")
@@ -49,9 +49,12 @@ object AirQuality {
       val polygons = mapRDD.collect.map(x => Polygon(x.getCoordinates ++ x.getCoordinates.reverse)).filter(x => x.intersects(sRange))
       val ts = Range(tRange.start.toInt, (tRange.end + 1).toInt, 86400).sliding(2).toArray
       val st = for (i <- polygons; j <- ts) yield (i, j)
-      val converter = new Event2RasterConverter(st.map(_._1), st.map(x => Duration(x._2(0).toLong, x._2(1).toLong)))
-      val convertedRDD = converter.convert(selectedRDD).map(x => (1, x.toString))
-      println(convertedRDD.count)
+      if (st.length > 0) {
+        val converter = new Event2RasterConverter(st.map(_._1), st.map(x => Duration(x._2(0).toLong, x._2(1).toLong)))
+        val convertedRDD = converter.convert(selectedRDD).map(x => x.mapValue(_.length))
+        println(convertedRDD.count)
+      }
+      else println(0)
     }
     println(s"Air aggregation ${(nanoTime - t) * 1e-9} s")
     sc.stop()
