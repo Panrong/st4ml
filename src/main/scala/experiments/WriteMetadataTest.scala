@@ -1,6 +1,7 @@
 package experiments
 
-import st4ml.instances.{Duration, Event, Extent, Point, Polygon, LineString}
+import experiments.AirQuality.AirRaw
+import st4ml.instances.{Duration, Event, Extent, LineString, Point, Polygon}
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner._
 import org.apache.spark.sql.SparkSession
@@ -56,6 +57,21 @@ object WriteMetadataTest extends App {
     trajDsWithPid.toDisk(res)
 
     /** END TEST TRAJ */
+  }
+
+  else if (m =="air") {
+    val eventDs = spark.read.parquet(fileName).as[AirRaw]
+    val eventRDD = eventDs.rdd.map(x => Event(Point(x.latitude, x.longitude), Duration(x.t), Array(x.PM25_Concentration, x.PM10_Concentration, x.NO2_Concentration,
+      x.CO_Concentration, x.O3_Concentration, x.SO2_Concentration), x.station_id)) // the data labeled wrongly, lon and lat should reverse
+    eventRDD.take(2).foreach(println)
+    println(eventRDD.count)
+    /** partition trajRDD and persist on disk */
+    val partitioner = new TSTRPartitioner(tNumPartitions, sNumPartitions, Some(0.0001))
+    val (partitionedRDDWithPId, pInfo) = eventRDD.stPartitionWithInfo(partitioner)
+    val EventDsWithPid = partitionedRDDWithPId.toDs()
+    EventDsWithPid.show(2, truncate = false)
+    pInfo.toDisk(metadata)
+    partitionedRDDWithPId.toDisk(res)
   }
   //
   //  /** load persisted partitioned trajRDD and metadata */

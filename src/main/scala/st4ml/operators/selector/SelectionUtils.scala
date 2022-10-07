@@ -3,8 +3,11 @@ package st4ml.operators.selector
 import st4ml.instances._
 import st4ml.operators.selector.partitioner.STPartitioner
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -278,7 +281,7 @@ object SelectionUtils {
           geomArr(i).setUserData(Array(durArr(i).start.toDouble, durArr(i).end.toDouble))
           entries = entries :+ (geomArr(i).copy.asInstanceOf[Polygon], arr(i), i)
         }
-        Iterator(RTree[Polygon, Trajectory[ V, D]](entries, capacity, dimension = 3))
+        Iterator(RTree[Polygon, Trajectory[V, D]](entries, capacity, dimension = 3))
       }
     }
 
@@ -398,4 +401,50 @@ object SelectionUtils {
     }
   }
 
+  def readMap(mapDir: String): Array[Polygon] = {
+    val spark = SparkSession.getActiveSession.get
+    val map = spark.read.option("delimiter", " ").csv(mapDir).rdd
+    val mapRDD = map.map(x => {
+      val points = x.getString(1).drop(1).dropRight(1).split("\\),").map { x =>
+        val p = x.replace("(", "").replace(")", "").split(",").map(_.toDouble)
+        Point(p(0), p(1))
+      }
+      LineString(points)
+    })
+    mapRDD.collect.map(x => Polygon(x.getCoordinates ++ x.getCoordinates.reverse))
+  }
+
+  def readPOI(poiDir: String = "../poi_small.json"): RDD[Event[Point, None.type, String]] = {
+    val spark = SparkSession.getActiveSession.get
+    val poiDf = spark.read.json(poiDir)
+      .select("g", "id").filter(col("g").isNotNull && col("id").isNotNull)
+    poiDf.rdd.mapPartitions { x =>
+      val wktReader = new WKTReader()
+      x.map { p =>
+        val id = p.getLong(1).toString
+        val point = wktReader.read(p.getString(0)).asInstanceOf[Point]
+        Event(point, Duration.empty, d = id)
+      }
+    }
+  }
+
+  def readArea(areaDir: String = "../postal_small.json"): Array[(Long, Polygon)] = {
+    val spark = SparkSession.getActiveSession.get
+    val areaDf = spark.read.json(areaDir).select("g", "id").filter(col("g").isNotNull && col("id").isNotNull &&
+      !col("g").startsWith("POINT") && !col("g").startsWith("LINESTRING"))
+    val areaRdd = areaDf.rdd.map { x =>
+      val wktReader = new WKTReader()
+      val p = wktReader.read(x.getString(0))
+      val gf = new GeometryFactory()
+      var polygon: Option[Polygon] = None
+      try {
+        polygon = Some(gf.createPolygon(p.getEnvelope.getCoordinates))
+      }
+      catch {
+        case _: Exception => println(p)
+      }
+      (x.getLong(1), polygon)
+    }.filter(_._2.isDefined).map(x => (x._1, x._2.get))
+    areaRdd.collect()
+  }
 }
