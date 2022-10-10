@@ -118,23 +118,28 @@ object Utils {
     }
   }
 
-  implicit class rasterRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[Raster[S, V, D]]) {
+  implicit class rasterRDDFuncs[V: ClassTag, S <: Geometry : ClassTag, D: ClassTag](rdd: RDD[Raster[S, V, D]]) extends Serializable {
     def mapValuePlus[V1](f: (V, S, Duration) => V1): RDD[Raster[S, V1, D]] =
       rdd.map(x => x.mapValuePlus(f))
 
     def mapValue[V1](f: V => V1): RDD[Raster[S, V1, D]] =
       rdd.map(x => x.mapValue(f))
 
-    def collectAndMerge[V1](init: V1, f: (V1, V) => V1): Raster[S, V1, D] = {
-      val sms = rdd.collect
+    def collectAndMerge[V1](init: V1, f1: (V1, V) => V1, f2: (V1, V1) => V1): Raster[S, V1, D] = {
 
-      def merge(a: Raster[S, V1, D], b: Raster[S, V, D]): Raster[S, V1, D] = {
-        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f(x._1.value, x._2.value)))
+      def merge1(a: Raster[S, V1, D], b: Raster[S, V, D]): Raster[S, V1, D] = {
+        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f1(x._1.value, x._2.value)))
         Raster(newEntries, a.data)
       }
 
-      val initSm = sms.head.mapValue(_ => init)
-      sms.foldLeft(initSm)(merge)
+      def merge2(a: Raster[S, V1, D], b: Raster[S, V1, D]): Raster[S, V1, D] = {
+        val newEntries = (a.entries zip b.entries).map(x => new Entry(x._1.spatial, x._1.temporal, f2(x._1.value, x._2.value)))
+        Raster(newEntries, a.data)
+      }
+
+      val initSm = rdd.take(1).head.mapValue(_ => init)
+      rdd.aggregate(initSm)(merge1, merge2)
+
     }
   }
 

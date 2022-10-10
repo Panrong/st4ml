@@ -1,6 +1,7 @@
 package experiments
 
 import org.apache.spark.sql.SparkSession
+import st4ml.instances.Utils.smRDDFuncs
 import st4ml.instances.{Event, Extent, Point}
 import st4ml.operators.converter.Event2SpatialMapConverter
 import st4ml.operators.selector.SelectionUtils._
@@ -35,7 +36,9 @@ object Osm {
         val converter = new Event2SpatialMapConverter(areas.map(_._2), optimization = "rtree")
         val agg = (x: Array[Event[Point, None.type, String]]) => x.length
         val convertedRDD = converter.convert(poiRDD, agg = agg)
-        println(convertedRDD.count)
+        val add = (a: Array[Int], b: Array[Int]) => a.zip(b).map { case (x, y) => x + y }
+        val res = convertedRDD.map(x => x.entries.map(_.value)).reduce(add)
+        println(res.length)
       }
     }
     println(s"poi aggregation ${(nanoTime - t) * 1e-9} s")
