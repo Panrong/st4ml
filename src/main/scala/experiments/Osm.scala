@@ -2,7 +2,7 @@ package experiments
 
 import org.apache.spark.sql.SparkSession
 import st4ml.instances.Utils.smRDDFuncs
-import st4ml.instances.{Event, Extent, Point}
+import st4ml.instances.{Duration, Event, Extent, Point}
 import st4ml.operators.converter.Event2SpatialMapConverter
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner.HashPartitioner
