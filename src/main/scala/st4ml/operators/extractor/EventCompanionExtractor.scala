@@ -82,7 +82,7 @@ class EventCompanionExtractor(sThreshold: Double,
           j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start,
           i.entries.head.temporal.start - j.entries.head.temporal.start,
           i.entries.head.spatial.greatCircle(j.entries.head.spatial))
-      }
+      }.distinct
     joinedRDD.unpersist()
     resRDD
   }

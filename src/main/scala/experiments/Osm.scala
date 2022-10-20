@@ -2,7 +2,7 @@ package experiments
 
 import org.apache.spark.sql.SparkSession
 import st4ml.instances.Utils.smRDDFuncs
-import st4ml.instances.{Event, Extent, Point}
+import st4ml.instances.{Duration, Event, Extent, Point}
 import st4ml.operators.converter.Event2SpatialMapConverter
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner.HashPartitioner
@@ -41,7 +41,6 @@ object Osm {
         val add = (a: Array[Int], b: Array[Int]) => a.zip(b).map { case (x, y) => x + y }
         val res = convertedRDD.map(x => x.entries.map(_.value)).reduce(add)
         println(res.length)
-        println(res.deep)
       }
     }
     println(s"poi aggregation ${(nanoTime - t) * 1e-9} s")
