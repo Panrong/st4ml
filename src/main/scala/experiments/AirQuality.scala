@@ -3,6 +3,7 @@ package experiments
 import org.apache.spark.sql.SparkSession
 import st4ml.instances._
 import st4ml.operators.converter.Event2RasterConverter
+import st4ml.operators.extractor.RasterAirExtractor
 import st4ml.operators.selector.SelectionUtils.readMap
 import st4ml.operators.selector.Selector
 import st4ml.utils.Config
@@ -31,14 +32,16 @@ object AirQuality {
     })
     for ((sRange, tRange) <- ranges) {
       val selector = new Selector[Event[Point, Array[Double], Int]](sRange, tRange, numPartitions)
-      val selectedRDD = selector.selectEvent(dataDir, metaDataDir = metadata)
+      val selectedRDD = selector.selectEvent(dataDir, metaDataDir = metadata).map(x => x.asInstanceOf[Event[Point, Array[Double], Int]])
       val polygons = readMap(mapDir).filter(x => x.intersects(sRange))
       val ts = Range(tRange.start.toInt, (tRange.end + 1).toInt, 86400).sliding(2).toArray
       val st = for (i <- polygons; j <- ts) yield (i, j)
       if (st.length > 0) {
         val converter = new Event2RasterConverter(st.map(_._1), st.map(x => Duration(x._2(0).toLong, x._2(1).toLong)))
-        val convertedRDD = converter.convert(selectedRDD).map(x => x.mapValue(_.length))
-        println(convertedRDD.count)
+        val convertedRDD = converter.convert(selectedRDD)
+        val extractor = new RasterAirExtractor
+        val extracted = extractor.extract(convertedRDD)
+        println(extracted.entries.length)
       }
       else println(0)
     }
@@ -46,3 +49,4 @@ object AirQuality {
     sc.stop()
   }
 }
+

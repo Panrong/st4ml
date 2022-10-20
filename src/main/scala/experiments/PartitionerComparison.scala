@@ -24,13 +24,13 @@ object PartitionerComparison {
 
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val ts = Range(1380585600, 1380585600+86400, 3600*6).sliding(2).toArray
+    val ts = Range(1380585600, 1380585600+86401, 3600*8).sliding(2).toArray
 
     if (mode == "event") {
       for (i <- ts) {
         import spark.implicits._
         val eventRDD = spark.read.parquet(fileName).as[E].toRdd.map(x => Event(x.spatialCenter, x.entries.head.temporal, None, x.data))
-          .filter(x => x.temporalCenter >= i(0) && x.temporalCenter <= i(1) && x.intersects(Extent(-74.023,40.701,-73.903,40.874).toPolygon))
+          .filter(x => x.temporalCenter >= i(0) && x.temporalCenter <= i(1))// && x.intersects(Extent(-74.023,40.701,-73.903,40.874).toPolygon))
         println(eventRDD.count)
         val extractor = EventCompanionExtractor(sThreshold, tThreshold, numPartitions)
         val extractedRDD = if (opt) extractor.extractDetailV2(eventRDD)

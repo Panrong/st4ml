@@ -1,6 +1,7 @@
 package experiments
 
 import org.apache.spark.sql.SparkSession
+import st4ml.instances.Utils.smRDDFuncs
 import st4ml.instances.{Event, Extent, Point}
 import st4ml.operators.converter.Event2SpatialMapConverter
 import st4ml.operators.selector.SelectionUtils._
@@ -30,15 +31,21 @@ object Osm {
     })
     for (sRange <- ranges) {
       val areas = readArea(postalDir).filter(_._2.intersects(sRange))
+      println(areas.length, areas.head)
       if (areas.length > 0) {
         val poiRDD = readPOI(poiDir).filter(_.intersects(sRange)).stPartition(new HashPartitioner(numPartitions))
+        println(poiRDD.count, poiRDD.take(2).deep)
         val converter = new Event2SpatialMapConverter(areas.map(_._2), optimization = "rtree")
         val agg = (x: Array[Event[Point, None.type, String]]) => x.length
         val convertedRDD = converter.convert(poiRDD, agg = agg)
-        println(convertedRDD.count)
+        val add = (a: Array[Int], b: Array[Int]) => a.zip(b).map { case (x, y) => x + y }
+        val res = convertedRDD.map(x => x.entries.map(_.value)).reduce(add)
+        println(res.length)
+        println(res.deep)
       }
     }
     println(s"poi aggregation ${(nanoTime - t) * 1e-9} s")
     sc.stop()
   }
 }
+

@@ -63,24 +63,27 @@ class EventCompanionExtractor(sThreshold: Double,
           i.entries.head.temporal.start - j.entries.head.temporal.start,
           i.entries.head.spatial.greatCircle(j.entries.head.spatial))
       }
-    val resRDD = joinedRDD.distinct
+    val resRDD = joinedRDD//.distinct
     resRDD
   }
 
   def extractWith2DSTR(rdd: RDD[Event[Point, None.type, String]]):
   RDD[(String, Double, Double, Long, String, Double, Double, Long, Long, Double)] = {
     val partitioner = new TSTRPartitioner(1, tPartition * sPartition,
-      sThreshold = sThreshold / 111000 / 2, tThreshold = 0, samplingRate = Some(0.2))
+      sThreshold = sThreshold / 111000 / 2, tThreshold = 0, samplingRate = Some(0.01))
     val partitionedRDD = partitioner.partitionWDup(rdd).mapPartitionsWithIndex { case (id, p) => p.map(x => (id, x)) }
+    rdd.unpersist()
     val joinedRDD = partitionedRDD.join(partitionedRDD).filter(x => x._2._1.data.hashCode < x._2._2.data.hashCode && // for (a, b) and (b, a), calculate only once
       isCompanion(x._2._1, x._2._2, sThreshold, tThreshold))
+    partitionedRDD.unpersist()
+    val resRDD = joinedRDD
       .map { case (_, (i, j)) =>
         (i.data, i.entries.head.spatial.x, i.entries.head.spatial.y, i.entries.head.temporal.start,
           j.data, j.entries.head.spatial.x, j.entries.head.spatial.y, j.entries.head.temporal.start,
           i.entries.head.temporal.start - j.entries.head.temporal.start,
           i.entries.head.spatial.greatCircle(j.entries.head.spatial))
       }
-    val resRDD = joinedRDD.distinct
+    joinedRDD.unpersist()
     resRDD
   }
 
