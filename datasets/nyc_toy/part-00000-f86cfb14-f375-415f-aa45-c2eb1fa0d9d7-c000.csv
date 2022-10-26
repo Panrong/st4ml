@@ -1,0 +1,1 @@
+shape,timestamp,dropoff_datetime,vendor_id,pickup_longitude,pickup_latitude,hack_license,trip_time_in_secs,trip_distance,passenger_count,dropoff_longitude,pickup_datetime,dropoff_latitude,medallion,g,rate_code

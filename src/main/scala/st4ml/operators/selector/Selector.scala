@@ -1,12 +1,14 @@
 package st4ml.operators.selector
 
+import examples.AnomalyExtractionTest.PreE
 import st4ml.instances._
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner.{HashPartitioner, STPartitioner}
 import st4ml.operators.Operator
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{array, col, lit, map, split, to_timestamp}
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.locationtech.jts.io.WKTReader
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -85,6 +87,31 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
     else pInstanceRDD.filter(_.intersects(sQuery, tQuery))
     if (partition) selectedRDD.stPartition(partitioner)
     else selectedRDD
+  }
+
+  def selectEventCSV(dataDir:String):RDD[Event[Geometry, None.type, Map[String, String]]] = {
+    val df = spark.read.option("header", value = true).csv(dataDir)
+    val columns = df.columns.filterNot(x => Array("shape", "timestamp", "time", "duration").contains(x))
+    val columnsNValue = columns.flatMap(x => Array(lit(x), col(x)))
+    val condensedDf = df.withColumn("data", map(columnsNValue: _*)).drop(columns: _*)
+    import spark.implicits._
+    val ds = if (condensedDf.columns.contains("timestamp")) condensedDf
+      .withColumn("t", array(col("timestamp"), col("timestamp"))).drop("timestamp")
+      .as[PreE]
+    else if (condensedDf.columns.contains("duration")) condensedDf
+      .withColumn("t", split(col("duration"), ",")).drop("duration").as[PreE]
+    else if (condensedDf.columns.contains("time")) condensedDf
+      .withColumn("timestamp", to_timestamp(col("time")))
+      .withColumn("t", array(col("timestamp"))).drop("timestamp", "time").as[PreE]
+    else condensedDf.withColumn("t", array(lit(0), lit(0))).as[PreE]
+    val eventRDD = ds.rdd.map { x =>
+      val wktReader = new WKTReader()
+      val shape = wktReader.read(x.shape)
+      val duration = Duration(x.t.map(x => x.stripMargin.toLong))
+      val data = x.data
+      Event(shape, duration, None, data)
+    }
+    eventRDD
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {

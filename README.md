@@ -51,13 +51,15 @@ bash PATH_TO_SPARK/bin/spark-submit\
 
 The following result shall appear (after some Spark logs) if the application is executed correctly:
 ```
-TODO: change to top dataset
 ============================================
 == ST4ML example: finding abnormal events ==
 ============================================
-Processing 23 events
-Extracted 0 abnormal events occurring during 23 to 4.
+Processing 9933 events
+Extracted 2674 abnormal events occurring during 23 to 4.
 2 examples: 
+Map(vendor_id -> CMT, trip_distance -> 2.80, rate_code -> 1, dropoff_longitude -> -73.979507, pickup_latitude -> 40.78125, hack_license -> 768FD7AF6008C453A3A5CAD66813E4A0, pickup_longitude -> -73.946266, g -> POINT (-73.946266 40.78125), passenger_count -> 1, trip_time_in_secs -> 672, dropoff_datetime -> 2013-07-07 13:32:37, pickup_datetime -> 2013-07-07 13:21:25, dropoff_latitude -> 40.763603, medallion -> 768FD7AF6008C453A3A5CAD66813E4A0)
+Map(vendor_id -> VTS, trip_distance -> 2.74, rate_code -> 1, dropoff_longitude -> -73.97673, pickup_latitude -> 40.781464, hack_license -> 768261A6327C320FD1F61E61B7F1358B, pickup_longitude -> -73.946503, g -> POINT (-73.946503 40.781464), passenger_count -> 5, trip_time_in_secs -> 600, dropoff_datetime -> 2013-07-07 12:43:00, pickup_datetime -> 2013-07-07 12:33:00, dropoff_latitude -> 40.760757, medallion -> 768261A6327C320FD1F61E61B7F1358B)
+
 ```
 
 ### Programming with ST4ML
@@ -99,7 +101,7 @@ In line 10, the path to the trajectory data directory is passed to the selector,
 and subsequently the resulting RDDs are passed to the converter and extractor 
 as a pipeline (lines 11-12). The final results are saved as CSV files with the `saveCSV` helper function.
 
-The complete example can be found at 'src/main/scala/examples/RasterSpeedExample.scala'. TODO
+The complete example can be found at `src/main/scala/examples/RasterSpeedExample.scala`. TODO
 
 ## Core Techniques
 The figure below plots the main components of ST4ML's _three-stage pipeline_ abstraction.
@@ -159,6 +161,54 @@ Please cite our paper if you find ST4ML useful in your research.
 
 
 
+
+## Toy Datasets (maybe put in the separate documentation)
+
+ST4ML supports automatically load and parse data with the following standard formats (more to be added).
+Some toy datasets that can be accommodated in a single machine are provided as examples and located in `./datasets`.
+### CSV + WKT
+CSV is one of the most common human-readable format, and we use WKT standard to represent the geometries.
+The CSV file should contain the following fields:
+
+| column name           | explanation                                                                                                                  |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| shape                 | WKT format of a geometry, currently support POINT, LINESTRING, and POLYGON.                                                  |
+| timestamp             | Numeric 10-bit epoch time (cannot together appear with duration or time).                                                    |
+| duration              | A duration of format timestamp, timestamp (cannot together appear with timestamp or time).                                 |
+| time                  | Time with yyyy-MM-dd HH:mm:ss format (cannot together appear with timestamp or time). The time zone of SparkSession applies. |
+| custom attribute name | Other attributes will be packed as a `Map` in Scala. The `value` will be of string type.                                                                          |
+
+
+For example, an event in CSV like
+
+| shape                      | timestamp          | id                  |
+|----------------------------|--------------------|---------------------|
+| POINT (-8.620326 41.14251) | 1372636888         | 1372636858620000589 |
+
+will be converted to an ST4ML Event:
+
+`Event(Entry(Point(-8.620326, 41.14251), Duration(1372636888, 1372636888)), "1372636858620000589")` 
+
+### Toy Datasets
+We provide the following toy datasets for users to get familiar with ST4ML and try their applications.
+#### NYC Taxi 
+
+9933 taxi pick up/ drop off records retrieved from https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page
+
+Path: `./datasets/nyc_toy`
+
+Preview: 
+```
++----------------------------+----------+--------------------+----------+------------------+-----------------+---------------------------------+-------------------+---------------+-----------------+-------------------+--------------------+------------------+---------------------------------+-----------------------------+-----------+
+|shape                       |timestamp | dropoff_datetime   |vendor_id | pickup_longitude | pickup_latitude | hack_license                    | trip_time_in_secs | trip_distance | passenger_count | dropoff_longitude | pickup_datetime    | dropoff_latitude | medallion                       | g                           | rate_code |
++----------------------------+----------+--------------------+----------+------------------+-----------------+---------------------------------+-------------------+---------------+-----------------+-------------------+--------------------+------------------+---------------------------------+-----------------------------+-----------+
+|POINT (-73.953201 40.771488)|1373695500| 2013-07-13 02:05:00| VTS      | -73.958336       | 40.719078       | 452B322CA3BB3132FF0F59FADAE615D6| 960               | 5.47          | 2               | -73.953201        | 2013-07-13 01:49:00| 40.771488        | 452B322CA3BB3132FF0F59FADAE615D6| POINT (-73.958336 40.719078)| 1         |
+|POINT (-73.949028 40.780659)|1373254679| 2013-07-07 23:43:04| CMT      | -73.949028       | 40.780659       | 0006C8F9279EFD18D8E70193D98499CB| 305               | 1.40          | 1               | -73.963455        | 2013-07-07 23:37:59| 40.769409        | 0006C8F9279EFD18D8E70193D98499CB| POINT (-73.949028 40.780659)| 1         |
++----------------------------+----------+--------------------+----------+------------------+-----------------+---------------------------------+-------------------+---------------+-----------------+-------------------+--------------------+------------------+---------------------------------+-----------------------------+-----------+
+```
+
+
+#### OSM Map
 
 
 [spark]: https://spark.apache.org/
