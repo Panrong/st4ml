@@ -84,20 +84,20 @@ case class RTree[T <: Geometry : ClassTag, D: ClassTag](root: RTreeNode[D]) exte
     val d = if (meter) distance / 111000 else distance
     val ans = mutable.ArrayBuffer[(T, D)]()
     val st = new mutable.Stack[RTreeNode[D]]()
-    if (root.mMbr.intersects(query) && root.mChild.nonEmpty) st.push(root)
+    if (root.mMbr.distance(query) < d && root.mChild.nonEmpty) st.push(root)
     while (st.nonEmpty) {
       val now = st.pop()
       if (!now.isLeaf) {
         now.mChild.foreach {
           x =>
             val y = x.asInstanceOf[RTreeInternalEntry[D]]
-            if (query.intersects(y.mbr)) st.push(y.node)
+            if (query.distance(y.mbr) < d) st.push(y.node)
         }
       } else {
         now.mChild.foreach {
           x =>
             val y = x.asInstanceOf[RTreeLeafEntry[T, D]]
-            if (query.intersects(y.shape)) ans += ((y.shape, y.mData))
+            if (query.distance(y.shape) < d) ans += ((y.shape, y.mData))
         }
       }
     }

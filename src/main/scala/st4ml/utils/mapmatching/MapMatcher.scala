@@ -13,17 +13,12 @@ import scala.math._
 import scala.reflect.ClassTag
 
 
-class MapMatcher(fileDir: String) extends Serializable {
+class MapMatcher(roadGrid: RoadGrid) extends Serializable {
 
   case class RoadSeg(id: String, shape: LineString)
 
-
-  val roadGrid: RoadGrid = loadRoadGraph(fileDir)
   val roadNetwork: RoadNetwork = genRoadNetwork(roadGrid)
   val roadGraph: RoadGraph = RoadGraph(roadGrid.edges)
-
-  // read osm files to generate a spatial map of road networks
-  def loadRoadGraph(fileDir: String): RoadGrid = RoadGrid(fileDir)
 
   // generate the companion road network for candidate searching
   def genRoadNetwork(rg: RoadGrid): RoadNetwork = {
@@ -50,7 +45,6 @@ class MapMatcher(fileDir: String) extends Serializable {
     roadNetwork.rTree = Some(buildRTree(roadNetwork.spatials))
     val candidates = roadNetwork.getSpatialIndexRTree(pArray, threshold)
     val roadSegs = roadNetwork.entries.map(x => RoadSeg(x.value, x.spatial))
-    candidates.map(x => x.map(i => roadSegs(i)))
     pArray zip candidates.map(x => x.map(i => roadSegs(i)))
   }
 
@@ -174,7 +168,7 @@ class MapMatcher(fileDir: String) extends Serializable {
       else new Array[Entry[Point, String]](0)
     }.toArray :+ new Array[Entry[Point, String]](0)
     val segNProjectedPoints = segNPointGrouped.map(x => (x._1, x._2.map { case (p, t) =>
-      val (_, _,projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
+      val (_, _, projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
       new Entry(Point(projected.x, projected.y), Duration(t), x._1.id)
     }))
 
@@ -218,7 +212,7 @@ class MapMatcher(fileDir: String) extends Serializable {
         else new Array[Entry[Point, String]](0)
       }.toArray :+ new Array[Entry[Point, String]](0)
       val segNProjectedPoints = segNPointGrouped.map(x => (x._1, x._2.map { case (p, t) =>
-        val (_,_, projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
+        val (_, _, projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
         new Entry(projected, Duration(t), x._1.id)
       }))
 
@@ -229,7 +223,7 @@ class MapMatcher(fileDir: String) extends Serializable {
       (segNProjectedPoints.map(_._2) zip interpolated).flatten.flatten
     } else {
       val segNProjectedPoints = segNPointGrouped.map(x => (x._1, x._2.map { case (p, t) =>
-        val (_,_, projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
+        val (_, _, projected) = roadGrid.id2edge(x._1.id).projectionDistance(Point(p.x, p.y))
         new Entry(projected, Duration(t), x._1.id)
       }))
       segNProjectedPoints.flatMap(_._2)
@@ -243,7 +237,7 @@ class MapMatcher(fileDir: String) extends Serializable {
     val entries = (selectedPoints zip timestamps).map {
       case ((point, roadSeg), t) =>
         val id = roadSeg.id
-        val (_, _,projected) = roadGrid.id2edge(id).projectionDistance(Point(point.x, point.y))
+        val (_, _, projected) = roadGrid.id2edge(id).projectionDistance(Point(point.x, point.y))
         Entry(Point(projected.x, projected.y), Duration(t), id)
     }
     entries
@@ -276,17 +270,25 @@ class MapMatcher(fileDir: String) extends Serializable {
     val validPoints = cleanedEMatrix.map(_._2)
     val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
     val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
-    val opimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
+    val optimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
     else {
       val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
       viterbi(cleanedEMatrix.map(_._1), tMatrix)
     }
-    if (opimalPathIdx sameElements Array(-1))
+    if (optimalPathIdx sameElements Array(-1))
       return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""), Entry(Point.empty, Duration.empty, "")), "invalid")
     else {
-      val entries = mapPoints(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
+      val entries = mapPoints(optimalPathIdx, cleanedCandidates, cleanedTimeStamps)
       new Trajectory[String, String](entries, traj.data.toString)
     }
+  }
+}
+
+object MapMatcher {
+  //deprecated
+  def apply(mapDir: String): MapMatcher = {
+    val roadGrid: RoadGrid = RoadGrid(mapDir)
+    new MapMatcher(roadGrid)
   }
 }
 
@@ -298,7 +300,7 @@ object mmTest {
       .getOrCreate()
     val sc = spark.sparkContext
     sc.setLogLevel("ERROR")
-    val mapMatcher = new MapMatcher("datasets/porto.csv")
+    val mapMatcher = MapMatcher("datasets/porto.csv")
     //    println(mapMatcher.roadGraph)
     //    println(mapMatcher.roadNetwork)
     import spark.implicits._

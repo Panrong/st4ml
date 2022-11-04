@@ -18,7 +18,7 @@ object MapMatching {
    val sparkConf = new SparkConf()
       .setAppName("MapMatching")
      .setMaster(Config.get("master"))
-     .registerKryoClasses(Array(classOf[MapMatcher], classOf[Traj2TrajConverter[Option[String]]], classOf[RTree[LineString, String]]))
+     .registerKryoClasses(Array(classOf[MapMatcher], classOf[Traj2TrajConverter], classOf[RTree[LineString, String]]))
      val spark = SparkSession.builder()
       .config(sparkConf).getOrCreate()
 
@@ -41,7 +41,7 @@ object MapMatching {
     println(s"num trajs: ${trajRDD.count()}")
     val l = trajRDD.map(_.entries.length)
     println(s"avg length: ${l.sum()/l.count()}")
-    val converter = new Traj2TrajConverter[Option[String]](mapFile)
+    val converter = Traj2TrajConverter(mapFile)
     val mmRDD = converter.convert(trajRDD)
 
     val formatter = new SimpleDateFormat("yyyy-MM-dd HH")

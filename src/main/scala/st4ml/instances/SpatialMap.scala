@@ -3,7 +3,7 @@ package st4ml.instances
 import scala.reflect.ClassTag
 
 class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Entry[S, V]],
-                                                  override val data: D)
+                                                 override val data: D)
   extends Instance[S, V, D] {
 
   lazy val spatials: Array[S] = entries.map(_.spatial)
@@ -122,6 +122,12 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Ent
     )
   }
 
+  def getBinIndices[S <: Geometry, T <: Geometry](bins: Array[S], queryArr: Array[T], distance: Double): Array[Array[Int]] = {
+    queryArr.map(q =>
+      bins.zipWithIndex.filter(_._1.distance(q) < distance).map(_._2)
+    )
+  }
+
   def getBinIndicesRTree[S <: Geometry, T <: Geometry : ClassTag](RTree: RTree[S, String], queryArr: Array[T]): Array[Array[Int]] = {
     queryArr.map(query => RTree.range(query).map(_._2.toInt))
   }
@@ -135,6 +141,13 @@ class SpatialMap[S <: Geometry : ClassTag, V, D](override val entries: Array[Ent
       getBinIndex(spatials, geomArr)
     else
       getBinIndices(spatials, geomArr)
+  }
+
+  def getSpatialIndex[G <: Geometry](geomArr: Array[G], distance: Double): Array[Array[Int]] = {
+    if (geomArr.head.isInstanceOf[Point] && isSpatialDisjoint)
+      getBinIndex(spatials, geomArr)
+    else
+      getBinIndices(spatials, geomArr, distance)
   }
 
   def getSpatialIndexRTree[G <: Geometry : ClassTag](geomArr: Array[G]): Array[Array[Int]] = {

@@ -3,13 +3,17 @@ package st4ml.operators.selector
 import st4ml.instances._
 import st4ml.operators.selector.partitioner.STPartitioner
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.functions.{col, exp}
 import org.apache.spark.sql.{Dataset, SparkSession}
 import org.apache.spark.storage.StorageLevel.MEMORY_AND_DISK_SER
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
+import st4ml.utils.mapmatching.road.{RoadEdge, RoadGrid, RoadVertex}
 
+import java.io.File
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 import scala.reflect.ClassTag
 
 object SelectionUtils {
@@ -199,7 +203,7 @@ object SelectionUtils {
 
   case class PreE(shape: String, t: Array[String], data: Map[String, String])
 
-  case class PreT(shape: String, timestamps: String,  data: Map[String, String])
+  case class PreT(shape: String, timestamps: String, data: Map[String, String])
 
   /** rdd2Df conversion functions */
   //  trait Ss {
@@ -464,5 +468,46 @@ object SelectionUtils {
       (polygon, duration)
     }
     (rdd.map(_._1).collect, rdd.map(_._2).collect)
+  }
+
+  def readOsm(mapDir: String, gridSize: Double = 0.1): RoadGrid = {
+    val spark = SparkSession.getActiveSession.get
+    val edgesDir = mapDir.stripMargin('/') + "/edges.csv"
+    val edgeDf = spark.read.option("header", true).csv(edgesDir)
+    val edges = edgeDf.rdd.map { edge =>
+      val wktReader = new WKTReader()
+      val linestring = wktReader.read(edge.getString(0)).asInstanceOf[LineString]
+      val from = edge.getString(1)
+      val to = edge.getString(2)
+      val id = edge.getString(3)
+      val length = edge.getString(5).toDouble
+      RoadEdge(s"$from-$to", from, to, length, linestring)
+    }.collect
+
+    val nodesDir = mapDir.stripMargin('/') + "/nodes.csv"
+    val nodeDf = spark.read.option("header", "true").csv(nodesDir)
+    val nodes = nodeDf.rdd.map { node =>
+      val wktReader = new WKTReader()
+      val point = wktReader.read(node.getString(1)).asInstanceOf[Point]
+      val id = node.getString(0)
+      RoadVertex(id, point)
+    }.collect
+    val minLon: Double = List(
+      nodes.map(_.point.getX).min,
+      edges.flatMap(_.ls.getCoordinates.map(_.x)).min
+    ).min
+    val minLat: Double = List(
+      nodes.map(_.point.getY).min,
+      edges.flatMap(_.ls.getCoordinates.map(_.y)).min
+    ).min
+    val maxLon: Double = List(
+      nodes.map(_.point.getX).max,
+      edges.flatMap(_.ls.getCoordinates.map(_.x)).max
+    ).max
+    val maxLat: Double = List(
+      nodes.map(_.point.getY).max,
+      edges.flatMap(_.ls.getCoordinates.map(_.y)).max
+    ).max
+    new RoadGrid(nodes, edges, minLon, minLat, maxLon, maxLat, gridSize)
   }
 }
