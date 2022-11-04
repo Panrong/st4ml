@@ -89,7 +89,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
     else selectedRDD
   }
 
-  def selectEventCSV(dataDir: String): RDD[Event[Geometry, None.type, Map[String, String]]] = {
+  def selectEventCSV(dataDir: String): RDD[EventDefault] = {
     val df = spark.read.option("header", value = true).csv(dataDir)
     val columns = df.columns.filterNot(x => Array("shape", "timestamp", "time", "duration").contains(x))
     val columnsNValue = columns.flatMap(x => Array(lit(x), col(x)))
@@ -116,8 +116,7 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
       eventRDD.filter(_.intersects(sQuery, tQuery))
   }
 
-  def selectTrajCSV(dataDir: String, sRange: Polygon = Extent(-180, -90, 180, 90).toPolygon,
-                    tRange: Duration = Duration(Long.MinValue, Long.MaxValue)): RDD[Trajectory[None.type, Map[String, String]]] = {
+  def selectTrajCSV(dataDir: String): RDD[TrajDefault] = {
     val df = spark.read.option("header", value = true).csv(dataDir)
     val columns = df.columns.filterNot(x => Array("shape", "timestamps").contains(x))
     val columnsNValue = columns.flatMap(x => Array(lit(x), col(x)))
@@ -131,9 +130,10 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
       val data = x.data
       Trajectory(points, timestamps, points.map(_ => None), data)
     }
-    if (sRange == Extent(-180, -90, 180, 90).toPolygon && tRange == Duration(Long.MinValue, Long.MaxValue)) trajRDD
-    else
-      trajRDD.filter(_.intersects(sRange, tRange))
+    if (sQuery == Extent(-180, -90, 180, 90).toPolygon && tQuery == Duration(Long.MinValue, Long.MaxValue)) trajRDD
+    else {
+      trajRDD.filter(_.intersects(sQuery, tQuery))
+    }
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {

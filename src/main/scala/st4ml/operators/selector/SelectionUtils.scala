@@ -17,6 +17,9 @@ import scala.io.Source
 import scala.reflect.ClassTag
 
 object SelectionUtils {
+  type TrajDefault = Trajectory[None.type, Map[String, String]]
+  type EventDefault = Event[Geometry, None.type, Map[String, String]]
+  type PointEventDefault = Event[Point, None.type, Map[String, String]]
 
   case class PartitionInfo(pId: Long,
                            spatial: Array[Double],
