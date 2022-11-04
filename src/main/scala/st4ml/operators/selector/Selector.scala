@@ -1,6 +1,5 @@
 package st4ml.operators.selector
 
-import examples.AnomalyExtractionTest.PreE
 import st4ml.instances._
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner.{HashPartitioner, STPartitioner}
@@ -9,6 +8,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.{array, col, lit, map, split, to_timestamp}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.locationtech.jts.io.WKTReader
+import SelectionUtils.{PreT, PreE}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -89,7 +89,8 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
     else selectedRDD
   }
 
-  def selectEventCSV(dataDir:String):RDD[Event[Geometry, None.type, Map[String, String]]] = {
+  def selectEventCSV(dataDir: String, sRange: Polygon = Extent(-180, -90, 180, 90).toPolygon,
+                     tRange: Duration = Duration(Long.MinValue, Long.MaxValue)): RDD[Event[Geometry, None.type, Map[String, String]]] = {
     val df = spark.read.option("header", value = true).csv(dataDir)
     val columns = df.columns.filterNot(x => Array("shape", "timestamp", "time", "duration").contains(x))
     val columnsNValue = columns.flatMap(x => Array(lit(x), col(x)))
@@ -111,7 +112,29 @@ class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-
       val data = x.data
       Event(shape, duration, None, data)
     }
-    eventRDD
+    if (sRange == Extent(-180, -90, 180, 90).toPolygon && tRange == Duration(Long.MinValue, Long.MaxValue)) eventRDD
+    else
+      eventRDD.filter(_.intersects(sRange, tRange))
+  }
+
+  def selectTrajCSV(dataDir: String, sRange: Polygon = Extent(-180, -90, 180, 90).toPolygon,
+                    tRange: Duration = Duration(Long.MinValue, Long.MaxValue)): RDD[Trajectory[None.type, Map[String, String]]] = {
+    val df = spark.read.option("header", value = true).csv(dataDir)
+    val columns = df.columns.filterNot(x => Array("shape", "timestamps").contains(x))
+    val columnsNValue = columns.flatMap(x => Array(lit(x), col(x)))
+    val condensedDf = df.withColumn("data", map(columnsNValue: _*)).drop(columns: _*)
+    import spark.implicits._
+    val ds = condensedDf.as[PreT]
+    val trajRDD = ds.rdd.map { x =>
+      val wktReader = new WKTReader()
+      val points = wktReader.read(x.shape).getCoordinates.map(x => Point(x))
+      val timestamps = x.timestamps.split(", ").map(x => Duration(x.stripMargin.toLong))
+      val data = x.data
+      Trajectory(points, timestamps, points.map(_ => None), data)
+    }
+    if (sRange == Extent(-180, -90, 180, 90).toPolygon && tRange == Duration(Long.MinValue, Long.MaxValue)) trajRDD
+    else
+      trajRDD.filter(_.intersects(sRange, tRange))
   }
 
   def select(dataDir: String, metaDataDir: String): RDD[I] = {

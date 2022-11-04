@@ -195,6 +195,12 @@ object SelectionUtils {
 
   case class TwP(points: Array[TrajPoint], d: String, pId: Int)
 
+  // for parsing csv
+
+  case class PreE(shape: String, t: Array[String], data: Map[String, String])
+
+  case class PreT(shape: String, timestamps: String,  data: Map[String, String])
+
   /** rdd2Df conversion functions */
   //  trait Ss {
   //    val spark: SparkSession = SparkSession.builder.getOrCreate()
@@ -446,5 +452,17 @@ object SelectionUtils {
       (x.getLong(1), polygon)
     }.filter(_._2.isDefined).map(x => (x._1, x._2.get))
     areaRdd.collect()
+  }
+
+  def ReadRaster(dir: String): (Array[Polygon], Array[Duration]) = {
+    val spark = SparkSession.getActiveSession.get
+    val df = spark.read.csv(dir)
+    val rdd = df.rdd.map { x =>
+      val polygon = Extent(x.getString(0).toDouble, x.getString(1).toDouble,
+        x.getString(2).toDouble, x.getString(3).toDouble).toPolygon
+      val duration = Duration(x.getString(4).toLong, x.getString(5).toLong)
+      (polygon, duration)
+    }
+    (rdd.map(_._1).collect, rdd.map(_._2).collect)
   }
 }

@@ -91,6 +91,26 @@ object GenToyDataSet {
     else if (dataType == "map") {
 
     }
+    else if (dataType == "raster") {
+      val lonMin = -8.7
+      val lonMax = -7.5
+      val latMin = 41
+      val latMax = 41.5
+      val tMin = 1408032143
+      val tMax = 1419172198
+      val sSplit = 5
+      val tSplit = 864000
+      val cells = for (lon <- (BigDecimal(lonMin) to BigDecimal(lonMax) by (lonMax - lonMin) / sSplit).sliding(2);
+                       lat <- (BigDecimal(latMin) to BigDecimal(latMax) by (latMax - latMin) / sSplit).sliding(2);
+                       t <- Range(tMin, tMax, tSplit).sliding(2)
+                       ) yield (lon, lat, t)
+      val arr = cells.toArray.map(x => (x._1(0).formatted("%.4f"), x._2(0).formatted("%.4f"), x._1(1).formatted("%.4f"),
+        x._2(1).formatted("%.4f"), x._3(0), x._3(1)))
+      val df = spark.createDataFrame(arr)
+      println(df.count)
+      df.show(2)
+      df.coalesce(1).write.csv("raster")
+    }
     else throw new Exception("Currently only support event, traj and map")
 
     sc.stop()

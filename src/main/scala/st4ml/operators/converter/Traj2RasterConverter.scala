@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
 class Traj2RasterConverter(polygonArr: Array[Polygon],
                            durArr: Array[Duration],
                            override val optimization: String = "rtree") extends Converter {
+  lazy val numCells = polygonArr.length
   lazy val sMap: Array[(Int, Polygon)] = polygonArr.sortBy(x =>
     (x.getCoordinates.map(c => c.x).min, x.getCoordinates.map(c => c.y).min)).zipWithIndex.map(_.swap)
   lazy val tMap: Array[(Int, Duration)] = durArr.sortBy(_.start).zipWithIndex.map(_.swap)

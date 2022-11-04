@@ -229,6 +229,10 @@ object Extent {
     new Extent(a(0), a(1), a(2), a(3))
   }
 
+  def apply[T <: Geometry](a: Array[T]): Extent = { // mbr of geometries
+    Extent(a.map(x => Extent(x.getEnvelopeInternal)))
+  }
+
   implicit def toPolygon(extent: Extent): Polygon =
     extent.toPolygon
 
