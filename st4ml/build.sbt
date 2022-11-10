@@ -1,4 +1,4 @@
-name := "st-tool"
+name := "st4ml"
 
 version := "3.0"
 
@@ -15,7 +15,8 @@ libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.2"
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 
 libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.18.2"
-resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
-resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
-resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
+
+libraryDependencies += "org.locationtech.jts.io" % "jts-io-common" % "1.18.2"
+
+
 resolvers += Resolver.url("maven_central", url("https://repo.maven.apache.org/maven2/"))
