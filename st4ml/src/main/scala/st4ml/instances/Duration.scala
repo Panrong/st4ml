@@ -3,8 +3,6 @@ package st4ml.instances
 import java.text.SimpleDateFormat
 import java.util.TimeZone
 
-case class DurationRangeError(msg: String) extends Exception(msg)
-
 /**
  * A temporal range. Both ends are inclusive.
  *
@@ -107,6 +105,7 @@ object Duration {
     Duration(arr(0), arr(1))
   }
 
+
   // construct with human readable time
   def apply(str: String, format: String = "yyyy-MM-dd HH:mm:ss", timeZone: TimeZone = TimeZone.getDefault): Duration = {
     val fm = new SimpleDateFormat(format)
@@ -115,12 +114,12 @@ object Duration {
     Duration(d.getTime / 1000)
   }
 
-  def apply(strs: (String, String), format: String, timeZone: TimeZone): Duration = {
-    val fm = new SimpleDateFormat(format)
-    fm.setTimeZone(timeZone)
-    val ds = Array(strs._1, strs._2).map(d => fm.parse(d).getTime / 1000)
-    Duration(ds(0), ds(1))
-  }
+//  def apply(strs: (String, String), format: String = "yyyy-MM-dd HH:mm:ss", timeZone: TimeZone = TimeZone.getDefault): Duration = {
+//    val fm = new SimpleDateFormat(format)
+//    fm.setTimeZone(timeZone)
+//    val ds = Array(strs._1, strs._2).map(d => fm.parse(d).getTime / 1000)
+//    Duration(ds(0), ds(1))
+//  }
 }
 
 

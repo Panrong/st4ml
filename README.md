@@ -43,10 +43,14 @@ git clone https://github.com/Panrong/st-tool.git
 ### Application example
 Run the following command as your first ST4ML application:
 ```bash
-cd PATH_TO_ST4ML
+cd PATH_TO_ST4ML/examples
+sbt assembly
+```
+```bash
 bash PATH_TO_SPARK/bin/spark-submit\
- --class examples.AnomalyExtractionTest\
- target/scala-2.12/st-tool-2.12-3.0.jar
+ --master local[*]\
+ --class AnomalyExtractionTest\
+ target/scala-2.12/st4ml_examples-assembly-0.1.jar
 ```
 
 The following result shall appear (after some Spark logs) if the application is executed correctly:
@@ -77,36 +81,29 @@ available, researchers need to derive them from other attainable data, such as t
 
 
 #### Essential code
-// TODO refine this code
 
 ```scala
 // define inputs
-val raster =  ReadRaster(rasterFile)
-val dataDir = "./datasets/"
-val sQuery = Extent().toPolygon
-val tQuery = Duration()
-// initialize operators
-val selector = Selector[STTraj](sQuery, tQuery, n = 100)
-val converter = Traj2RasterConverter(raster)
-val extractor = RasterSpeedExtractor(unit = "kmh")
-// execute the application
-val trajRDD = selector.select(dataDir)
-val rasterRDD = converter.convert(trajRDD)
-val speedRDD = extractor.extract(rasterRDD)
-// save results
-saveCSV(speedRDD, resDir)
-```
-The helper function `ReadRaster` reads the raster structure from a CSV file (each line has fields shape, t_min and t_max) into `Array[Polygon]` and `Array[Duration]` for conversion.
-The three operators are initiated in lines 7-9. In line 7, `STTraj` indicates that the original data type is trajectory, while
-`sQuery` and `tQuery` specify the spatial and temporal range of interest. `n` specifies the number of partitions, i.e., the parallelism of the application.
-For this feature extraction task, the most suitable data representation is raster, so a `Traj2Raster` converter is initiated as in line 8.
-Last, ST4ML's built-in `RasterSpeedExtractor` is invoked.
-After defining the operators, their execution functions are called in sequence. 
-In line 10, the path to the trajectory data directory is passed to the selector, 
-and subsequently the resulting RDDs are passed to the converter and extractor 
-as a pipeline (lines 11-12). The final results are saved as CSV files with the `saveCSV` helper function.
+val (sArray, tArray) = ReadRaster(rasterDir)
+val sRange = Extent(sArray).toPolygon
+val tRange = Duration(tArray)
 
-The complete example can be found at `src/main/scala/examples/RasterSpeedExample.scala`. TODO
+// instantiate operators
+val selector = Selector(sRange, tRange, parallelism)
+val converter = new Traj2RasterConverter(sArray, tArray)
+val extractor = new RasterSpeedExtractor
+
+// execute in a pipeline
+val selectedRDD = selector.selectTrajCSV(trajDir)
+println(s"--- Selected ${selectedRDD.count} trajectories")
+val convertedRDD = converter.convert(selectedRDD)
+println(s"--- Converted to ${converter.numCells} raster cells")
+val extractedRDD = extractor.extract(convertedRDD, metric = "greatCircle", convertKmh = true)
+println("=== Top 2 raster cells with the highest speed:")
+extractedRDD.sortBy(_._2, ascending = false).take(2).foreach(println)
+```
+
+The complete example can be found at `examples/src/main/scala/AverageSpeedExample.scala`. 
 
 ## Technical Features
 The figure below plots the main components of ST4ML's _three-stage pipeline_ abstraction.
@@ -154,8 +151,9 @@ We list the supported technique and operations:
 
 ## Next Step
 Please refer to the following documentation for a thorough guide on using ST4ML.
-
-- API for Data I/O, main computation abstraction
+- [End-to-end examples](https://github.com/Panrong/st-tool/blob/instance/docs/examples.md)
+- [API for data I/O](https://github.com/Panrong/st-tool/blob/instance/docs/data_standard.md)
+- [Full documentation](https://github.com/Panrong/st-tool/blob/instance/docs/internal.md)
 - Guide on installation and deployment (local mode, cluster mode, docker mode)
 - Efficiency report
 
@@ -167,7 +165,7 @@ Please cite our paper if you find ST4ML useful in your research.
 
 
 
-## Toy Datasets (maybe put in the separate documentation)
+## Toy Datasets
 
 ST4ML supports automatically load and parse data with the following standard formats (more to be added).
 Some toy datasets that can be accommodated in a single machine are provided as examples and located in `./datasets`.
@@ -260,10 +258,12 @@ Preview: an OSM directory has two CSV files:
 |112624414|POINT(-8.5389837 41.1371699)|
 +---------+----------------------------+
 ```
+<center>
 
-Visualization (-8.70, 41.10, -8.70, 41.25):
+| Visualization of range (-8.70, 41.10, -8.70, 41.25): |
+|------------------------------------------------------|
+| <img src="docs/map-viz.png" width="300" />           |
 
-![osm](docs/map-viz.png?raw=true "Processed Map")
-
+</center>
 
 [spark]: https://spark.apache.org/

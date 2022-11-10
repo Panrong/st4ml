@@ -5,7 +5,7 @@ import st4ml.instances.{Duration, SpatialMap, Trajectory}
 import st4ml.operators.converter.Traj2SpatialMapConverter
 import st4ml.operators.extractor.Extractor
 import st4ml.operators.selector.SelectionUtils.{ReadRaster, TrajDefault}
-import st4ml.operators.selector.Select
+import st4ml.operators.selector.Selector
 
 object CustomizationExample {
   def main(args: Array[String]): Unit = {
@@ -33,11 +33,15 @@ object CustomizationExample {
     val selectedRDD = selector.selectTrajCSV(trajDir)
     println(s"--- Selected ${selectedRDD.count} trajectories")
     val preMap: TrajDefault => Trajectory[None.type, String] = traj => traj.mapData(x => x("TRIP_ID")) // discard the rest attributes
-    val agg: Array[Trajectory[None.type, String]] => Int = _.length // count
+    val agg: Array[Trajectory[None.type, String]] => Map[String, Int] = _.map(_.data).groupBy(identity).map(t => (t._1, t._2.length)) // count
     val convertedRDD = converter.convert(selectedRDD, preMap, agg) // utilizing the two customized functions
     import st4ml.instances.Utils._
-    val merge: (Int, Int) => Int = _ + _
-    val resultSm = convertedRDD.collectAndMerge(0, merge)
+
+    def combineMap(a: Map[String, Int], b: Map[String, Int]): Map[String, Int] = {
+      a ++ b.map { case (k, v) => k -> (v + a.getOrElse(k, 0)) }
+    }
+
+    val resultSm = convertedRDD.collectAndMerge(Map[String, Int](), combineMap)
     println(s"Number of trajectories inside each cell: ${resultSm.entries.map(_.value).deep}") // utilizing the collectiveRDD functions
 
     /** example for writing a customized extractor */
@@ -46,15 +50,18 @@ object CustomizationExample {
     println(s"--- Selected ${selectedRDD2.count} trajectories")
     val convertedRDD2 = converter.convert(selectedRDD2)
     class CountExtractor extends Extractor {
-      def extract(rdd: RDD[SpatialMap[Polygon, Array[TrajDefault], None.type]]): Array[Int] = {
-        val merge: (Int, Int) => Int = _ + _
-        rdd.map(sm => sm.mapValue(_.length)).collectAndMerge(0, merge)
-          .entries.map(_.value)
+      def agg(trajArr: Array[Trajectory[None.type, Map[String, String]]]): Map[String, Int] = {
+        trajArr.map(_.mapData(x => x("TRIP_ID"))).map(_.data).groupBy(identity).map(t => (t._1, t._2.length))
+      }
+
+      def extract(rdd: RDD[SpatialMap[Polygon, Array[Trajectory[None.type, Map[String, String]]], None.type]]): SpatialMap[Polygon, Map[String, Int], None.type] = {
+        rdd.map(sm => sm.mapValue(agg))
+          .collectAndMerge(Map[String, Int](), combineMap)
       }
     }
     val extractor = new CountExtractor
     val extractedResult = extractor.extract(convertedRDD2)
-    println(s"Number of trajectories inside each cell: ${extractedResult.deep}") // utilizing the customized extractor
+    println(s"Number of trajectories inside each cell: ${extractedResult}") // utilizing the customized extractor
 
     sc.stop
   }
