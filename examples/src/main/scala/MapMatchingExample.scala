@@ -11,7 +11,7 @@ object MapMatchingExample {
      * >> cd preprocessing && python process_osm.py -r='-8.7,41,-7.5,41.5' -o porto
      * the map file is too large for github
      */
-    // example inputs: local[*] datasets/porto_toy datasets/osm_toy 64
+    // example inputs: local[*] ../datasets/porto_toy ../datasets/osm_toy 64
     val master = args(0)
     val trajDir = args(1)
     val mapDir = args(2)

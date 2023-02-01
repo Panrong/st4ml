@@ -22,7 +22,7 @@ object AnomalyExtractionTest {
     val condition = if (threshold(0) > threshold(1)) (x: Double) => x >= threshold(0) || x < threshold(1)
     else (x: Double) => x >= threshold(0) && x < threshold(1)
     val selector = new Selector[EVENT]()
-    val eventRDD = selector.selectEventCSV("datasets/nyc_toy")
+    val eventRDD = selector.selectEventCSV("../datasets/nyc_toy")
     println(s"Processing ${eventRDD.count} events")
     val res = eventRDD.filter(x => condition(getHour(x.duration.start))).map(_.data)
     println(s"Extracted ${res.count} abnormal events occurring during ${threshold(0)} to ${threshold(1)} hrs.")

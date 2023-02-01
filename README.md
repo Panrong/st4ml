@@ -42,14 +42,22 @@ git clone https://github.com/Panrong/st-tool.git
 
 ### Application example
 Run the following command as your first ST4ML application:
+
+Compile ST4ML core and the example project:
 ```bash
+cd PATH_TO_ST4ML/st4ml
+sbt assembly
+
 cd PATH_TO_ST4ML/examples
 sbt assembly
 ```
+
+Submit the example application to Spark:
 ```bash
 bash PATH_TO_SPARK/bin/spark-submit\
  --master local[*]\
  --class AnomalyExtractionTest\
+ --jars ../st4ml/target/scala-2.12/st4ml-assembly-3.0.jar\
  target/scala-2.12/st4ml_examples-assembly-0.1.jar
 ```
 

@@ -7,7 +7,7 @@ import st4ml.operators.selector.Selector
 
 object AverageSpeedExample {
   def main(args: Array[String]): Unit = {
-    // example inputs: local[*] datasets/porto_toy datasets/porto_raster.csv 64
+    // example inputs: local[*] ../datasets/porto_toy ../datasets/porto_raster.csv 64
     val master = args(0)
     val trajDir = args(1)
     val rasterDir = args(2)
