@@ -56,7 +56,7 @@ Submit the example application to Spark:
 ```bash
 bash PATH_TO_SPARK/bin/spark-submit\
  --master local[*]\
- --class AnomalyExtractionTest\
+ --class AnomalyExtractionExample\
  --jars ../st4ml/target/scala-2.12/st4ml-assembly-3.0.jar\
  target/scala-2.12/st4ml_examples-assembly-0.1.jar
 ```

@@ -5,7 +5,10 @@ import st4ml.instances.{Event, Point}
 import st4ml.operators.selector.Selector
 import st4ml.utils.TimeParsing.getHour
 
-object AnomalyExtractionTest {
+/**
+ * For environment test
+ */
+object AnomalyExtractionExample {
   case class PreE(shape: String, t: Array[String], data: Map[String, String])
 
   def main(args: Array[String]): Unit = {

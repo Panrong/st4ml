@@ -3,7 +3,6 @@ package st4ml.operators.selector
 import st4ml.instances._
 import st4ml.operators.selector.SelectionUtils._
 import st4ml.operators.selector.partitioner.{HashPartitioner, STPartitioner}
-import st4ml.operators.Operator
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.functions.{array, col, lit, map, split, to_timestamp}
 import org.apache.spark.sql.{DataFrame, SparkSession}
