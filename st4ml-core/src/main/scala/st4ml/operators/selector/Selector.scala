@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 class Selector[I <: Instance[_, _, _] : ClassTag](var sQuery: Polygon = Extent(-180, -90, 180, 90).toPolygon,
                                                   var tQuery: Duration = Duration(Long.MinValue, Long.MaxValue),
                                                   var parallelism: Int = 1,
-                                                 ) extends Operator with Serializable {
+                                                 ) extends Serializable {
 
   var partitioner: STPartitioner = new HashPartitioner(parallelism)
   val spark: SparkSession = SparkSession.builder.getOrCreate()

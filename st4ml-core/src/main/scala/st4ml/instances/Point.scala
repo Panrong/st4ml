@@ -5,6 +5,7 @@ import org.locationtech.jts.{geom => jts}
 object Point extends PointConstructors
 
 trait PointConstructors {
+
   def empty: Point =
     GeometryFactory.factory.createPoint()
 

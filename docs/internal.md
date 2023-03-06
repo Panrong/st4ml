@@ -1,9 +1,14 @@
 # Programming Guide
 
 
-In this section, we introduce the design and use of two core parts in ST4ML, the ST instances and operations.
+In this page, we introduce the design and use of two core parts in ST4ML: ST instances and operations.
 With the well-designed ST instances, programmers can easily manipulate heterogeneous ST data; and with the three types operators
 programmers can make ST data ingestible for machine learning applications.
+
+> - The source code of ST4ML functionalities are located at `st4ml/st4ml-core/`, and the package 
+name is `st4ml`.
+> - Currently, ST4ML relies on Spark environment (i.e., it can only be used under `spark-submit` or `spark-shell` but
+> not normal `scala`). We may extend ST support to normal `scala` environment in the future versions.
 
 [ST Instances](#ST-Instances)
 - [Geometry](#Geometry)
@@ -19,9 +24,10 @@ programmers can make ST data ingestible for machine learning applications.
   - [Selector](#Selector)
   - [Converter](#Converter)
   - [Extractor](#Extractor)
+
 ## ST Instances
 
-We first introduce the ST supports based on our ``Geometry`` class and ``Duration`` class.
+We first introduce the ST support based on our ``Geometry`` class and ``Duration`` class.
 
 ### Geometry
 
@@ -42,7 +48,7 @@ We add easier construction methods in scala. E.g., besides the original JTS cons
 > **_NOTE:_**
     In ST4ML's convention, when describing a geographical point, it is denoted as ``Point(longitude, latitude)``, i.e. the longitude is defined first. The order is important when using geometrical functions (e.g. calculating the Great Circle Distance). 
     The same applies to other geometries. 
->  Extra accessing methods for the coordinatesa re available: `point.x == point.lon`, `point.y == point.lat`.
+>  Extra accessing methods for the coordinates are available: `point.x == point.lon`, `point.y == point.lat`.
 
 A ``LineString`` can be created with points or array of tuples:
 
@@ -80,8 +86,13 @@ which provides an easy way to construct a rectangular polygon.
 
 #### Built-in Functions
 
+> Import the dependency below before using the following functionalities
+>  ```scala
+>  import st4ml.instances.GeometryImplicits._
+>  ```
+
 ```scala
-  /** Tests whether this st4ml.geometry is topologically equal to the input st4ml.geometry. */
+  /** Tests whether this geometry is topologically equal to the input geometry. */
   def ==(geom: Geometry): Boolean
 
   /** Return the MBR as extent of a geometry */
@@ -173,27 +184,26 @@ The ``Duration`` class records temporal information. Examples of constructing a 
 
 
 An ST instance contain two fields: ``entries`` and ``data``.  The ``entries`` field is an array of ``Entry``, where each entry contains
-spatial, temporal and auxiliary value. The spatial information should inherit the ``Geometry`` class, the temporal information is fixed to ``Duration``, while 
+spatial, temporal and an auxiliary value. The spatial information should inherit the ``Geometry`` class, the temporal information is fixed to ``Duration``, while 
 the ``value`` and ``data`` information can be of any type specified by the programmer.
 
 It is formally defined as below:
 
 ``` scala
-    abstract class Instance[S <: Geometry, V, D] extends Serializable {
-
-        val entries: Array[Entry[S, V]]
-        val data: D
-        ...
-    }
-
-    case class Entry[S <: Geometry, V](spatial: S,
-                                       temporal: Duration,
-                                       value: V) {
+abstract class Instance[S <: Geometry, V, D] extends Serializable {
+    val entries: Array[Entry[S, V]]
+    val data: D
     ...
-    }
+}
+
+case class Entry[S <: Geometry, V](spatial: S,
+                                   temporal: Duration,
+                                   value: V) {
+   ...
+}
 ```
 
-##### Built-in Functions:
+##### Built-in Functions (for all `Instance` inheritances) :
 ```scala
   // fields
   val entries: Array[Entry[S, V]]
@@ -261,13 +271,13 @@ It is formally defined as below:
   def mapData[D1](f: D => D1): Instance[S, V, D1]
 
 
-// not inheriting, but separately implemented
+  // not inheriting, but separately implemented
 
-def mapSpatial[T <: Geometry : ClassTag](f: S => T): Instance[T, V, D]
+  def mapSpatial[T <: Geometry : ClassTag](f: S => T): Instance[T, V, D]
 
-def mapValuePlus[V1](f: (V, S, Duration) => V1): Instance[S, V1, D]
+  def mapValuePlus[V1](f: (V, S, Duration) => V1): Instance[S, V1, D]
 
-def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): Instance[S, V, D1]
+  def mapDataPlus[D1](f: (D, Polygon, Duration) => D1): Instance[S, V, D1]
   }
 ```
 
@@ -282,7 +292,7 @@ We first introduce the definition and construction of each instance and then pre
 #### Event
 
 
-An event stands for an occurrence of an object and the length of ``entries`` is retrained to be 1.
+An event stands for an occurrence of an object and the length of ``entries`` is retrained to be **1**.
 
 ```scala
     case class Event[S <: Geometry, V, D](entries: Array[Entry[S, V]],
@@ -298,8 +308,7 @@ An event stands for an occurrence of an object and the length of ``entries`` is 
 An alternative construction method is provided to allow programmer create an event with one ``spatial`` and one ``temporal`` value (the ``value`` and ``data`` are set to ``None`` by default):
 
 ``` scala
-    def apply[S <: Geometry, V, D](entries: Array[Entry[S, V]], data: D = None): Event[S, V, D] = ...
-
+    def apply[S <: Geometry, V, D](entry: Entry[S, V], data: D): Event[S, V, D] = ...
     def apply[S <: Geometry, V, D](s: S, t: Duration, v: V = None, d: D = None): Event[S, V, D] = ...
 ```
 
@@ -340,6 +349,36 @@ We provide alternative construction methods:
               durationArr: Array[Duration]): Trajectory[None.type, None.type] = ...
 ```
 
+Additional methods:
+```scala
+  // sliding functions
+  def entrySliding(n: Int): Iterator[Array[Entry[Point, V]]] = ...
+
+  def spatialSliding(n: Int): Iterator[Array[Point]] = ...
+
+  def temporalSliding(n: Int): Iterator[Array[Duration]] = ...
+
+ // finding consecutive values along spatial / temporal intervals
+  def consecutiveSpatialDistance(metric: String = "euclidean"): Array[Double] = ...
+
+  def consecutiveSpatialDistance(metric: (Point, Point) => Double): Array[Double] = ...
+
+  def consecutiveTemporalDistance(metric: String): Array[Long] = ...
+
+  def consecutiveTemporalDistance(metric: (Duration, Duration) => Long): Array[Long] = ...
+
+  def mapConsecutive(f: (Array[Double], Array[Long]) => Array[Double],
+                      spatialMetric: String = "euclidean",
+                      temporalMetric: String = "start"
+                    ): Array[Double] = ...
+
+  def mapConsecutive(f: (Array[Double], Array[Long]) => Array[Double],
+                      spatialMetric: (Point, Point) => Double,
+                      temporalMetric: (Duration, Duration) => Long
+                    ): Array[Double] = ...
+ // reverse 
+ def reverse: Trajectory[V, D] = ...
+```
 
 #### SpatialMap
 
@@ -365,7 +404,22 @@ ST4ML provides two methods to construct an empty spatial map (with defined cells
         
     def empty[T: ClassTag](extentArr: Array[Extent]): SpatialMap[Polygon, Array[T], None.type] = ...
 ```
+Additional methods:
+```scala
+  // merge two spatial maps
+  def merge[T: ClassTag](other: SpatialMap[S, Array[T], _]
+                        )(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], None.type] = ...
 
+  def merge[T](other: SpatialMap[S, T, D],
+                valueCombiner: (V, T) => V,
+                dataCombiner: (D, D) => D): SpatialMap[S, V, D] = ...
+
+  def merge[T: ClassTag](other: SpatialMap[S, Array[T], D],
+                          dataCombiner: (D, D) => D)(implicit ev: Array[T] =:= V): SpatialMap[S, Array[T], D] = ...
+
+  // sort by xMin then yMin of the spatial of each entry
+  def sorted: SpatialMap[S, V, D] = ...
+```
 
 #### TimeSeries
 
@@ -390,6 +444,30 @@ ST4ML provides a method to construct an empty time series (with defined cells an
     def empty[T: ClassTag](durArr: Array[Duration]): TimeSeries[Array[T], None.type] = {...}
 ```
 
+Additional methods:
+```scala
+  // merge two time series
+  def merge[T: ClassTag](other: TimeSeries[Array[T], _])(implicit ev: Array[T] =:= V): TimeSeries[Array[T], None.type] = ...
+
+  def merge[T](other: TimeSeries[T, D],
+                valueCombiner: (V, T) => V,
+                dataCombiner: (D, D) => D): TimeSeries[V, D] = ...
+
+  def merge[T: ClassTag](other: TimeSeries[Array[T], D],
+                          dataCombiner: (D, D) => D)(implicit ev: Array[T] =:= V): TimeSeries[Array[T], D] = ...
+
+  def split(at: Long): (TimeSeries[V, D], TimeSeries[V, D]) = ...
+
+  // manipulation
+  def select(targetDur: Array[Duration]): TimeSeries[V, D] = ...
+
+  def append(other: TimeSeries[V, _]): TimeSeries[V, None.type] = ...
+
+  def append(other: TimeSeries[V, D], dataCombiner: (D, D) => D): TimeSeries[V, D] = ...
+
+  // sort by tMin of the temporal of each entry
+  def sorted: TimeSeries[V, D] = ...
+```
 #### Raster
 
 A raster is a collection of 3-d cubes in the ST space. Each cell is defined with a 2-d shape with a duration. Raster instance is useful when both the spatial and temporal information of the cell is required for calculation.
@@ -410,6 +488,22 @@ Three ways to create an empty raster are described below:
     def empty[T: ClassTag](extentArr: Array[Extent], durArr: Array[Duration]): Raster[Polygon, Array[T], None.type] = {...}
 
     def empty[T: ClassTag](polygonArr: Array[Polygon], durArr: Array[Duration]): Raster[Polygon, Array[T], None.type] = {...}
+```
+Additional methods:
+
+```scala
+  def merge[T: ClassTag](other: Raster[S, Array[T], _])(implicit ev: Array[T] =:= V): Raster[S, Array[T], None.type] = ...
+
+  def merge[T: ClassTag](other: Raster[S, V, D],
+                          valueCombiner: (V, V) => V,
+                          dataCombiner: (D, D) => D): Raster[S, V, D] = ...
+
+  def merge[T: ClassTag](other: Raster[S, Array[T], D],
+                          dataCombiner: (D, D) => D
+                        )(implicit ev: Array[T] =:= V): Raster[S, Array[T], D] = ...
+
+  // sort by tMin then xMin then yMin of the spatial of each entry
+  def sorted: Raster[S, V, D] = ...
 ```
 
 > **_NOTE:_** 
@@ -449,7 +543,7 @@ Two alternative initialization approaches are provided:
 
 - Selecting Data with ST4ML standard
 
-The ``Selector`` provides concise commands over ``Event`` or ``Trajectory`` data that meet [ST4ML standard](https://github.com/Panrong/st-tool/blob/instance/docs/data_standard.md).
+The ``Selector`` provides concise commands over ``Event`` or ``Trajectory`` data that meet [ST4ML standard](https://github.com/Panrong/st4ml/blob/instance/docs/data_standard.md).
 
 Programmers may convert the source data to the standard with his preferred methods.
 
@@ -482,7 +576,7 @@ If the RDD is already formulated, the `Selector` could also select data from it 
 
 - Selection over CSV
 
-ST4ML supports selection over `CSV` files with some predefined fields. For details please refer to [toy datasets](https://github.com/Panrong/st-tool/blob/instance/docs/README.md#Toy-Datasets). 
+ST4ML supports selection over `CSV` files with some predefined fields. For details please refer to [toy datasets](https://github.com/Panrong/st4ml/blob/instance/docs/README.md#Toy-Datasets). 
 
 ```scala
     def selectEventCSV(dataDir: String): RDD[EventDefault] = {...}
@@ -491,7 +585,7 @@ ST4ML supports selection over `CSV` files with some predefined fields. For detai
     def selectTrajCSV(dataDir: String): RDD[TrajDefault] = {...}
 ```
 
-For `EventDefault` and `TrajDefault`, please refer to  [ST4ML standard](https://github.com/Panrong/st-tool/blob/instance/docs/data_standard.md).
+For `EventDefault` and `TrajDefault`, please refer to  [ST4ML standard](https://github.com/Panrong/st4ml/blob/instance/docs/data_standard.md).
 #### Example
 The following example illustrates how to select trajectories that fall in range ``(0, 0, 10, 10), Duration(0, 100)`` from ``fileName`` and construct a ``trajRDD``:
 

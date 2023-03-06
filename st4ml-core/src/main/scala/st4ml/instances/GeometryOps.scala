@@ -11,7 +11,7 @@ trait GeometryOps[+T <: Geometry] extends Serializable {
     if (self.isEmpty) Extent(0.0, 0.0, 0.0, 0.0)
     else Extent(self.getEnvelopeInternal)
 
-  /** Tests whether this st4ml.geometry is topologically equal to the input st4ml.geometry. */
+  /** Tests whether this geometry is topologically equal to the input geometry. */
   def ==(geom: Geometry): Boolean = self.equals(geom)
 
   /** Returns the euclidean distance between centroids of the two geometries */

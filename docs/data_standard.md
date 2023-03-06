@@ -1,5 +1,9 @@
 # Data Standard in ST4ML
 
+Programmers may transform their data to ST4ML's **on-disk standard** with their preferred methods
+ and utilize ST4ML's data ingestion functions for in-memory processing. Otherwise, they may directly 
+write Spark code to transform the data to ST4ML's **in-memory standard**.
+
 ## On-Disk Parquet Data Standard
 
 
@@ -13,13 +17,11 @@ The on-disk events should be stored as ``Parquet`` files and contain the followi
                  v: Option[String], 
                  d: String)
 ```
-where the shape ``String`` follows the [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) format. 
-
-E.g., ``POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))``
-
+where the shape ``String`` follows the [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) format, e.g., ``POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))``.
+The `timeStamp` can store a duration as `Array(start, end)` or an instance as `Array(instance)`.
+The `v` field is preserved for some extra values to be stored, and can be `None`. The `d` field is used for storing information such as ID.
 
 ### Trajectory
-
 
 The on-disk trajectories are defined as follows:
 
@@ -31,6 +33,7 @@ The on-disk trajectories are defined as follows:
 
     case class T(points: Array[TrajPoint], d: String)
 ```
+The `t`, `v`, and `d` fields follow the convention as in Event.
 
 ### OSM Map
 
@@ -73,3 +76,5 @@ A `RoadGrid` can be initialized as:
 def apply(sourceFilePath: String, gridSize: Double = 0.1): RoadGrid = {...}
 ```
 Where the `sourceFilePath` has to contain `edges.csv` and `nodes.csv`. The `gridSize` is the granularity of longitude/latitude.
+
+> For more flexible instance declaration and usage, please refer to [Full API](https://github.com/Panrong/st4ml/blob/instance/docs/internal.md).

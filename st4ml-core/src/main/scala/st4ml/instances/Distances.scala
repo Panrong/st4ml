@@ -35,5 +35,4 @@ object Distances {
     val deltaSigma = acos(sin(phi1) * sin(phi2) + cos(phi1) * cos(phi2) * cos(abs(lambda2 - lambda1)))
     r * deltaSigma
   }
-
 }

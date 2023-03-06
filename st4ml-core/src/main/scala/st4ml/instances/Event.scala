@@ -77,6 +77,9 @@ object Event {
   def apply[S <: Geometry, V, D](entries: Array[Entry[S, V]], data: D): Event[S, V, D] =
     new Event(entries, data)
 
+  def apply[S <: Geometry, V, D](entry: Entry[S, V], data: D): Event[S, V, D] =
+    new Event(Array(entry), data)
+
   def apply[S <: Geometry, V](entries: Array[Entry[S, V]]): Event[S, V, None.type] =
     new Event(entries, None)
 

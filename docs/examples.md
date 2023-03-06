@@ -1,6 +1,6 @@
 # End-To-End Examples
 
-In this sections we present three real applications implementing with ST4ML. The source code can be found [here](https://github.com/Panrong/st-tool/tree/instance/examples/src/main/scala).
+In this page we present three real applications implementing with ST4ML. The source code can be found [here](https://github.com/Panrong/st-tool/tree/instance/examples/src/main/scala).
 
 - [Average Speed Extraction](Average-Speed-Extraction)
 - [Writing Customized Extraction](Writing-Customized-Extraction)
@@ -171,7 +171,7 @@ Perform selection:
 The main algorithm is implemented in `convertWithInterpolation` in a MapReduce manner. For each trajectory, after conversion a new trajectory with sojourn points on the road network is generated. For road segments that no nearby GPS points are captured,
 interpolation is induced. 
 
-For the input format of the road network, please refer to [here](https://github.com/Panrong/st-tool/blob/instance/docs/data_standard.md). 
+For the input format of the road network, please refer to [here](https://github.com/Panrong/st4ml/blob/instance/docs/data_standard.md). 
 ```scala
     val selector = new Selector(sRange, parallelism = parallelism)
     val converter = new Traj2TrajConverter(map)
