@@ -104,7 +104,7 @@ The application is Spark-complied, which can be executed with high efficiency in
 The APIs of ST4ML operators can be found [here](https://github.com/Panrong/st4ml/blob/instance/docs/internal.md).
 
 Besides the built-in extractors, the programmer may also define their own extraction logic on ST instances.
-An example can be found [here](([details](https://github.com/Panrong/st4ml/blob/instance/docs/examples.md)).
+An example can be found [here]([details](https://github.com/Panrong/st4ml/blob/instance/docs/examples.md)).
 
 
 ### Application Execution with Spark
