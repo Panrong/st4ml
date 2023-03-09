@@ -24,8 +24,8 @@ The target users of ST4ML are expected to program with `Scala`, while being fami
 
 ## Getting Started (with an example)
 
-We demonstrate the usage of ST4ML with an example - _"extracting the hourly average speed of roads from vehicle trajectories"_. Other applications
-can be developed following this pattern.
+We demonstrate the usage of ST4ML with an example - <ins>_"extracting the hourly average speed of roads from vehicle trajectories"_</ins>. Other applications
+can be developed following the same pattern.
 
 <div align="center">
 
@@ -37,12 +37,13 @@ can be developed following this pattern.
 
 
 
-The main idea is to first assign the trajectories to the road segments and then find the average speed
-for each segment. For simplicity, we assume that the trajectories are already projected to the roads in 
+The application can be realized in three steps: (1) select the trajectories of interest from a gigantic trajectory dataset,
+(2) assign the selected trajectories to the road segments,
+and (3) find the average speed for each segment. For simplicity, we assume that the trajectories are already projected to the roads in 
 this example. Note that ST4ML provides a [map-matching](https://github.com/Panrong/st4ml/blob/instance/docs/examples.md#map-matching) function to deal 
 with noisy trajectories.
 
-The application can be implemented in the following steps:
+The detailed implementation is as follows:
 
 ### Environment Setup
 To develop applications with ST4ML, ensure the following pre-requisites are installed:
@@ -55,6 +56,7 @@ with conventional Spark environment and no additional action is needed for an es
     cd st4ml/st4ml-core && sbt assembly
     ```
 - The `jar` package of `st4ml-core` is located at `st4ml-core/target/scala-2.1x/st4ml-assembly-3.0.jar`.
+- In the distributed environment, ST4ML is only required to compile on the master machine.
   
 ### Reading and Parsing ST data
 
