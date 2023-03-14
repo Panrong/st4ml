@@ -10,7 +10,7 @@ libraryDependencies += "org.locationtech.jts" % "jts-core" % "1.18.2"
 
 libraryDependencies += "org.locationtech.jts.io" % "jts-io-common" % "1.18.2"
 
-lazy val st4ml = RootProject(file("../st4ml"))
+lazy val st4ml = RootProject(file("../st4ml-core"))
 
 lazy val root = project in file(".") dependsOn(st4ml)
 
