@@ -484,7 +484,7 @@ object SelectionUtils {
       val to = edge.getString(2)
       val id = edge.getString(3)
       val length = edge.getString(5).toDouble
-      RoadEdge(s"$from-$to", from, to, length, linestring)
+      RoadEdge(s"$from-$to", from, to, length, linestring, id)
     }.collect
 
     val nodesDir = mapDir.stripMargin('/') + "/nodes.csv"

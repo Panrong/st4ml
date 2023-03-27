@@ -27,6 +27,12 @@ class Traj2TrajConverter(roadGrid: RoadGrid,
                                                          inferTime: Boolean = false): RDD[Trajectory[String, String]] = {
     input.map(traj => mm.value.mapMatchWithInterpolation(traj, candidateThresh, sigmaZ, beta, inferTime))
   }
+
+  // for internal visualization use
+  def convertWithInterpolationExp[V: ClassTag, D: ClassTag](input: RDD[Trajectory[V, D]],
+                                                            inferTime: Boolean = false): RDD[(Trajectory[V, D], Trajectory[String, String])] = {
+    input.map(traj => (traj, mm.value.mapMatchWithInterpolation(traj, candidateThresh, sigmaZ, beta, inferTime)))
+  }
 }
 
 object Traj2TrajConverter {

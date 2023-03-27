@@ -6,7 +6,7 @@ import st4ml.instances.RoadNetwork.RoadNetwork
 import st4ml.instances._
 import st4ml.operators.selector.SelectionUtils.T
 import st4ml.utils.Config
-import st4ml.utils.mapmatching.road.{RoadGraph, RoadGrid}
+import st4ml.utils.mapmatching.road.{RoadEdge, RoadGraph, RoadGrid}
 
 import scala.language.implicitConversions
 import scala.math._
@@ -15,10 +15,11 @@ import scala.reflect.ClassTag
 
 class MapMatcher(roadGrid: RoadGrid) extends Serializable {
 
-  case class RoadSeg(id: String, shape: LineString)
+  case class RoadSeg(id: String, shape: LineString, osmId: String = "")
 
   val roadNetwork: RoadNetwork = genRoadNetwork(roadGrid)
   val roadGraph: RoadGraph = RoadGraph(roadGrid.edges)
+  val roadSegs: Array[RoadSeg] = roadNetwork.entries.map(x => RoadSeg(x.value, x.spatial))
 
   // generate the companion road network for candidate searching
   def genRoadNetwork(rg: RoadGrid): RoadNetwork = {
@@ -44,8 +45,8 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
     val pArray = traj.entries.map(_.spatial)
     roadNetwork.rTree = Some(buildRTree(roadNetwork.spatials))
     val candidates = roadNetwork.getSpatialIndexRTree(pArray, threshold)
-    val roadSegs = roadNetwork.entries.map(x => RoadSeg(x.value, x.spatial))
-    pArray zip candidates.map(x => x.map(i => roadSegs(i)))
+    // val candidates = roadNetwork.getSpatialIndex(pArray, threshold)
+    pArray zip candidates.map(x => x.distinct.map(i => roadSegs(i)))
   }
 
   //    // find candidates of each point in a trajectory in a road network with a threshold
@@ -58,7 +59,7 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
 
   // calculate emission probability
   def calEmissionProb(p: Point, l: LineString, sigmaZ: Double): Double = {
-    val d = p.greatCircle(l)
+    val d = p.project(l)._2
     1 / (sqrt(2 * Pi) * sigmaZ) * pow(E, -0.5 * pow(d / sigmaZ, 2))
   }
 
@@ -71,8 +72,13 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
     val p1 = roadGrid.id2vertex(endVertex).point
     val edges = roadGrid.getGraphEdgesByPoint(p0, p1)
     val rGraph = RoadGraph(edges)
+    val edge1 = roadGrid.id2edge(id1).ls
+    val xProject = x.project(edge1)._1
+    val edge2 = roadGrid.id2edge(id2).ls
+    val yProject = y.project(edge2)._1
     rGraph.getShortestPathAndLength(startVertex, endVertex)._2 +
-      p0.greatCircle(Point(x.x, x.y)) + p1.greatCircle(Point(y.x, y.y))
+      p0.greatCircle(xProject) +
+      p1.greatCircle(yProject)
   }
 
   //find transition probability of consecutive points
@@ -149,7 +155,7 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
           val (internal, totalDist) = roadGraph.getShortestPathAndLength(start._1.id, end._1.id)
           val tEnd = end._2.last._2
           val tStart = start._2.head._2
-          val edges = internal.sliding(2).map(x => roadGrid.id2edge(x.head + "-" + x(1))).toArray.drop(1).dropRight(1)
+          val edges = internal.sliding(2).map(x => roadGrid.id2edge(x.head + "-" + x(1))).toArray
           edges.map(edge => {
             val startPoint = Point(edge.coordinates.head, edge.coordinates(1))
             val endPointOfLastSegId = start._1.id.split("-").last
@@ -162,7 +168,10 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
           })
         }
         catch {
-          case _: Any => new Array[Entry[Point, String]](0)
+          case _: Any => {
+            println(s"$start, $end cannot be connected")
+            new Array[Entry[Point, String]](0)
+          }
         }
       }
       else new Array[Entry[Point, String]](0)
@@ -199,14 +208,17 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
             val (internal, totalDist) = roadGraph.getShortestPathAndLength(start._1.id, end._1.id)
             val tEnd = end._2.last._2
             val tStart = start._2.head._2
-            val edges = internal.sliding(2).map(x => roadGrid.id2edge(x.head + "-" + x(1))).toArray.drop(1).dropRight(1)
+            val edges = internal.sliding(2).map(x => roadGrid.id2edge(x.head + "-" + x(1))).toArray
             edges.map(edge => {
               val startPoint = Point(edge.coordinates.head, edge.coordinates(1))
               Entry(startPoint, Duration(tStart, tEnd), edge.id)
             })
           }
           catch {
-            case _: Any => new Array[Entry[Point, String]](0)
+            case _: Any => {
+              println(s"Failed shortest path connecting: $start, $end")
+              new Array[Entry[Point, String]](0)
+            }
           }
         }
         else new Array[Entry[Point, String]](0)
@@ -249,16 +261,27 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
     val eMatrix = genEmissionMatrix(candidates, sigmaZ)
     val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => x._1.length > 0 && (!x._1.forall(_ <= 0))) // remove points with all 0 emission probs or no candidates
     val validPoints = cleanedEMatrix.map(_._2)
-    val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
+    val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1).map(x => (x._1, x._2.distinct))
+    //    cleanedCandidates.foreach(x => println(x._1, x._2.map(y => roadGrid.edgeId2OsmId(y.id)).deep))
+    //    println(cleanedCandidates.flatMap(_._2.map(_.id)).deep)
+    //    for (i <- cleanedCandidates.flatMap(_._2.map(_.id))) {
+    //      for (j <- cleanedCandidates.flatMap(_._2.map(_.id))) {
+    //        if (i != j) println(roadGrid.edgeId2OsmId(i), roadGrid.edgeId2OsmId(j), i, j, roadGraph.getShortestPathAndLength(i.split('-').last, j.split('-').head))
+    //      }
+    //    }
     val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
-    val opimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
+    assert(cleanedEMatrix.length == cleanedCandidates.length && cleanedCandidates.length == cleanedTimeStamps.length)
+    val optimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)
     else {
       val tMatrix = genTransitionMatrix(cleanedCandidates, beta)
       viterbi(cleanedEMatrix.map(_._1), tMatrix)
     }
-    if (opimalPathIdx sameElements Array(-1)) return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""), Entry(Point.empty, Duration.empty, "")), "invalid")
-    val connected = if (inferTime) connectRoadsInfer(opimalPathIdx, cleanedCandidates, cleanedTimeStamps) else
-      connectRoads(opimalPathIdx, cleanedCandidates, cleanedTimeStamps)
+    if (optimalPathIdx sameElements Array(-1)) {
+      println(s"Failed viterbi: $traj")
+      return new Trajectory(Array(Entry(Point.empty, Duration.empty, ""), Entry(Point.empty, Duration.empty, "")), "invalid")
+    }
+    val connected = if (inferTime) connectRoads(optimalPathIdx, cleanedCandidates, cleanedTimeStamps) else
+      connectRoads(optimalPathIdx, cleanedCandidates, cleanedTimeStamps)
     Trajectory(connected, traj.data.toString)
   }
 

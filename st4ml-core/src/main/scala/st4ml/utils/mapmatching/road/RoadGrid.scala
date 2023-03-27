@@ -11,10 +11,11 @@ class RoadGrid(val vertexes: Array[RoadVertex], val edges: Array[RoadEdge],
   extends Grid(minLon, minLat, maxLon, maxLat, gridSize) {
 
   // fields
-  val id2vertex: Map[String, RoadVertex] = vertexes.map(x => x.id -> x).toMap
-  val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
-  val grid2Vertex: Map[GridId, Array[RoadVertex]] = buildGrid2Vertex()
-  val grid2Edge: Map[GridId, Array[RoadEdge]] = buildGrid2Edge()
+  lazy val id2vertex: Map[String, RoadVertex] = vertexes.map(x => x.id -> x).toMap
+  lazy val id2edge: Map[String, RoadEdge] = edges.map(x => x.id -> x).toMap
+  lazy val grid2Vertex: Map[GridId, Array[RoadVertex]] = buildGrid2Vertex()
+  lazy val grid2Edge: Map[GridId, Array[RoadEdge]] = buildGrid2Edge()
+  lazy val edgeId2OsmId: Map[String, String] = edges.map(x => (x.id, x.osmId)).toMap
 
   override def toString: String =
     s"""RoadGrid built with:

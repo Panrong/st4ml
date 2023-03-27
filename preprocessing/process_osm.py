@@ -1,15 +1,15 @@
 import osmnx as ox
 import argparse
 import pandas as pd
-import os
+import os, sys
 
-# python process_osm.py -r='-8.5,41.1,-8.55,41.15' -o osm
+# python process_osm.py -r='-8.55,41.1,-8.5,41.15' -o osm
 if __name__  == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--range', '-r', required=True, help = "the spatial range lon_min,lat_min,lon_max,lat_max")
     parser.add_argument('--network_type', '-n', default='drive', help = "network type, default: drive")
-    parser.add_argument('--simplify', '-s', default=True, help="boolean, simplify or not")
+    parser.add_argument('--simplify', '-s', default=False, help="boolean, simplify or not")
     parser.add_argument('--res_dir', '-o', required=True, help="the directory to save the resulting csvs")
     args = parser.parse_args()
 
@@ -23,8 +23,9 @@ if __name__  == "__main__":
     sr = [float(i) for i in args.range.split(",")]
     assert len(sr)== 4, "the input spatial range is invalid"
     G = ox.graph_from_bbox(sr[1], sr[3], sr[0], sr[2], network_type=args.network_type, simplify=args.simplify, retain_all=True)
+#     G = ox.graph_from_place('porto', network_type="drive")
     print('Found ', len(G.nodes()), 'nodes', len(G.edges()), 'edges')
-
+    print(sum(['geometry' in d for u, v, d in G.edges(data=True)]))  # 672
     res = [['shape','start_node','end_node','osmid','oneway','length']]
     for edge in G.edges(data=True):
         src_gps = (G.nodes[edge[0]]["x"], G.nodes[edge[0]]["y"])
