@@ -144,8 +144,8 @@ Please refer to the following documentation for a thorough guide on using ST4ML.
 
 Please cite our paper if you find ST4ML useful in your research and development.
 
->  Kaiqi Liu, Panrong Tong, Mo Li, Yue Wu, and Jianqiang Huang. 2023. ST4ML:
-Machine Learning Oriented Spatio-Temporal Data Processing at Scale. In
-_Proceedings of the 2023 International Conference on Management of Data (SIGMOD’23)_. ACM, New York, NY, USA
+>  Kaiqi Liu, Panrong Tong, Mo Li, Yue Wu, and Jianqiang Huang. 2023. ST4ML: Machine Learning Oriented
+Spatio-Temporal Data Processing at Scale. _Proc. ACM Manag. Data._ 1, 1, Article 87 (May 2023), 28 pages.
+https://doi.org/10.1145/3588941
 
 
