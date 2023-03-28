@@ -195,6 +195,15 @@ class Trajectory[V, D](
 
   override lazy val duration: Duration = Duration(entries.head.duration.start, entries.last.duration.end)
 
+  def take(n: Int): Trajectory[V,D] = new Trajectory[V, D](entries.take(n), data)
+
+  def takeRight(n: Int): Trajectory[V,D] = new Trajectory[V, D](entries.takeRight(n), data)
+
+  def drop(n: Int): Trajectory[V,D] = new Trajectory[V, D](entries.drop(n), data)
+
+  def dropRight(n: Int): Trajectory[V,D] = new Trajectory[V, D](entries.dropRight(n), data)
+
+
 }
 
 object Trajectory {

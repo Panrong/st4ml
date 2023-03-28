@@ -182,3 +182,12 @@ For the input format of the road network, please refer to [here](https://github.
     println(s"--- Two example map-matched trajectories:")
     convertedRDD.filter(_.data != "invalid").take(2).foreach(println)
 ```
+
+[A demo of the map matching results.](https://github.com/Panrong/st4ml/blob/instance/docs/mmres.html)
+
+### Tips for good map matching results:
+
+- Ensure that the map is fully downloaded (including the road candidates).
+- Sometimes the OSM map itself is not correct (missing road, missing direction, etc.). In
+this case, consider cut the trajectory to exclude the infected parts to correctly map-match the rest part.
+- The HMM parameters can be tuned.

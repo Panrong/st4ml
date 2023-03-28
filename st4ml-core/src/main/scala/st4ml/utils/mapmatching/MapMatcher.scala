@@ -87,8 +87,9 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
     else {
       val roadDist = findShortestPath(p1: Point, p2: Point, road1.id, road2.id)
       val dt = abs(p1.greatCircle(p2) - roadDist)
-      if (dt > 2000) 0
+      val res = if (dt > 500 || dt.isNaN) 0
       else 1 / beta * pow(E, -dt / beta)
+      res
     }
   }
 
@@ -105,7 +106,12 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
     candidates.sliding(2).map { x =>
       val o = x(0)._2.map(r => (x(0)._1, r))
       val d = x(1)._2.map(r => (x(1)._1, r))
-      o.map(x => d.map(y => calTransitionProb(x._1, y._1, x._2, y._2, beta)))
+      val res = o.map { x =>
+        d.map { y =>
+          calTransitionProb(x._1, y._1, x._2, y._2, beta)
+        }
+      }
+      res
     }.toArray
   }
 
@@ -258,17 +264,18 @@ class MapMatcher(roadGrid: RoadGrid) extends Serializable {
   def mapMatchWithInterpolation[T <: Trajectory[_, _] : ClassTag](traj: T, candidateThresh: Double = 50,
                                                                   sigmaZ: Double = 4.07, beta: Double = 0.2, inferTime: Boolean = false): Trajectory[String, String] = {
     val candidates = findCandidate[T](traj, candidateThresh)
+//    val test = candidates.map(x => x._2.map(a => x._1.distance(a.shape)))
     val eMatrix = genEmissionMatrix(candidates, sigmaZ)
     val cleanedEMatrix = eMatrix.zipWithIndex.filter(x => x._1.length > 0 && (!x._1.forall(_ <= 0))) // remove points with all 0 emission probs or no candidates
     val validPoints = cleanedEMatrix.map(_._2)
     val cleanedCandidates = candidates.zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1).map(x => (x._1, x._2.distinct))
-    //    cleanedCandidates.foreach(x => println(x._1, x._2.map(y => roadGrid.edgeId2OsmId(y.id)).deep))
-    //    println(cleanedCandidates.flatMap(_._2.map(_.id)).deep)
-    //    for (i <- cleanedCandidates.flatMap(_._2.map(_.id))) {
-    //      for (j <- cleanedCandidates.flatMap(_._2.map(_.id))) {
-    //        if (i != j) println(roadGrid.edgeId2OsmId(i), roadGrid.edgeId2OsmId(j), i, j, roadGraph.getShortestPathAndLength(i.split('-').last, j.split('-').head))
-    //      }
-    //    }
+//    cleanedCandidates.foreach(x => println(x._1, x._2.map(y => roadGrid.edgeId2OsmId(y.id)).deep))
+//    println(cleanedCandidates.flatMap(_._2.map(_.id)).deep)
+    //        for (i <- cleanedCandidates.flatMap(_._2.map(_.id))) {
+    //          for (j <- cleanedCandidates.flatMap(_._2.map(_.id))) {
+    //            if (i != j) println(roadGrid.edgeId2OsmId(i), roadGrid.edgeId2OsmId(j), i, j, roadGraph.getShortestPathAndLength(i.split('-').last, j.split('-').head))
+    //          }
+    //        }
     val cleanedTimeStamps = traj.entries.map(_.temporal.start).zipWithIndex.filter(x => validPoints.contains(x._2)).map(_._1)
     assert(cleanedEMatrix.length == cleanedCandidates.length && cleanedCandidates.length == cleanedTimeStamps.length)
     val optimalPathIdx = if (cleanedCandidates.length < 2) Array(-1)

@@ -10,7 +10,7 @@ object MapMatchingExample {
   def main(args: Array[String]): Unit = {
     /** to generate the road network that covers all trajectories,
      * run
-     * >> cd preprocessing && python process_osm.py -r='-8.7,41,-7.5,41.5' -o porto
+     * >> cd preprocessing && python process_osm.py -r='-8.7,41.1,-8.5,41.3' -o porto
      * the map file is too large for github
      */
     // example inputs: local[*] datasets/porto_toy datasets/osm_toy 64
