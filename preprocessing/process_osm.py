@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 import os, sys
 
-# python process_osm.py -r='-8.55,41.1,-8.5,41.15' -o osm
+# python process_osm.py -r='-8.7,41.1,-8.5,41.3' -o osm
 if __name__  == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -22,7 +22,7 @@ if __name__  == "__main__":
 
     sr = [float(i) for i in args.range.split(",")]
     assert len(sr)== 4, "the input spatial range is invalid"
-    G = ox.graph_from_bbox(sr[1], sr[3], sr[0], sr[2], network_type=args.network_type, simplify=args.simplify, retain_all=True)
+    G = ox.graph_from_bbox(sr[1], sr[3], sr[0], sr[2], network_type=args.network_type)
 #     G = ox.graph_from_place('porto', network_type="drive")
     print('Found ', len(G.nodes()), 'nodes', len(G.edges()), 'edges')
     print(sum(['geometry' in d for u, v, d in G.edges(data=True)]))  # 672
