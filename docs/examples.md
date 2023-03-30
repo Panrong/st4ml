@@ -2,9 +2,9 @@
 
 In this page we present three real applications implementing with ST4ML. The source code can be found [here](https://github.com/Panrong/st-tool/tree/instance/examples/src/main/scala).
 
-- [Average Speed Extraction](average-speed-extraction)
-- [Writing Customized Extraction](writing-customized-extraction)
-- [Map Matching](map-matching)
+- [Average Speed Extraction](#average-speed-extraction)
+- [Writing Customized Extraction](#writing-customized-extraction)
+- [Map Matching](#map-matching)
 
 ## Average Speed Extraction
 
