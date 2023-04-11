@@ -183,7 +183,7 @@ For the input format of the road network, please refer to [here](https://github.
     convertedRDD.filter(_.data != "invalid").take(2).foreach(println)
 ```
 
-[A demo of the map matching results.](https://htmlpreview.github.io/?https://github.com/Panrong/st4ml/blob/instance/docs/mmres.html)
+[A demo of the map matching results.](https://raw.githack.com/Panrong/st4ml/instance/docs/mmres.html)
 
 ### Tips for good map matching results:
 
