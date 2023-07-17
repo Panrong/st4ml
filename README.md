@@ -138,6 +138,7 @@ Please refer to the following documentation for a thorough guide on using ST4ML.
 - [ST4ML data standard](https://github.com/Panrong/st4ml/blob/instance/docs/data_standard.md), [Supported one-line data input format and toy datasets](https://github.com/Panrong/st4ml/blob/instance/docs/toy_data.md)
 - [Full programming guide and APIs](https://github.com/Panrong/st4ml/blob/instance/docs/internal.md)
 - [End-to-end examples](https://github.com/Panrong/st4ml/blob/instance/docs/examples.md)
+- [Scripts for experiments in the SIGMOD paper are in `experiments`](https://github.com/Panrong/st4ml/blob/instance/experiments/readme.md)
 
 
 ## References
