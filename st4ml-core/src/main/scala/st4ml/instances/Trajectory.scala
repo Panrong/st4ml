@@ -205,7 +205,7 @@ class Trajectory[V, D](
 
   def avgSpeed(metric: String = "greatCircle"): Double = {
     val length = this.consecutiveSpatialDistance(metric).sum
-    val duration = this.duration
+    val duration = this.duration.seconds
     length / duration
   }
 }
